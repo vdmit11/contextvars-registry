@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "contextvars-extras"
+version = "0.1.0"
+description = "contextvars made easy"
+authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
+exclude = ["**/*_test.py"]
+
+[tool.poetry.dependencies]
+python = "^3.7.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+tox = "^3.22.0"
+ipython = "^7.20.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
