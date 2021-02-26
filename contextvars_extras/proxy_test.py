@@ -11,7 +11,7 @@ def test__ContextVarsProxy__must_be_subclassed__and_cannot_be_instanciated_direc
     Subclass()
 
 
-def test__subclass_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
+def test__class_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
     class MyVars(ContextVarsProxy):
         # magically becomes ContextVarDescriptor()
         hinted: str = "hinted"
@@ -39,7 +39,7 @@ def test__subclass_members__with_type_hints__are_automatically_converted_to_cont
     MyVars.hinted.reset(token)
     assert my_vars.hinted == MyVars.hinted.get() == 42
 
-    # underlying ContextVar() objects are available via the ContextVarDescriptor.context_var attribute
+    # underlying ContextVar() objects are available via ContextVarDescriptor.context_var
     assert isinstance(MyVars.hinted.context_var, ContextVar)
 
     # also, ContextVar() automatically get verbose name, useful for debugging
@@ -68,4 +68,4 @@ def test__class_member_values__become__context_var_defaults():
 
     # after we initialize it, the error is not raised anymore
     my_vars.no_default = None
-    assert my_vars.no_default == None
+    assert my_vars.no_default is None

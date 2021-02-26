@@ -1,10 +1,9 @@
-import os
 from abc import ABC
-from typing import get_type_hints, FrozenSet
-
-from contextvars import *
+from contextvars import ContextVar, Token
+from typing import get_type_hints
 
 from contextvars_extras.util import dedent_strip
+
 
 MISSING = Token.MISSING
 
@@ -56,12 +55,12 @@ class ContextVarsProxy(ABC):
     So class members are ContextVarDescriptor objects:
 
         >>> CurrentVars.timezone
-        <ContextVarDescriptor name='contextvars_extras.proxy.CurrentVars.timezone' default='Europe/London'...>
+        <ContextVarDescriptor name='contextvars_extras.proxy.CurrentVars.timezone'...>
 
     and its underlying ContextVar can be reached via the `.context_var` attribute:
 
         >>> CurrentVars.timezone.context_var
-        <ContextVar name='contextvars_extras.proxy.CurrentVars.timezone' default='Europe/London'...>
+        <ContextVar name='contextvars_extras.proxy.CurrentVars.timezone'...>
 
     But in practice, you normally shouldn't need that.
     ContextVarDescriptor should implement all same attributes and methods as ContextVar,
