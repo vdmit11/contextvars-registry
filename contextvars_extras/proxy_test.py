@@ -69,3 +69,41 @@ def test__class_member_values__become__context_var_defaults():
     # after we initialize it, the error is not raised anymore
     my_vars.no_default = None
     assert my_vars.no_default is None
+
+
+def test__missing_vars__are_automatically_created__on_setattr():
+    class CurrentVars(ContextVarsProxy):
+        pass
+
+    current = CurrentVars()
+
+    with raises(AttributeError):
+        current.timezone
+    current.timezone = 'Europe/Moscow'
+    assert CurrentVars.timezone.get() == 'Europe/Moscow'
+
+    # ...but this feature may be disabled by setting `_var_init_on_setattr = False`
+    # Let's test that:
+
+    class CurrentVars(ContextVarsProxy):
+        _var_init_on_setattr = False
+
+    current = CurrentVars()
+
+    with raises(AttributeError):
+        current.timezone = 'Europe/Moscow'
+
+
+def test__var_prefix__is_reserved__and_cannot_be_used_for_context_variables():
+    class CurrentVars(ContextVarsProxy):
+        _var_foo: str = 'foo'
+
+    current = CurrentVars()
+
+    # _var_* attributes cannot be set on instance level
+    with raises(AttributeError):
+        current._var_foo = 'bar'
+
+    # and they don't become ContextVar() objects,
+    # even though they were declared with type hints on the class level
+    assert isinstance(CurrentVars._var_foo, str)   # normally you expect ContextVarDescriptor here

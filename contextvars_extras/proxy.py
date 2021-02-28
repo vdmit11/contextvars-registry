@@ -1,7 +1,7 @@
+import threading
 from abc import ABC
 from contextvars import ContextVar, Token
 from typing import get_type_hints
-
 from contextvars_extras.util import dedent_strip
 
 
@@ -67,26 +67,115 @@ class ContextVarsProxy(ABC):
     and thus it can be used instead of ContextVar() object in all cases except isinstance() checks.
     """
 
+    _var_init_on_setattr: bool = True
+    """Automatically initialize missing ContextVar() objects when setting attributes?
+
+    If set to True (default), missing ContextVar() objects are automatically created when
+    setting attributes. That is, you can define an empty class, and then set arbitrary attributes:
+
+        >>> class CurrentVars(ContextVarsProxy):
+        ...    pass
+
+        >>> current = CurrentVars()
+        >>> current.locale = 'en'
+        >>> current.timezone = 'UTC'
+
+    However, if you find this behavior weak, you may disable it, like this:
+
+        >>> class CurrentVars(ContextVarsProxy):
+        ...     _var_init_on_setattr = False
+        ...     locale: str = 'en'
+
+        >>> current = CurrentVars()
+        >>> current.timezone = 'UTC'
+        AttributeError: ...
+    """
+
+    _var_init_lock: threading.RLock
+    """A lock that protects initialization of the class attributes as context variables.
+
+    ContextVar() objects are lazily created on 1st attempt to set an attribute.
+    So a race condition is possible: multiple concurrent threads (or co-routines)
+    set an attribute for the 1st time, and thus create multiple ContextVar() objects.
+    The last created ContextVar() object wins, and others are lost, causing a memory leak.
+
+    So this lock is needed to ensure that ContextVar() object is created only once.
+    """
+
+    _var_init_done_attrs: set
+    """Names of attributes that were initialized as context variables.
+
+    Can be mutated at run time, when missing ContextVar() objects are created
+    dynamically (on the 1st attempt to set an attribute).
+    """
+
     @classmethod
     def __init_subclass__(cls):
-        cls._init_class_attrs_as_contextvars()
+        cls._var_init_done_attrs = set()
+        cls._var_init_lock = threading.RLock()
+        cls._var_init_type_hinted_attrs_as_descriptors()
 
     @classmethod
-    def _init_class_attrs_as_contextvars(cls):
+    def _var_init_type_hinted_attrs_as_descriptors(cls):
         hinted_attrs = get_type_hints(cls)
         for attr_name in hinted_attrs:
-            cls._init_attr_as_contextvar(attr_name)
+            cls._var_init_attr_as_descriptor(attr_name)
 
     @classmethod
-    def _init_attr_as_contextvar(cls, attr_name) -> ContextVar:
-        default = getattr(cls, attr_name, MISSING)
+    def _var_init_attr_as_descriptor(cls, attr_name):
+        with cls._var_init_lock:
+            if attr_name in cls._var_init_done_attrs:
+                return
 
-        assert not isinstance(default, (ContextVar, ContextVarDescriptor))
+            if attr_name.startswith('_var_'):
+                return
 
-        var_name = f"{cls.__module__}.{cls.__name__}.{attr_name}"
-        new_var_descriptor = ContextVarDescriptor(var_name, default)
+            value = getattr(cls, attr_name, MISSING)
+            assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
-        setattr(cls, attr_name, new_var_descriptor)
+            var_name = f"{cls.__module__}.{cls.__name__}.{attr_name}"
+            new_var_descriptor = ContextVarDescriptor(var_name, default=value)
+            setattr(cls, attr_name, new_var_descriptor)
+
+            cls._var_init_done_attrs.add(attr_name)
+
+    def __setattr__(self, attr_name, value):
+        if attr_name not in self._var_init_done_attrs:
+            if not self._var_init_on_setattr:
+                class_name = self.__class__.__name__
+                raise AttributeError(dedent_strip(
+                    f"""
+                    Can't set undeclared attribute: {class_name}.{attr_name}
+
+                    Maybe there is a typo in the attribute name?
+
+                    If this is a new attribute, then you have to first declare it in the class,
+                    with a type hint, like this:
+
+                    class {class_name}(...):
+                        {attr_name}: {type(value).__name__} = default_value
+                    """
+                ))
+
+            if attr_name.startswith('_var_'):
+                raise AttributeError(dedent_strip(
+                    f"""
+                    Can't set attribute '{attr_name}' because of special '_var_' prefix.
+
+                    '_var_' prefix is reserved for ContextVarProxy class settings.
+                    You can't set such attribute on the instance level.
+
+                    If you want to configure the class, you should do it on the class level:
+                    like this:
+
+                        class {self.__class__.__name__}(...):
+                            {attr_name}: {type(value).__name__} = {value!r}
+                    """
+                ))
+
+            self._var_init_attr_as_descriptor(attr_name)
+
+        super().__setattr__(attr_name, value)
 
     def __init__(self):
         cls = self.__class__
