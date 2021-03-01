@@ -18,3 +18,11 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+.PHONY: apidoc
+apidoc:
+	sphinx-apidoc --force -o . ../contextvars_extras '../**/*_test.py'
+
+.PHONY: browse
+browse: apidoc html
+	x-www-browser $(BUILDDIR)/html/index.html
