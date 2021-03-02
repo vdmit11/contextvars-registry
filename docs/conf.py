@@ -30,6 +30,7 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'private-members': True,
     'undoc-members': True,
+    'special-members': '__call__',
 }
 
 # Add any Sphinx extension module names here, as strings. They can be
