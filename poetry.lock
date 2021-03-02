@@ -444,6 +444,14 @@ security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
 socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 
 [[package]]
+name = "rpdb"
+version = "0.1.6"
+description = "pdb wrapper with remote access via tcp socket"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "six"
 version = "1.15.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -706,7 +714,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "ed8ff51dde737138db2570989cdf09bbfd27e05137d93b98b95612b3b7c6dc1c"
+content-hash = "310ccd267805075e38c20b6c18169fb49ebd36c906c0edac58b1742665c1620f"
 
 [metadata.files]
 alabaster = [
@@ -925,6 +933,9 @@ pytz = [
 requests = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},
     {file = "requests-2.25.1.tar.gz", hash = "sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804"},
+]
+rpdb = [
+    {file = "rpdb-0.1.6.tar.gz", hash = "sha256:5d1a1cee34378ab075879dc30fa6328d448a9f680a66c4e84cac7382ad92f15f"},
 ]
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},

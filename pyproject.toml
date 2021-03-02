@@ -16,6 +16,7 @@ ipython = "^7.20.0"
 pylama = "^7.7.1"
 Sphinx = "^3.5.1"
 sphinx-autobuild = "^2020.9.1"
+rpdb = "^0.1.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
