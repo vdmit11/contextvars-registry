@@ -3,10 +3,7 @@ import threading
 from contextvars import ContextVar, Token
 from typing import get_type_hints, Dict, List, Tuple
 from contextlib import contextmanager
-from contextvars_extras.util import dedent_strip
-
-
-MISSING = Token.MISSING
+from contextvars_extras.util import Missing, dedent_strip
 
 
 class ContextVarsRegistry:
@@ -203,7 +200,7 @@ class ContextVarsRegistry:
             if attr_name.startswith('_var_'):
                 return
 
-            value = getattr(cls, attr_name, MISSING)
+            value = getattr(cls, attr_name, Missing)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
             var_name = f"{cls.__module__}.{cls.__name__}.{attr_name}"
@@ -250,8 +247,8 @@ class ContextVarsRegistry:
 class ContextVarDescriptor:
     context_var: ContextVar
 
-    def __init__(self, name, default=MISSING):
-        if default is MISSING:
+    def __init__(self, name, default=Missing):
+        if default is Missing:
             self.context_var = ContextVar(name)
         else:
             self.context_var = ContextVar(name, default=default)
@@ -273,7 +270,7 @@ class ContextVarDescriptor:
         self.context_var.set(value)
 
     def __repr__(self):
-        if self.default is MISSING:
+        if self.default is Missing:
             return f"<{self.__class__.__name__} name={self.name}>"
         else:
             return f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
