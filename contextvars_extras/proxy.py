@@ -1,7 +1,9 @@
+from __future__ import annotations
 import threading
 from abc import ABC
 from contextvars import ContextVar, Token
-from typing import get_type_hints
+from typing import get_type_hints, Dict, List, Tuple
+from contextlib import contextmanager
 from contextvars_extras.util import dedent_strip
 
 
@@ -91,6 +93,18 @@ class ContextVarsProxy(ABC):
         AttributeError: ...
     """
 
+    _var_init_done_descriptors: Dict[str, ContextVarDescriptor]
+    """A dictionary that tracks which attributes were initialized as ContextVarDescriptor objects.
+
+    Keys are attribute names, and values are instances of :class:`ContextVarDescriptor`.
+    The dictionary can be mutated at run time, because new context variables can be created
+    on the fly, lazily, on 1st set of an attribute.
+
+    Actually, this dictionary isn't strictly required.
+    You can derive this mapping by iterating over all class attributes and calling isinstance().
+    It is just kept for the convenience, and maybe small performance improvements.
+    """
+
     _var_init_lock: threading.RLock
     """A lock that protects initialization of the class attributes as context variables.
 
@@ -102,29 +116,89 @@ class ContextVarsProxy(ABC):
     So this lock is needed to ensure that ContextVar() object is created only once.
     """
 
-    _var_init_done_attrs: set
-    """Names of attributes that were initialized as context variables.
+    @contextmanager
+    def __call__(self, **attr_names_and_values):
+        """Set attributes temporarily, using context manager (the ``with`` statement in Python).
 
-    Can be mutated at run time, when missing ContextVar() objects are created
-    dynamically (on the 1st attempt to set an attribute).
-    """
+        Example of usage:
+
+            >>> class CurrentVars(ContextVarsProxy):
+            ...     timezone: str = 'UTC'
+            ...     locale: str = 'en'
+            >>> current = CurrentVars()
+
+            >>> with current(timezone='Europe/London', locale='en_GB'):
+            ...    print(current.timezone)
+            ...    print(current.locale)
+            Europe/London
+            en_GB
+
+        On exiting form the ``with`` block, the values are restored:
+
+            >>> current.timezone
+            'UTC'
+            >>> current.locale
+            'en'
+
+        .. caution::
+            Only attributes that are present inside ``with (...)`` parenthesis are restored:
+
+                >>> with current(timezone='Europe/London'):
+                ...   current.locale = 'en_GB'
+                ...   current.user_id = 42
+                >>> current.timezone  # restored
+                'UTC'
+                >>> current.locale  # not restored
+                'en_GB'
+                >>> current.user_id  # not restored
+                42
+
+            That is, the ``with current(...)`` doesn't make a full copy of all context variables.
+            It is NOT a scope isolation mechanism that protects all attributes.
+
+            It is a more primitive tool, roughly, a syntax sugar for this:
+
+                >>> try:
+                ...     saved_timezone = current.timezone
+                ...     current.timezone = 'Europe/London'
+                ...
+                ...     # do_something_useful_with_current_timezone()
+                ... finally:
+                ...     current.timezone = saved_timezone
+        """
+        saved_state: List[Tuple[ContextVarDescriptor, Token]] = []
+        try:
+            # Set context variables, saving their state.
+            for attr_name, value in attr_names_and_values.items():
+                # This is almost like __setattr__(), except that it also saves a Token() object,
+                # that allows to restore the previous value later (via ContextVar.reset() method).
+                descriptor = self.__before_set__ensure_initialized(attr_name, value)
+                reset_token = descriptor.set(value)  # calls ContextVar.set() method
+                saved_state.append((descriptor, reset_token))
+
+            # execute code inside the ``with: ...`` block
+            yield
+        finally:
+            # Restore context variables.
+            for (descriptor, reset_token) in saved_state:
+                descriptor.reset(reset_token)  # calls ContextVar.reset() method
 
     @classmethod
     def __init_subclass__(cls):
-        cls._var_init_done_attrs = set()
+        cls._var_init_done_descriptors = dict()
         cls._var_init_lock = threading.RLock()
-        cls._var_init_type_hinted_attrs_as_descriptors()
+        cls.__init_type_hinted_class_attrs_as_descriptors()
 
     @classmethod
-    def _var_init_type_hinted_attrs_as_descriptors(cls):
+    def __init_type_hinted_class_attrs_as_descriptors(cls):
         hinted_attrs = get_type_hints(cls)
         for attr_name in hinted_attrs:
-            cls._var_init_attr_as_descriptor(attr_name)
+            cls.__init_class_attr_as_descriptor(attr_name)
 
     @classmethod
-    def _var_init_attr_as_descriptor(cls, attr_name):
+    def __init_class_attr_as_descriptor(cls, attr_name):
         with cls._var_init_lock:
-            if attr_name in cls._var_init_done_attrs:
+            if attr_name in cls._var_init_done_descriptors:
                 return
 
             if attr_name.startswith('_var_'):
@@ -137,45 +211,7 @@ class ContextVarsProxy(ABC):
             new_var_descriptor = ContextVarDescriptor(var_name, default=value)
             setattr(cls, attr_name, new_var_descriptor)
 
-            cls._var_init_done_attrs.add(attr_name)
-
-    def __setattr__(self, attr_name, value):
-        if attr_name not in self._var_init_done_attrs:
-            if not self._var_init_on_setattr:
-                class_name = self.__class__.__name__
-                raise AttributeError(dedent_strip(
-                    f"""
-                    Can't set undeclared attribute: {class_name}.{attr_name}
-
-                    Maybe there is a typo in the attribute name?
-
-                    If this is a new attribute, then you have to first declare it in the class,
-                    with a type hint, like this:
-
-                    class {class_name}(...):
-                        {attr_name}: {type(value).__name__} = default_value
-                    """
-                ))
-
-            if attr_name.startswith('_var_'):
-                raise AttributeError(dedent_strip(
-                    f"""
-                    Can't set attribute '{attr_name}' because of special '_var_' prefix.
-
-                    '_var_' prefix is reserved for ContextVarProxy class settings.
-                    You can't set such attribute on the instance level.
-
-                    If you want to configure the class, you should do it on the class level:
-                    like this:
-
-                        class {self.__class__.__name__}(...):
-                            {attr_name}: {type(value).__name__} = {value!r}
-                    """
-                ))
-
-            self._var_init_attr_as_descriptor(attr_name)
-
-        super().__setattr__(attr_name, value)
+            cls._var_init_done_descriptors[attr_name] = new_var_descriptor
 
     def __init__(self):
         cls = self.__class__
@@ -195,6 +231,60 @@ class ContextVarsProxy(ABC):
                 """
                 )
             )
+
+    def __setattr__(self, attr_name, value):
+        self.__before_set__ensure_initialized(attr_name, value)
+        super().__setattr__(attr_name, value)
+
+    @classmethod
+    def __before_set__ensure_initialized(self, attr_name, value) -> ContextVarDescriptor:
+        try:
+            return self._var_init_done_descriptors[attr_name]
+        except KeyError:
+            self.__before_set__ensure_not_starts_with_special_var_prefix(attr_name, value)
+            self.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
+
+            return self._var_init_done_descriptors[attr_name]
+
+    @classmethod
+    def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
+        if attr_name.startswith('_var_'):
+            raise AttributeError(dedent_strip(
+                f"""
+                Can't set attribute '{attr_name}' because of special '_var_' prefix.
+
+                '_var_' prefix is reserved for ContextVarProxy class settings.
+                You can't set such attribute on the instance level.
+
+                If you want to configure the class, you should do it on the class level:
+                like this:
+
+                    class {cls.__name__}(...):
+                        {attr_name}: {type(value).__name__} = {value!r}
+                """
+            ))
+
+    @classmethod
+    def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
+        assert attr_name not in cls._var_init_done_descriptors, \
+            "This method should not be called when attribute is already initialized as ContextVar"
+
+        if not cls._var_init_on_setattr:
+            raise AttributeError(dedent_strip(
+                f"""
+                Can't set undeclared attribute: {cls.__name__}.{attr_name}
+
+                Maybe there is a typo in the attribute name?
+
+                If this is a new attribute, then you have to first declare it in the class,
+                with a type hint, like this:
+
+                class {cls.__name__}(...):
+                    {attr_name}: {type(value).__name__} = default_value
+                """
+            ))
+
+        cls.__init_class_attr_as_descriptor(attr_name)
 
 
 class ContextVarDescriptor:

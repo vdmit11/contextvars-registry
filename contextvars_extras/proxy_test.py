@@ -107,3 +107,86 @@ def test__var_prefix__is_reserved__and_cannot_be_used_for_context_variables():
     # and they don't become ContextVar() objects,
     # even though they were declared with type hints on the class level
     assert isinstance(CurrentVars._var_foo, str)   # normally you expect ContextVarDescriptor here
+
+
+def test__with_context_manager__sets_variables__temporarily():
+    class CurrentVars(ContextVarsProxy):
+        timezone: str = 'UTC'
+        locale: str
+
+    current = CurrentVars()
+
+    with current(timezone='Europe/London', locale='en'):
+        with current(locale='en_GB', user_id=1):
+            assert current.timezone == 'Europe/London'
+            assert current.locale == 'en_GB'
+            assert current.user_id == 1
+        assert current.timezone == 'Europe/London'
+        assert current.locale == 'en'
+        assert CurrentVars.user_id.get('FALLBACK_VALUE') == 'FALLBACK_VALUE'
+
+        # ``user_id`` wasn't set above using the ``with()`` block,
+        # so it will NOT be restored afterrwards
+        current.user_id = 2
+
+    # not restored, because not present in the ``with (...)`` parenthesis
+    assert current.user_id == 2
+
+    # these two were set using ``with (...)``, so they are restored to their initial states
+    assert current.timezone == 'UTC'
+    assert CurrentVars.locale.get('FALLBACK_VALUE') == 'FALLBACK_VALUE'
+
+
+def test__with_context_manager__throws_error__when_setting_reserved_var_attribute():
+    class CurrentVars(ContextVarsProxy):
+        _var_foo: str = 'not a ContextVar because of special _var_ prefix'
+
+    current = CurrentVars()
+
+    with raises(AttributeError):
+        with current(_var_foo='foo'):
+            pass
+
+    with raises(AttributeError):
+        with current(_var_bar='bar'):
+            pass
+
+
+def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
+    class CurrentVars(ContextVarsProxy):
+        _var_init_on_setattr = False
+        locale: str = 'en'
+
+    current = CurrentVars()
+
+    with current(locale='en_US'):
+        assert current.locale == 'en_US'
+
+    # an attempt to set current.timezone will raise AttributeError
+    # Because the variable wasn't declared in the class definition
+    # (and dynamic creation of variables is disabled by ``_var_init_on_setattr = False``)
+    with raises(AttributeError):
+        with current(locale='en_US', timezone='America/New_York'):
+            pass
+
+
+def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
+    class CurrentVars(ContextVarsProxy):
+        locale: str = 'en'
+
+    current = CurrentVars()
+
+    # Try to set a couple of attributes using the ``with`` statement.
+    #
+    # Upon exit from the ``with`` block, the attribute states must be restored,
+    # even though ValueError was raised inside.
+    with raises(ValueError):
+        with current(locale='en_US', user_id=42):
+            raise ValueError
+
+    # current.locale is restored to the default value
+    assert current.locale == 'en'
+
+    # current.user_id is also restored to its initial state:(no value, getattr raises LookupError)
+    with raises(LookupError):
+        current.user_id
