@@ -1,6 +1,5 @@
 from __future__ import annotations
 import threading
-from abc import ABC
 from contextvars import ContextVar, Token
 from typing import get_type_hints, Dict, List, Tuple
 from contextlib import contextmanager
@@ -10,7 +9,7 @@ from contextvars_extras.util import dedent_strip
 MISSING = Token.MISSING
 
 
-class ContextVarsRegistry(ABC):
+class ContextVarsRegistry:
     """A collection of ContextVar() objects, with nice @property-like way to access them.
 
     The idea is simple: you create a sub-class, and declare your variables using type annotations:
