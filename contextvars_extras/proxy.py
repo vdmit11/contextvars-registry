@@ -216,21 +216,7 @@ class ContextVarsProxy(ABC):
     def __init__(self):
         cls = self.__class__
         if cls == ContextVarsProxy:
-            raise NotImplementedError(
-                dedent_strip(
-                    f"""
-                class {cls.__name__} cannot be instanciated directly without sub-classing.
-
-                You have to create a sub-class before using it:
-
-                    class CurrentVars({cls.__name__}):
-                        var1: str = "default_value"
-
-                    current = CurrentVars()
-                    current.var1   # => "default_value"
-                """
-                )
-            )
+            raise MustBeSubclassedError.format()
 
     def __setattr__(self, attr_name, value):
         self.__before_set__ensure_initialized(attr_name, value)
@@ -249,20 +235,7 @@ class ContextVarsProxy(ABC):
     @classmethod
     def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
         if attr_name.startswith('_var_'):
-            raise AttributeError(dedent_strip(
-                f"""
-                Can't set attribute '{attr_name}' because of special '_var_' prefix.
-
-                '_var_' prefix is reserved for ContextVarProxy class settings.
-                You can't set such attribute on the instance level.
-
-                If you want to configure the class, you should do it on the class level:
-                like this:
-
-                    class {cls.__name__}(...):
-                        {attr_name}: {type(value).__name__} = {value!r}
-                """
-            ))
+            raise ReservedAttributeError.format(cls, attr_name, value)
 
     @classmethod
     def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
@@ -270,19 +243,7 @@ class ContextVarsProxy(ABC):
             "This method should not be called when attribute is already initialized as ContextVar"
 
         if not cls._var_init_on_setattr:
-            raise AttributeError(dedent_strip(
-                f"""
-                Can't set undeclared attribute: {cls.__name__}.{attr_name}
-
-                Maybe there is a typo in the attribute name?
-
-                If this is a new attribute, then you have to first declare it in the class,
-                with a type hint, like this:
-
-                class {cls.__name__}(...):
-                    {attr_name}: {type(value).__name__} = default_value
-                """
-            ))
+            raise UndeclaredAttributeError.format(cls, attr_name, value)
 
         cls.__init_class_attr_as_descriptor(attr_name)
 
@@ -317,3 +278,70 @@ class ContextVarDescriptor:
             return f"<{self.__class__.__name__} name={self.name}>"
         else:
             return f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
+
+
+class MustBeSubclassedError(NotImplementedError):
+    @staticmethod
+    def format():
+        return MustBeSubclassedError(
+            dedent_strip(
+                """
+                class ContextVarsProxy cannot be instanciated directly without sub-classing.
+
+                You have to create a sub-class before using it:
+
+                    class CurrentVars(ContextVarsProxy):
+                        var1: str = "default_value"
+
+                    current = CurrentVars()
+                    current.var1   # => "default_value"
+                """
+            )
+        )
+
+
+class ReservedAttributeError(AttributeError):
+    @staticmethod
+    def format(context_vars_proxy_subclass, attr_name, attr_value):
+        cls_name = context_vars_proxy_subclass.__name__
+        attr_type_name = type(attr_value).__name__
+
+        return ReservedAttributeError(
+            dedent_strip(
+                f"""
+                Can't set attribute '{attr_name}' because of special '_var_' prefix.
+
+                '_var_' prefix is reserved for ContextVarProxy class settings.
+                You can't set such attribute on the instance level.
+
+                If you want to configure the class, you should do it on the class level:
+                like this:
+
+                class {cls_name}(ContextVarsProxy):
+                    {attr_name}: {attr_type_name}
+                """
+            )
+        )
+
+
+class UndeclaredAttributeError(AttributeError):
+    @staticmethod
+    def format(context_var_proxy_subclass, attr_name, attr_value):
+        cls_name = context_var_proxy_subclass.__name__
+        attr_type_name = type(attr_value).__name__
+
+        return UndeclaredAttributeError(
+            dedent_strip(
+                f"""
+                Can't set undeclared attribute: {cls_name}.{attr_name}
+
+                Maybe there is a typo in the attribute name?
+
+                If this is a new attribute, then you have to first declare it in the class,
+                with a type hint, like this:
+
+                class {cls_name}(...):
+                    {attr_name}: {attr_type_name}
+                """
+            )
+        )
