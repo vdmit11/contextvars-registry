@@ -10,12 +10,12 @@ from contextvars_extras.util import dedent_strip
 MISSING = Token.MISSING
 
 
-class ContextVarsProxy(ABC):
+class ContextVarsRegistry(ABC):
     """A collection of ContextVar() objects, with nice @property-like way to access them.
 
     The idea is simple: you create a sub-class, and declare your variables using type annotations:
 
-        >>> class CurrentVars(ContextVarsProxy):
+        >>> class CurrentVars(ContextVarsRegistry):
         ...    locale: str = 'en_GB'
         ...    timezone: str = 'Europe/London'
         ...    user_id: int = None
@@ -57,12 +57,12 @@ class ContextVarsProxy(ABC):
     So class members are ContextVarDescriptor objects:
 
         >>> CurrentVars.timezone
-        <ContextVarDescriptor name='contextvars_extras.proxy.CurrentVars.timezone'...>
+        <ContextVarDescriptor name='contextvars_extras.registry.CurrentVars.timezone'...>
 
     and its underlying ContextVar can be reached via the `.context_var` attribute:
 
         >>> CurrentVars.timezone.context_var
-        <ContextVar name='contextvars_extras.proxy.CurrentVars.timezone'...>
+        <ContextVar name='contextvars_extras.registry.CurrentVars.timezone'...>
 
     But in practice, you normally shouldn't need that.
     ContextVarDescriptor should implement all same attributes and methods as ContextVar,
@@ -75,7 +75,7 @@ class ContextVarsProxy(ABC):
     If set to True (default), missing ContextVar() objects are automatically created when
     setting attributes. That is, you can define an empty class, and then set arbitrary attributes:
 
-        >>> class CurrentVars(ContextVarsProxy):
+        >>> class CurrentVars(ContextVarsRegistry):
         ...    pass
 
         >>> current = CurrentVars()
@@ -84,7 +84,7 @@ class ContextVarsProxy(ABC):
 
     However, if you find this behavior weak, you may disable it, like this:
 
-        >>> class CurrentVars(ContextVarsProxy):
+        >>> class CurrentVars(ContextVarsRegistry):
         ...     _var_init_on_setattr = False
         ...     locale: str = 'en'
 
@@ -122,7 +122,7 @@ class ContextVarsProxy(ABC):
 
         Example of usage:
 
-            >>> class CurrentVars(ContextVarsProxy):
+            >>> class CurrentVars(ContextVarsRegistry):
             ...     timezone: str = 'UTC'
             ...     locale: str = 'en'
             >>> current = CurrentVars()
@@ -215,7 +215,7 @@ class ContextVarsProxy(ABC):
 
     def __init__(self):
         cls = self.__class__
-        if cls == ContextVarsProxy:
+        if cls == ContextVarsRegistry:
             raise MustBeSubclassedError.format()
 
     def __setattr__(self, attr_name, value):
@@ -286,11 +286,11 @@ class MustBeSubclassedError(NotImplementedError):
         return MustBeSubclassedError(
             dedent_strip(
                 """
-                class ContextVarsProxy cannot be instanciated directly without sub-classing.
+                class ContextVarsRegistry cannot be instanciated directly without sub-classing.
 
                 You have to create a sub-class before using it:
 
-                    class CurrentVars(ContextVarsProxy):
+                    class CurrentVars(ContextVarsRegistry):
                         var1: str = "default_value"
 
                     current = CurrentVars()
@@ -302,8 +302,8 @@ class MustBeSubclassedError(NotImplementedError):
 
 class ReservedAttributeError(AttributeError):
     @staticmethod
-    def format(context_vars_proxy_subclass, attr_name, attr_value):
-        cls_name = context_vars_proxy_subclass.__name__
+    def format(context_vars_registry_subclass, attr_name, attr_value):
+        cls_name = context_vars_registry_subclass.__name__
         attr_type_name = type(attr_value).__name__
 
         return ReservedAttributeError(
@@ -317,7 +317,7 @@ class ReservedAttributeError(AttributeError):
                 If you want to configure the class, you should do it on the class level:
                 like this:
 
-                class {cls_name}(ContextVarsProxy):
+                class {cls_name}(ContextVarsRegistry):
                     {attr_name}: {attr_type_name}
                 """
             )

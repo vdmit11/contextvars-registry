@@ -1,18 +1,18 @@
 from pytest import raises
-from contextvars_extras.proxy import ContextVarsProxy, ContextVarDescriptor, ContextVar
+from contextvars_extras.registry import ContextVarsRegistry, ContextVarDescriptor, ContextVar
 
 
-def test__ContextVarsProxy__must_be_subclassed__and_cannot_be_instanciated_directly():
+def test__ContextVarsRegistry__must_be_subclassed__and_cannot_be_instanciated_directly():
     with raises(NotImplementedError):
-        ContextVarsProxy()
+        ContextVarsRegistry()
 
-    class Subclass(ContextVarsProxy):
+    class Subclass(ContextVarsRegistry):
         pass
     Subclass()
 
 
 def test__class_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
-    class MyVars(ContextVarsProxy):
+    class MyVars(ContextVarsRegistry):
         # magically becomes ContextVarDescriptor()
         hinted: str = "hinted"
 
@@ -44,14 +44,14 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
 
     # also, ContextVar() automatically get verbose name, useful for debugging
     assert (
-        "contextvars_extras.proxy_test.MyVars.hinted"
+        "contextvars_extras.registry_test.MyVars.hinted"
         == MyVars.hinted.name
         == MyVars.hinted.context_var.name
     )
 
 
 def test__class_member_values__become__context_var_defaults():
-    class MyVars(ContextVarsProxy):
+    class MyVars(ContextVarsRegistry):
         has_default: str = "has default value"
         has_none_as_default: int = None
         no_default: str
@@ -72,7 +72,7 @@ def test__class_member_values__become__context_var_defaults():
 
 
 def test__missing_vars__are_automatically_created__on_setattr():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         pass
 
     current = CurrentVars()
@@ -85,7 +85,7 @@ def test__missing_vars__are_automatically_created__on_setattr():
     # ...but this feature may be disabled by setting `_var_init_on_setattr = False`
     # Let's test that:
 
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         _var_init_on_setattr = False
 
     current = CurrentVars()
@@ -95,7 +95,7 @@ def test__missing_vars__are_automatically_created__on_setattr():
 
 
 def test__var_prefix__is_reserved__and_cannot_be_used_for_context_variables():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         _var_foo: str = 'foo'
 
     current = CurrentVars()
@@ -110,7 +110,7 @@ def test__var_prefix__is_reserved__and_cannot_be_used_for_context_variables():
 
 
 def test__with_context_manager__sets_variables__temporarily():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         timezone: str = 'UTC'
         locale: str
 
@@ -138,7 +138,7 @@ def test__with_context_manager__sets_variables__temporarily():
 
 
 def test__with_context_manager__throws_error__when_setting_reserved_var_attribute():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         _var_foo: str = 'not a ContextVar because of special _var_ prefix'
 
     current = CurrentVars()
@@ -153,7 +153,7 @@ def test__with_context_manager__throws_error__when_setting_reserved_var_attribut
 
 
 def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         _var_init_on_setattr = False
         locale: str = 'en'
 
@@ -171,7 +171,7 @@ def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled()
 
 
 def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
-    class CurrentVars(ContextVarsProxy):
+    class CurrentVars(ContextVarsRegistry):
         locale: str = 'en'
 
     current = CurrentVars()
