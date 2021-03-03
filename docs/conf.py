@@ -33,10 +33,21 @@ autodoc_default_options = {
     'special-members': '__call__',
 }
 
+# Configure sphinx_copybutton extensions to work with Python doctest code snippets
+copybutton_prompt_text = r'>>> |\.\.\. | $'
+copybutton_prompt_is_regexp = True
+copybutton_remove_prompts = True
+copybutton_only_copy_prompt_lines = False
+
+# Shift '>>>' button away from corner, otherwise it conflicts with sphinx_copybutton
+toggleprompt_offset_right = 25
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_copybutton',
+    'sphinx_toggleprompt',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
