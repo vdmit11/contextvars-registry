@@ -44,7 +44,7 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
 
     # also, ContextVar() automatically get verbose name, useful for debugging
     assert (
-        "contextvars_extras.registry_test.MyVars.hinted"
+        "tests.test_registry.MyVars.hinted"
         == MyVars.hinted.name
         == MyVars.hinted.context_var.name
     )

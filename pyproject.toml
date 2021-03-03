@@ -3,7 +3,7 @@ name = "contextvars-extras"
 version = "0.1.0"
 description = "contextvars made easy"
 authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
-exclude = ["**/*_test.py"]
+exclude = []
 
 [tool.poetry.dependencies]
 python = "^3.7.1"
