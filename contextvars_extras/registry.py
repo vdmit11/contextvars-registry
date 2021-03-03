@@ -335,7 +335,6 @@ class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     And, the class {class_name} is configured in a specific way
     that disables dyanmic variable initialization::
 
-
         class {class_name}(ContextVarsRegistry):
             _var_init_on_setattr = False
 
