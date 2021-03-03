@@ -1,5 +1,5 @@
 import functools
-import textwrap
+import inspect
 
 
 class MissingType:
@@ -39,5 +39,5 @@ Missing = MissingType()
 
 
 @functools.lru_cache(maxsize=128)
-def dedent_strip(text):
-    return textwrap.dedent(text).strip()
+def cleandoc_cached(doc):
+    return inspect.cleandoc(doc)

@@ -3,7 +3,7 @@ import threading
 from contextvars import ContextVar, Token
 from typing import get_type_hints, Dict, List, Tuple
 from contextlib import contextmanager
-from contextvars_extras.util import Missing, dedent_strip
+from contextvars_extras.util import Missing, cleandoc_cached
 
 
 class ContextVarsRegistry:
@@ -280,7 +280,7 @@ class MustBeSubclassedError(NotImplementedError):
     @staticmethod
     def format():
         return MustBeSubclassedError(
-            dedent_strip(
+            cleandoc_cached(
                 """
                 class ContextVarsRegistry cannot be instanciated directly without sub-classing.
 
@@ -303,7 +303,7 @@ class ReservedAttributeError(AttributeError):
         attr_type_name = type(attr_value).__name__
 
         return ReservedAttributeError(
-            dedent_strip(
+            cleandoc_cached(
                 f"""
                 Can't set attribute '{attr_name}' because of special '_var_' prefix.
 
@@ -327,7 +327,7 @@ class UndeclaredAttributeError(AttributeError):
         attr_type_name = type(attr_value).__name__
 
         return UndeclaredAttributeError(
-            dedent_strip(
+            cleandoc_cached(
                 f"""
                 Can't set undeclared attribute: {cls_name}.{attr_name}
 
