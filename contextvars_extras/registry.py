@@ -3,7 +3,7 @@ import threading
 from contextvars import ContextVar, Token
 from typing import get_type_hints, Dict, List, Tuple
 from contextlib import contextmanager
-from contextvars_extras.util import Missing, cleandoc_cached
+from contextvars_extras.util import Missing, ExceptionDocstringMixin
 
 
 class ContextVarsRegistry:
@@ -212,7 +212,7 @@ class ContextVarsRegistry:
     def __init__(self):
         cls = self.__class__
         if cls == ContextVarsRegistry:
-            raise MustBeSubclassedError.format()
+            raise RegistryMustBeSubclassedError
 
     def __setattr__(self, attr_name, value):
         self.__before_set__ensure_initialized(attr_name, value)
@@ -231,7 +231,12 @@ class ContextVarsRegistry:
     @classmethod
     def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
         if attr_name.startswith('_var_'):
-            raise ReservedAttributeError.format(cls, attr_name, value)
+            raise ReservedAttributeError.format(
+                class_name=cls.__name__,
+                attr_name=attr_name,
+                attr_type=type(value).__name__,
+                attr_value=value,
+            )
 
     @classmethod
     def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
@@ -239,7 +244,11 @@ class ContextVarsRegistry:
             "This method should not be called when attribute is already initialized as ContextVar"
 
         if not cls._var_init_on_setattr:
-            raise UndeclaredAttributeError.format(cls, attr_name, value)
+            raise UndeclaredAttributeError.format(
+                class_name=cls.__name__,
+                attr_name=attr_name,
+                attr_type=type(value).__name__,
+            )
 
         cls.__init_class_attr_as_descriptor(attr_name)
 
@@ -276,68 +285,75 @@ class ContextVarDescriptor:
             return f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
 
 
-class MustBeSubclassedError(NotImplementedError):
-    @staticmethod
-    def format():
-        return MustBeSubclassedError(
-            cleandoc_cached(
-                """
-                class ContextVarsRegistry cannot be instanciated directly without sub-classing.
+class RegistryMustBeSubclassedError(ExceptionDocstringMixin, NotImplementedError):
+    """Class ContextVarsRegistry cannot be instanciated directly without sub-classing.
 
-                You have to create a sub-class before using it:
+    This exception is raised when you try to instanciate :class:`ContextVarsRegistry` directly::
 
-                    class CurrentVars(ContextVarsRegistry):
-                        var1: str = "default_value"
+        instance = ContextVarsRegistry()
 
-                    current = CurrentVars()
-                    current.var1   # => "default_value"
-                """
-            )
-        )
+    This is not allowed, because when you set an attribute, under the hood, the class allocates
+    a new :class:`ContextVarDescriptor` object, and then it attaches the descriptor to itself
+    (to the **class**, not instance), and thus descriptors become shared among all sub-classes.
 
+    Therefore, by using ContextVarsRegistry directly, you could pollute all its sub-classes.
 
-class ReservedAttributeError(AttributeError):
-    @staticmethod
-    def format(context_vars_registry_subclass, attr_name, attr_value):
-        cls_name = context_vars_registry_subclass.__name__
-        attr_type_name = type(attr_value).__name__
+    So, you should create your own sub-class, like this::
 
-        return ReservedAttributeError(
-            cleandoc_cached(
-                f"""
-                Can't set attribute '{attr_name}' because of special '_var_' prefix.
+        class CurrentVars(ContextVarsRegistry):
+            var1: str = "default_value"
 
-                '_var_' prefix is reserved for ContextVarProxy class settings.
-                You can't set such attribute on the instance level.
-
-                If you want to configure the class, you should do it on the class level:
-                like this:
-
-                class {cls_name}(ContextVarsRegistry):
-                    {attr_name}: {attr_type_name}
-                """
-            )
-        )
+        current = CurrentVars()
+        current.var1   # => "default_value"
+    """
 
 
-class UndeclaredAttributeError(AttributeError):
-    @staticmethod
-    def format(context_var_proxy_subclass, attr_name, attr_value):
-        cls_name = context_var_proxy_subclass.__name__
-        attr_type_name = type(attr_value).__name__
+class ReservedAttributeError(ExceptionDocstringMixin, AttributeError):
+    """Can't set attribute: {class_name}.{attr_name} because of the special '_var_' prefix.
 
-        return UndeclaredAttributeError(
-            cleandoc_cached(
-                f"""
-                Can't set undeclared attribute: {cls_name}.{attr_name}
+    This exception is raised when you try to set a special attribute::
 
-                Maybe there is a typo in the attribute name?
+        instance.{attr_name} = {attr_value!r}
 
-                If this is a new attribute, then you have to first declare it in the class,
-                with a type hint, like this:
+    The ``_var_*`` prefix is reserved for configuration of the :class:`ContextVarRegistry`.
+    You can't have a context variable with such name.
 
-                class {cls_name}(...):
-                    {attr_name}: {attr_type_name}
-                """
-            )
-        )
+    If you want to configure the registry class itself, you should do it when defining
+    your sub-class, like this::
+
+        class {class_name}(ContextVarsRegistry):
+            {attr_name}: {attr_type} = {attr_value!r}
+    """
+
+
+class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
+    """Can't set undeclared attribute: {class_name}.{attr_name}
+
+    This exception is raised when you try to set an attribute that was not declared
+    in the class {class_name} (subclass of :class:`ContextVarsRegistry`).
+
+    And, the class {class_name} is configured in a specific way
+    that disables dyanmic variable initialization::
+
+
+        class {class_name}(ContextVarsRegistry):
+            _var_init_on_setattr = False
+
+    Because of ``_var_init_on_setattr=False``, you can use only pre-defined variables.
+    An attempt to set any other attribute will raise this exception.
+
+    So, you have 3 options to solve the problem:
+
+    1. Add attribute to the class, like this::
+
+        class {class_name}(ContextVarsRegistry):
+            {attr_name}: {attr_type}
+
+    2. Enable dynamic initialization of new context variables, like this::
+
+        class {class_name}(ContextVarsRegistry):
+            _var_init_on_setattr = True
+
+    3. Check the name of the attribute: '{attr_name}'.
+       Maybe there is a typo in the name?
+    """
