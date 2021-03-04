@@ -5,5 +5,5 @@ echo '----------------'
 set -e
 set -x
 
-pylama ./contextvars_extras
+pylava ./contextvars_extras
 pytest

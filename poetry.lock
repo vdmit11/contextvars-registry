@@ -374,9 +374,9 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
-name = "pylama"
-version = "7.7.1"
-description = "pylama -- Code audit tool for python"
+name = "pylava"
+version = "0.3.0"
+description = "Pylava -- Code audit tool for Python"
 category = "dev"
 optional = false
 python-versions = "*"
@@ -739,7 +739,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "7161785fe27930cbb568abe8413c0ca105bba3275feebe4d4e70f77dc1176ac1"
+content-hash = "ed40810884de77ae53b6a4f1b7eec19a4ed4407f15fe2b63ffa78c31255cbcce"
 
 [metadata.files]
 alabaster = [
@@ -939,9 +939,9 @@ pygments = [
     {file = "Pygments-2.8.0-py3-none-any.whl", hash = "sha256:b21b072d0ccdf29297a82a2363359d99623597b8a265b8081760e4d0f7153c88"},
     {file = "Pygments-2.8.0.tar.gz", hash = "sha256:37a13ba168a02ac54cc5891a42b1caec333e59b66addb7fa633ea8a6d73445c0"},
 ]
-pylama = [
-    {file = "pylama-7.7.1-py2.py3-none-any.whl", hash = "sha256:fd61c11872d6256b019ef1235be37b77c922ef37ac9797df6bd489996dddeb15"},
-    {file = "pylama-7.7.1.tar.gz", hash = "sha256:9bae53ef9c1a431371d6a8dca406816a60d547147b60a4934721898f553b7d8f"},
+pylava = [
+    {file = "pylava-0.3.0-py2.py3-none-any.whl", hash = "sha256:c14f5af2c285700b003f0fdf38b8f7762d41f933fd3c2c93a92fb0a956f9d890"},
+    {file = "pylava-0.3.0.tar.gz", hash = "sha256:16a6ac75819a52b9e2e269722513292d5320d4d9a554af3f598bb9b8fc6ed91d"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
