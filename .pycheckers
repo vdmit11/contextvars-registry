@@ -1,0 +1,3 @@
+[DEFAULT]
+checkers = pep8
+pep8_command=pylava --format=pep8
