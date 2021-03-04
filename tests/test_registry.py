@@ -2,6 +2,10 @@ from pytest import raises
 from contextvars_extras.registry import ContextVarsRegistry, ContextVarDescriptor, ContextVar
 
 
+# pylint: disable=attribute-defined-outside-init,protected-access,pointless-statement
+# pylint: disable=function-redefined
+
+
 def test__ContextVarsRegistry__must_be_subclassed__and_cannot_be_instanciated_directly():
     with raises(NotImplementedError):
         ContextVarsRegistry()

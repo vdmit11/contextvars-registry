@@ -219,14 +219,14 @@ class ContextVarsRegistry:
         super().__setattr__(attr_name, value)
 
     @classmethod
-    def __before_set__ensure_initialized(self, attr_name, value) -> ContextVarDescriptor:
+    def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor:
         try:
-            return self._var_init_done_descriptors[attr_name]
+            return cls._var_init_done_descriptors[attr_name]
         except KeyError:
-            self.__before_set__ensure_not_starts_with_special_var_prefix(attr_name, value)
-            self.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
+            cls.__before_set__ensure_not_starts_with_special_var_prefix(attr_name, value)
+            cls.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
 
-            return self._var_init_done_descriptors[attr_name]
+            return cls._var_init_done_descriptors[attr_name]
 
     @classmethod
     def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
@@ -280,9 +280,10 @@ class ContextVarDescriptor:
 
     def __repr__(self):
         if self.default is Missing:
-            return f"<{self.__class__.__name__} name={self.name}>"
+            out = f"<{self.__class__.__name__} name={self.name}>"
         else:
-            return f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
+            out = f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
+        return out
 
 
 class RegistryMustBeSubclassedError(ExceptionDocstringMixin, NotImplementedError):
@@ -327,7 +328,7 @@ class ReservedAttributeError(ExceptionDocstringMixin, AttributeError):
 
 
 class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
-    """Can't set undeclared attribute: {class_name}.{attr_name}
+    """Can't set undeclared attribute: '{class_name}.{attr_name}'.
 
     This exception is raised when you try to set an attribute that was not declared
     in the class {class_name} (subclass of :class:`ContextVarsRegistry`).

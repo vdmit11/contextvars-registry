@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'contextvars-extras'
-copyright = '2021, Dmitry Vasilyanov'
+copyright = '2021, Dmitry Vasilyanov'  # pylint: disable=redefined-builtin
 author = 'Dmitry Vasilyanov'
 
 

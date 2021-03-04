@@ -9,7 +9,7 @@ class MissingType:
     This is a singleton.
     There should be only one instance of MissingType
 
-    Example:
+    Example::
 
         >>> from contextvars_extras.util import Missing
         >>> value = getattr(object, 'some_attribute', Missing)
@@ -17,15 +17,17 @@ class MissingType:
         ...    print('attribute is not set')
         attribute is not set
     """
+
     was_instanciated: bool = False
 
-    @staticmethod
-    def __init__():
+    def __init__(self):
         if MissingType.was_instanciated:
             raise AssertionError(
                 "The `Missing` object must be a singleton (instanciated only once)."
             )
         MissingType.was_instanciated = True
+
+        super().__init__()
 
     @staticmethod
     def __str__():
@@ -86,6 +88,7 @@ class ExceptionDocstringMixin:
         There is no good workaround for that.
         You just have to remember to put the mixin first.
     """
+
     def __init__(self, *args, **kwargs):
         if not args and not kwargs:
             super().__init__(self._clean_docstring())
@@ -96,7 +99,7 @@ class ExceptionDocstringMixin:
     def format(cls, **kwargs):
         """Format class docstring as the exception message.
 
-        Example:
+        Example::
 
             >>> class InvalidEmailAddressError(ExceptionDocstringMixin, ValueError):
             ...     '''Invalid e-mail address: '{email_address}'
