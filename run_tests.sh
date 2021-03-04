@@ -5,5 +5,4 @@ echo '----------------'
 set -e
 set -x
 
-pylava
 pytest
