@@ -1,6 +1,6 @@
-import os
 import functools
 import inspect
+import os
 
 
 class MissingType:
@@ -31,11 +31,11 @@ class MissingType:
 
     @staticmethod
     def __str__():
-        return 'Missing'
+        return "Missing"
 
     @staticmethod
     def __repr__():
-        return MissingType.__module__ + '.Missing'
+        return MissingType.__module__ + ".Missing"
 
 
 Missing = MissingType()

@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import threading
-from contextvars import ContextVar, Token
-from typing import get_type_hints, Dict, List, Tuple
 from contextlib import contextmanager
-from contextvars_extras.util import Missing, ExceptionDocstringMixin
+from contextvars import ContextVar, Token
+from typing import Dict, List, Tuple, get_type_hints
+
+from contextvars_extras.util import ExceptionDocstringMixin, Missing
 
 
 class ContextVarsRegistry:
@@ -197,7 +199,7 @@ class ContextVarsRegistry:
             if attr_name in cls._var_init_done_descriptors:
                 return
 
-            if attr_name.startswith('_var_'):
+            if attr_name.startswith("_var_"):
                 return
 
             value = getattr(cls, attr_name, Missing)
@@ -230,7 +232,7 @@ class ContextVarsRegistry:
 
     @classmethod
     def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
-        if attr_name.startswith('_var_'):
+        if attr_name.startswith("_var_"):
             raise ReservedAttributeError.format(
                 class_name=cls.__name__,
                 attr_name=attr_name,
@@ -240,8 +242,9 @@ class ContextVarsRegistry:
 
     @classmethod
     def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
-        assert attr_name not in cls._var_init_done_descriptors, \
-            "This method should not be called when attribute is already initialized as ContextVar"
+        assert (
+            attr_name not in cls._var_init_done_descriptors
+        ), "This method should not be called when attribute is already initialized as ContextVar"
 
         if not cls._var_init_on_setattr:
             raise UndeclaredAttributeError.format(
