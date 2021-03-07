@@ -209,3 +209,26 @@ def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
     # current.user_id is also restored to its initial state:(no value, getattr raises LookupError)
     with raises(LookupError):
         current.user_id
+
+
+def test__ContextVarsRegistry__calls_super_in_init_methods():
+    class MyMixin:
+        init_was_called: bool = False
+        init_subclass_was_called: bool = False
+
+        def __init_subclass__(cls):
+            assert isinstance(cls, type)
+            MyMixin.init_subclass_was_called = True
+            super().__init_subclass__()
+
+        def __init__(self):
+            MyMixin.init_was_called = True
+            super().__init__()
+
+    class CurrentVars(ContextVarsRegistry, MyMixin):
+        pass
+
+    CurrentVars()
+
+    assert MyMixin.init_subclass_was_called
+    assert MyMixin.init_was_called

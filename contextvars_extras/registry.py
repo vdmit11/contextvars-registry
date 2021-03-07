@@ -186,6 +186,7 @@ class ContextVarsRegistry:
         cls._var_init_done_descriptors = dict()
         cls._var_init_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
+        super().__init_subclass__()
 
     @classmethod
     def __ensure_subclassed_properly(cls):
@@ -218,6 +219,7 @@ class ContextVarsRegistry:
 
     def __init__(self):
         self.__ensure_subclassed_properly()
+        super().__init__()
 
     def __setattr__(self, attr_name, value):
         self.__before_set__ensure_initialized(attr_name, value)
