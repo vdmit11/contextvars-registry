@@ -183,9 +183,15 @@ class ContextVarsRegistry:
 
     @classmethod
     def __init_subclass__(cls):
+        cls.__ensure_subclassed_properly()
         cls._var_init_done_descriptors = dict()
         cls._var_init_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
+
+    @classmethod
+    def __ensure_subclassed_properly(cls):
+        if ContextVarsRegistry not in cls.__bases__:
+            raise RegistryInheritanceError
 
     @classmethod
     def __init_type_hinted_class_attrs_as_descriptors(cls):
@@ -212,9 +218,7 @@ class ContextVarsRegistry:
             cls._var_init_done_descriptors[attr_name] = new_var_descriptor
 
     def __init__(self):
-        cls = self.__class__
-        if cls == ContextVarsRegistry:
-            raise RegistryMustBeSubclassedError
+        self.__ensure_subclassed_properly()
 
     def __setattr__(self, attr_name, value):
         self.__before_set__ensure_initialized(attr_name, value)
@@ -289,26 +293,46 @@ class ContextVarDescriptor:
         return out
 
 
-class RegistryMustBeSubclassedError(ExceptionDocstringMixin, NotImplementedError):
-    """Class ContextVarsRegistry cannot be instanciated directly without sub-classing.
+class RegistryInheritanceError(ExceptionDocstringMixin, NotImplementedError):
+    """Class ContextVarsRegistry must be subclassed, and only one level deep.
 
-    This exception is raised when you try to instanciate :class:`ContextVarsRegistry` directly::
+    This exception is raised in 2 cases:
+
+    1. When you use :class:`ContextVarsRegistry` directly, without subclassing::
 
         instance = ContextVarsRegistry()
 
-    This is not allowed, because when you set an attribute, under the hood, the class allocates
-    a new :class:`ContextVarDescriptor` object, and then it attaches the descriptor to itself
-    (to the **class**, not instance), and thus descriptors become shared among all sub-classes.
+    2. When you create a sub-sub-class of ``ContextVarsRegistry``::
 
-    Therefore, by using ContextVarsRegistry directly, you could pollute all its sub-classes.
+        class SubRegistry(ContextVarsRegistry):
+            pass
 
-    So, you should create your own sub-class, like this::
+        class SubSubRegistry(ContextVarsRegistry):
+            pass
+
+    These limitations are caused by the way we store ``ContextVar`` objects on class attributes.
+    Setting a context variable on a base class pollutes all its sub-classes,
+    and setting a variable on sub-class shadows attribute of the base class.
+    Things become messy quickly, so we ensure you define subclasses in a right way.
+
+    So, the proper way is to just define a subclass (but not sub-sub-class),
+    and then use it, like this::
 
         class CurrentVars(ContextVarsRegistry):
             var1: str = "default_value"
 
         current = CurrentVars()
         current.var1   # => "default_value"
+
+    .. NOTE::
+
+      Actually, that could be done in a smarter way: what we really want is to make sure that
+      ``ContextVar`` objects are always stored in the leafs of class hierarchy.
+      So, we could forbid subclassing if a class has context variables, and also forbid
+      setting variables on a class that has subclasses, and that should solve the problem.
+
+      But, that could add some complexity, so to keep things simple, we just ban deep inheritance.
+      At least for now (may be implemented in the future, or maybe not).
     """
 
 

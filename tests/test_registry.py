@@ -1,19 +1,35 @@
 from pytest import raises
 
-from contextvars_extras.registry import ContextVar, ContextVarDescriptor, ContextVarsRegistry
+from contextvars_extras.registry import (
+    ContextVar,
+    ContextVarDescriptor,
+    ContextVarsRegistry,
+    RegistryInheritanceError,
+)
 
 # pylint: disable=attribute-defined-outside-init,protected-access,pointless-statement
 # pylint: disable=function-redefined
 
 
-def test__ContextVarsRegistry__must_be_subclassed__and_cannot_be_instanciated_directly():
-    with raises(NotImplementedError):
-        ContextVarsRegistry()
-
-    class Subclass(ContextVarsRegistry):
+def test__ContextVarsRegistry__must_be_subclassed__but_not_subsubclassed():
+    # First, let's demonstrate a normal use of ContextVarsRegistry:
+    # you create a sub-class of it, and then can use it, like set a variable.
+    # That should work as usual and not raise any exceptions.
+    class SubRegistry(ContextVarsRegistry):
         pass
 
-    Subclass()
+    sub_registry = SubRegistry()
+    sub_registry.some_var = "value"
+
+    # But, sub-sub-classing is not allowed
+    with raises(RegistryInheritanceError):
+        # pylint: disable=unused-variable
+        class SubSubRegistry(SubRegistry):
+            pass
+
+    # Instanciating ContextVarsRegistry directly (without subclassing) is also not allowed.
+    with raises(RegistryInheritanceError):
+        ContextVarsRegistry()
 
 
 def test__class_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
