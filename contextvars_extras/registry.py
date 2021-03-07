@@ -300,7 +300,7 @@ class ContextVarDescriptor:
         return out
 
 
-class RegistryInheritanceError(ExceptionDocstringMixin, NotImplementedError):
+class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):
     """Class ContextVarsRegistry must be subclassed, and only one level deep.
 
     This exception is raised in 2 cases:
