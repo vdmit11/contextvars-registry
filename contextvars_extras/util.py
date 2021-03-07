@@ -37,6 +37,19 @@ class MissingType:
     def __repr__():
         return MissingType.__module__ + ".Missing"
 
+    @staticmethod
+    def __bool__():
+        """Evaluate to ``False`` when treated as boolean.
+
+        This thing allows to do ``if not`` checks on the ``Missing`` object, like this:
+
+            >>> value = getattr(object, 'some_attribute', Missing)
+            >>> if not value:
+            ...     print('no value')
+            no value
+        """
+        return False
+
 
 Missing = MissingType()
 
