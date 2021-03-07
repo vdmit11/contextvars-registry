@@ -181,7 +181,6 @@ class ContextVarsRegistry:
             for (descriptor, reset_token) in saved_state:
                 descriptor.reset(reset_token)  # calls ContextVar.reset() method
 
-    @classmethod
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
         cls._var_init_done_descriptors = dict()
