@@ -232,3 +232,57 @@ def test__ContextVarsRegistry__calls_super_in_init_methods():
 
     assert MyMixin.init_subclass_was_called
     assert MyMixin.init_was_called
+
+
+def test__hasattr_getattr_setatt_consistency():  # noqa R701
+    class CurrentVars(ContextVarsRegistry):
+        # Here we test 3 different cases of variables:
+        #  1. declared and initialized with a default value
+        locale: str = "en"
+        #  2. declared, but not initialized
+        timezone: str
+        #  3. not declared (will be allocated automatically when attribute is set)
+        # user_id: int
+
+    current = CurrentVars()
+    _MISSING = object()
+
+    # Initially, only 'locale' attribute is set, and the other two attributes are missing.
+    # Well, actually, ContextVar() objects may alrady be allocated, and stored in class
+    # attributes, but for consistency, the class behaves as if attributes were never set.
+    assert hasattr(current, "locale") is True
+    assert hasattr(current, "timezone") is False
+    assert hasattr(current, "user_id") is False
+    assert getattr(current, "locale", _MISSING) == "en"
+    assert getattr(current, "timezone", _MISSING) is _MISSING
+    assert getattr(current, "user_id", _MISSING) is _MISSING
+
+    # Try with() block that sets values temporarily.
+    # Inside the ``with`` block, attributes should be set and accessible via ``getattr()``,
+    # but upon exit from the block, the state should be restored, as if they were never set.
+    with current(locale="en", timezone="UTC", user_id=1):
+        assert hasattr(current, "locale") is True
+        assert hasattr(current, "timezone") is True
+        assert hasattr(current, "user_id") is True
+        assert getattr(current, "locale") == "en"
+        assert getattr(current, "timezone") == "UTC"
+        assert getattr(current, "user_id") == 1
+
+    # Upon exit from the block, the initial state should be restored.
+    assert hasattr(current, "locale") is True
+    assert hasattr(current, "timezone") is False
+    assert hasattr(current, "user_id") is False
+    assert getattr(current, "locale", _MISSING) == "en"
+    assert getattr(current, "timezone", _MISSING) is _MISSING
+    assert getattr(current, "user_id", _MISSING) is _MISSING
+
+    # Try to set some attributes. hasattr()/getattr() should see these changes.
+    current.locale = "en_GB"
+    current.timezone = "Europe/London"
+    current.user_id = 42
+    assert hasattr(current, "locale") is True
+    assert hasattr(current, "timezone") is True
+    assert hasattr(current, "user_id") is True
+    assert getattr(current, "locale") == "en_GB"
+    assert getattr(current, "timezone") == "Europe/London"
+    assert getattr(current, "user_id") == 42
