@@ -281,13 +281,13 @@ class ContextVarDescriptor:
         if instance is None:
             return self
         try:
-            return self.context_var.get()
+            return self.get()
         except LookupError as err:
             raise ContextVarNotSetError.format(context_var_name=self.name) from err
 
     def __set__(self, instance, value):
         assert instance is not None
-        self.context_var.set(value)
+        self.set(value)
 
     def __repr__(self):
         if self.default is Missing:
