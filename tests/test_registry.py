@@ -286,3 +286,17 @@ def test__hasattr_getattr_setattr_consistency():  # noqa R701
     assert getattr(current, "locale") == "en_GB"
     assert getattr(current, "timezone") == "Europe/London"
     assert getattr(current, "user_id") == 42
+
+
+def test__deleting_attributes__is_not_allowed():
+    class CurrentVars(ContextVarsRegistry):
+        locale: str = "en"
+        timezone: str
+
+    current = CurrentVars()
+
+    with raises(NotImplementedError):
+        del current.locale
+
+    with raises(NotImplementedError):
+        del current.timezone

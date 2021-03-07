@@ -289,6 +289,9 @@ class ContextVarDescriptor:
         assert instance is not None
         self.set(value)
 
+    def __delete__(self, _unused_instance):
+        raise DeleteIsNotImplementedError.format(context_var_name=self.name)
+
     def __repr__(self):
         if self.default is Missing:
             out = f"<{self.__class__.__name__} name={self.name}>"
@@ -437,4 +440,35 @@ class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError
 
       So, to fit both cases, this exception uses both ``AttributeErrror`` and ``LookupError``
       as base classes.
+    """
+
+
+class DeleteIsNotImplementedError(ExceptionDocstringMixin, NotImplementedError):
+    """Can't delete context variable: '{context_var_name}'.
+
+    This exception is raised when you try to delete an attribute of :class:`ContextVarsRegistry`
+    like this::
+
+        >>> class Current(ContextVarsRegistry):
+        ...     user_id: int
+        >>> current = Current()
+
+        >>> current.user_id = 42
+        >>> del current.user_id
+        Traceback (most recent call last):
+        ...
+        contextvars_extras.registry.DeleteIsNotImplementedError: ...
+
+    This is caused by the fact, that ``contextvars.ContextVar`` object cannot be garbage-collected,
+    so deleting it causes a memory leak. In addition, the standard library doesn't provide any API
+    for erasing values stored inside ``ContextVar`` objects.
+
+    So context variables cannot be deleted or erased.
+    This is a technical limitation. Deal with it.
+
+    A possible workaround is to use a ``with`` block to set context variables temporarily:
+
+        >>> with current(user_id=100):
+        ...    print(current.user_id)
+        100
     """
