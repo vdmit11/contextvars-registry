@@ -234,7 +234,7 @@ def test__ContextVarsRegistry__calls_super_in_init_methods():
     assert MyMixin.init_was_called
 
 
-def test__hasattr_getattr_setatt_consistency():  # noqa R701
+def test__hasattr_getattr_setattr_consistency():  # noqa R701
     class CurrentVars(ContextVarsRegistry):
         # Here we test 3 different cases of variables:
         #  1. declared and initialized with a default value
