@@ -1,23 +1,167 @@
 from contextvars import ContextVar
+from typing import Any, Optional
 
 from contextvars_extras.util import ExceptionDocstringMixin, Missing
 
 
 class ContextVarDescriptor:
+    """A ``ContextVar`` wrapper that behaves like ``@property`` when attached to a class.
+
+    This thing is designed to be placed in as class attribute, like this::
+
+        >>> class MyVars:
+        ...     locale = ContextVarDescriptor(default='en')
+        >>> my_vars = MyVars()
+
+    and it provides ``@property``-like access to the context variable.
+
+    That is, you just get/set object attributes, and under the hood it calls methods of
+    the underlying ``ContextVar`` object::
+
+        >>> my_vars.locale
+        'en'
+        >>> my_vars.locale = 'en_US'
+        >>> my_vars.locale
+        'en_US'
+
+    The underlying :class:`contextvars.ContextVar` methods can be reached via class attributes::
+
+        >>> MyVars.locale.get()
+        'en_US'
+        >>> token = MyVars.locale.set('en_GB')
+        >>> MyVars.locale.get()
+        'en_GB'
+        >>> MyVars.locale.reset(token)
+        >>> MyVars.locale.get()
+        'en_US'
+    """
+
     context_var: ContextVar
+    name: str
+    _default: Any
 
-    def __init__(self, name, default=Missing):
-        if default is Missing:
-            self.context_var = ContextVar(name)
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        default: Optional[Any] = Missing,
+        owner_cls: Optional[type] = None,
+        owner_attr: Optional[str] = None,
+        context_var: Optional[ContextVar] = None,
+    ):
+        """Initialize ContextVarDescriptor object.
+
+        :param default: The default value for the  underlying ``ContextVar`` object.
+                        Returned by the ``get()`` method if the variable is not bound to a value.
+                        If default is missing, then ``get()`` may raise ``LookupError``.
+
+        :param name: Name for the underlying ``ContextVar`` object.
+                     Needed for introspection and debugging purposes.
+                     Ususlly you don't want to set it manually, because it is automatically
+                     formatted from owner class/attribute names.
+
+        :param owner_cls: Reference to a class, where the descritor is placed.
+                          Usually it is captured automatically by the ``__set_name__`` method,
+                          however, you need to pass it manually if you're adding a new descriptor
+                          after the class is already created.
+
+        :param owner_attr: Name of the attribute, where the descriptor is placed.
+                           Usually it is captured automatically by the ``__set_name__`` method,
+                           however, you need to pass it manually if you're adding a new descriptor
+                           after the class is already creted.
+
+        :param context_var: A reference to an existing ``ContextVar`` object.
+                            You need it only if you want to re-use an existing object.
+                            If missing, a new ``ContextVar`` object is created automatically.
+
+
+        There are 4 ways to initialize a ``ContextVarsDescriptor`` object:
+
+        1. Most common way - inside class body::
+
+             >>> class Vars:
+             ...     timezone = ContextVarDescriptor(default='UTC')
+
+             >>> Vars.timezone.name
+             'contextvars_extras.descriptor.Vars.timezone'
+
+           In this case, the owner class/attribute is captured automatically by the standard
+           :meth:`__set_name__` method (called automatically by Python when the class is created).
+
+           So a new ``ContextVar`` object is created automatically in the ``__set_name__`` method,
+           and its name is composed from class/attribute names.
+
+           This is the easiest way to initialize ``ContextVarDescriptor`` objects, and in most
+           cases, you probably want to use it. However, if you create descriptors outside of the
+           class body, you need to use one of alternative ways...
+
+        2. Manually pass ``owner_cls`` and ``owner_attr`` arguments::
+
+            >>> class Vars:
+            ...    pass
+            >>> Vars.timezone = ContextVarDescriptor(owner_cls=Vars, owner_attr='timezone')
+
+            >>> Vars.timezone.name
+            'contextvars_extras.descriptor.Vars.timezone'
+
+        3. Set a completely custom name::
+
+            >>> timezone_descriptor = ContextVarDescriptor(name='timezone_context_var')
+
+            >>> timezone_descriptor.context_var.name
+            'timezone_context_var'
+
+        4. Re-use an existing ``ContextVar`` object::
+
+            >>> timezone_context_var = ContextVar('timezone_context_var')
+            >>> timezone_descriptor = ContextVarDescriptor(context_var=timezone_context_var)
+
+            >>> timezone_descriptor.context_var is timezone_context_var
+            True
+        """
+        if context_var:
+            assert not name and not default
+            self._set_context_var(context_var)
+        elif name:
+            context_var = self._new_context_var(name, default)
+            self._set_context_var(context_var)
+        elif owner_cls and owner_attr:
+            context_var = self._new_context_var_for_owner(owner_cls, owner_attr, default)
+            self._set_context_var(context_var)
         else:
-            self.context_var = ContextVar(name, default=default)
+            self._default = default
 
-        self.name = self.context_var.name
-        self.get = self.context_var.get
-        self.set = self.context_var.set
-        self.reset = self.context_var.reset
+    def __set_name__(self, owner_cls: type, owner_attr: str):
+        if hasattr(self, "context_var"):
+            return
 
-        self.default = default
+        context_var = self._new_context_var_for_owner(owner_cls, owner_attr, self._default)
+        self._set_context_var(context_var)
+
+    @classmethod
+    def _new_context_var(cls, name: str, default: Any) -> ContextVar:
+        context_var: ContextVar
+
+        if default is Missing:
+            context_var = ContextVar(name)
+        else:
+            context_var = ContextVar(name, default=default)
+
+        return context_var
+
+    @classmethod
+    def _new_context_var_for_owner(cls, owner_cls: type, owner_attr: str, default) -> ContextVar:
+        name = f"{owner_cls.__module__}.{owner_cls.__name__}.{owner_attr}"
+        return cls._new_context_var(name, default)
+
+    def _set_context_var(self, context_var: ContextVar):
+        assert not hasattr(self, "context_var")
+
+        self.context_var = context_var
+        self.name = context_var.name
+
+        self.get = context_var.get
+        self.set = context_var.set
+        self.reset = context_var.reset
 
     def __get__(self, instance, _unused_owner_cls):
         if instance is None:
@@ -35,11 +179,7 @@ class ContextVarDescriptor:
         raise DeleteIsNotImplementedError.format(context_var_name=self.name)
 
     def __repr__(self):
-        if self.default is Missing:
-            out = f"<{self.__class__.__name__} name={self.name}>"
-        else:
-            out = f"<{self.__class__.__name__} name={self.name!r} default={self.default!r}>"
-        return out
+        return f"<{self.__class__.__name__} name={self.name!r}>"
 
 
 class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError):

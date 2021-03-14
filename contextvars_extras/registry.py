@@ -56,7 +56,7 @@ class ContextVarsRegistry:
     So class members are ContextVarDescriptor objects:
 
         >>> CurrentVars.timezone
-        <ContextVarDescriptor name='contextvars_extras.registry.CurrentVars.timezone'...>
+        <ContextVarDescriptor name='contextvars_extras.registry.CurrentVars.timezone'>
 
     and its underlying ContextVar can be reached via the `.context_var` attribute:
 
@@ -212,11 +212,9 @@ class ContextVarsRegistry:
             value = getattr(cls, attr_name, Missing)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
-            var_name = f"{cls.__module__}.{cls.__name__}.{attr_name}"
-            new_var_descriptor = ContextVarDescriptor(var_name, default=value)
-            setattr(cls, attr_name, new_var_descriptor)
-
-            cls._var_init_done_descriptors[attr_name] = new_var_descriptor
+            descriptor = ContextVarDescriptor(default=value, owner_cls=cls, owner_attr=attr_name)
+            setattr(cls, attr_name, descriptor)
+            cls._var_init_done_descriptors[attr_name] = descriptor
 
     def __init__(self):
         self.__ensure_subclassed_properly()
