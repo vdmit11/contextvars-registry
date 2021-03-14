@@ -30,7 +30,7 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'private-members': True,
     'undoc-members': True,
-    'special-members': '__call__',
+    'special-members': '__call__,__init__',
 }
 
 # Configure sphinx_copybutton extensions to work with Python doctest code snippets
