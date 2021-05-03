@@ -5,4 +5,4 @@ echo '----------------'
 set -e
 set -x
 
-pytest
+pytest $@
