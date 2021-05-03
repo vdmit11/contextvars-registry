@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import ItemsView, KeysView, MutableMapping, ValuesView
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from typing import Dict, List, Tuple, get_type_hints
@@ -9,7 +10,7 @@ from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.util import ExceptionDocstringMixin, Missing
 
 
-class ContextVarsRegistry:
+class ContextVarsRegistry(MutableMapping):
     """A collection of ContextVar() objects, with nice @property-like way to access them.
 
     The idea is simple: you create a sub-class, and declare your variables using type annotations:
@@ -258,6 +259,108 @@ class ContextVarsRegistry:
             )
 
         cls.__init_class_attr_as_descriptor(attr_name)
+
+    # collections.abc.MutableMapping implementation methods
+
+    @classmethod
+    def _asdict(cls) -> dict:
+        out = {}
+        for key, ctx_var in cls._var_init_done_descriptors.items():
+            try:
+                out[key] = ctx_var.get()
+            except LookupError:
+                pass
+        return out
+
+    @classmethod
+    def keys(cls) -> KeysView:
+        """Get all variable names in the registry (excluding unset variables).
+
+        Example::
+
+            >>> class CurrentVars(ContextVarsRegistry):
+            ...    locale: str = 'en'
+            ...    timezone: str = 'UTC'
+
+            >>> current = CurrentVars()
+
+            >>> keys = current.keys()
+            >>> list(keys)
+            ['locale', 'timezone']
+        """
+        return cls._asdict().keys()
+
+    @classmethod
+    def values(cls) -> ValuesView:
+        """Get values of all context variables in the registry.
+
+        Example::
+
+            >>> class CurrentVars(ContextVarsRegistry):
+            ...    locale: str = 'en'
+            ...    timezone: str = 'UTC'
+
+            >>> current = CurrentVars()
+
+            >>> values = current.values()
+            >>> list(values)
+            ['en', 'UTC']
+        """
+        return cls._asdict().values()
+
+    @classmethod
+    def items(cls) -> ItemsView:
+        """Get key-value pairs for all context variables in the registry.
+
+        Example::
+
+            >>> class CurrentVars(ContextVarsRegistry):
+            ...    locale: str = 'en'
+            ...    timezone: str = 'UTC'
+
+            >>> current = CurrentVars()
+
+            >>> items = current.items()
+            >>> list(items)
+            [('locale', 'en'), ('timezone', 'UTC')]
+        """
+        return cls._asdict().items()
+
+    @classmethod
+    def __iter__(cls):
+        return iter(cls._asdict())
+
+    @classmethod
+    def __len__(cls):
+        return len(cls._asdict())
+
+    @classmethod
+    def __getitem__(cls, key):
+        ctx_var = cls._var_init_done_descriptors[key]
+        try:
+            return ctx_var.get()
+        except LookupError as err:
+            raise KeyError(key) from err
+
+    @classmethod
+    def __setitem__(cls, key, value):
+        ctx_var = cls.__before_set__ensure_initialized(key, value)
+        ctx_var.set(value)
+
+    def __delitem__(self, key):
+        """Delete member of the registry (NOT IMPLEMENTED, ALWAYS THROWS ERROR).
+
+        This method always throws :class:`contextvars_extras.descriptor.DeleteIsNotImplementedError`
+
+        This is done because Python's context variables cannot be garbage-collected.
+        Once a ``ContextVar`` object is created, it has to live forever.
+        If you delete it, you get a memory leak.
+
+        To avoid memory leaks, we have to completely ban deletion of context variables,
+        and thus this method always throws an error.
+        """
+        ctx_var = self.__before_set__ensure_initialized(key, None)
+        ctx_var.__delete__(self)
 
 
 class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):

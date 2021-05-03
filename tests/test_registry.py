@@ -300,3 +300,92 @@ def test__deleting_attributes__is_not_allowed():
 
     with raises(NotImplementedError):
         del current.timezone
+
+
+def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
+    class CurrentVars(ContextVarsRegistry):
+        locale: str = "en"
+        timezone: str
+        user_id: int
+
+    current = CurrentVars()
+
+    # get item
+    assert current["locale"] == "en"
+
+    # .get() method
+    assert current.get("locale") == "en"
+    assert current.get("timezone", "DEFAULT_VALUE") == "DEFAULT_VALUE"
+
+    # set item
+    current["locale"] = "en_US"
+    assert current["locale"] == "en_US"
+
+    # .setdefault() method
+    assert current.setdefault("locale", "en_GB") == "en_US"
+    assert current["locale"] == "en_US"
+
+    # .update() method
+    current.update(
+        {
+            "locale": "en_GB",
+            "timezone": "GMT",
+        }
+    )
+    assert current["locale"] == "en_GB"
+    assert current["timezone"] == "GMT"
+
+    # converting to dict()
+    assert dict(current) == {
+        "locale": "en_GB",
+        "timezone": "GMT",
+    }
+
+    # counting variables (note: 'user_id' variable doesn't have a value, so not counted)
+    assert len(current) == 2
+
+    # iter()
+    assert list(iter(current)) == ["locale", "timezone"]
+
+    # keys()/values()/items()
+    assert set(current.keys()) == {"locale", "timezone"}
+    assert set(current.values()) == {"en_GB", "GMT"}
+    assert set(current.items()) == {("locale", "en_GB"), ("timezone", "GMT")}
+
+    # error/edge cases...
+
+    # deletion is not supported (because in Python it is impossible to un-set a ContextVar object)
+    with raises(NotImplementedError):
+        del current["locale"]
+    with raises(NotImplementedError):
+        current.pop("locale")
+    with raises(NotImplementedError):
+        current.popitem()
+
+    # an attempt ro read a non-existent variable throws an error
+    with raises(KeyError):
+        current["non_existent_context_var"]
+
+    # an attempt to read non-initialized (but still existing) context variable throws an error
+    assert CurrentVars.user_id
+    with raises(KeyError):
+        current["user_id"]
+
+    # the with() context manager is friendly towards those dict methods....
+    with current(locale="nb", timezone="Antarctica/Troll", user_id=42, name="John Doe"):
+        current.update({"user_id": 43, "name": "John Smith"})
+
+        assert dict(current) == {
+            "locale": "nb",
+            "timezone": "Antarctica/Troll",
+            "user_id": 43,
+            "name": "John Smith",
+        }
+
+    # also, state is restored nicely upon exit form the with(...) block
+    assert dict(current) == {
+        "locale": "en_GB",
+        "timezone": "GMT",
+    }
+    assert "user_id" not in current
+    assert "last_name" not in current
