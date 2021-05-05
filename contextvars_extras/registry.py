@@ -1,5 +1,9 @@
 """ContextVarsRegistry - a nice ``@property``-like way to access context variables.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+class ContextClassRegistry
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 This module contains only 1 main class: :class:`ContextVarsRegistry`.
 
 The idea is simple: you create a sub-class, and declare your variables using type annotations:
@@ -56,6 +60,100 @@ and its underlying ContextVar can be reached via the `.context_var` attribute:
 But in practice, you normally shouldn't need that.
 ContextVarDescriptor should implement all same attributes and methods as ContextVar,
 and thus it can be used instead of ContextVar() object in all cases except isinstance() checks.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+variables cannot be deleted
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. CAUTION::
+
+    It is not possible to delete a context variable.
+
+An attempt to call ``delattr()`` or use ``del`` operator throws an error::
+
+    >>> delattr(current, 'user_id')
+    Traceback (most recent call last):
+    ...
+    contextvars_extras.descriptor.DeleteIsNotImplementedError: ...
+
+This is done because in Python, ``ContextrVar`` objects cannot be garbage-collected.
+Deleting it causes a memory leak, so we have to forbid deletion.
+Once variable is allocated, it has to live forever.
+
+A possible workaround is to use a ``with`` block to set context variables temporarily:
+
+    >>> with current(user_id=100):
+    ...    print(current.user_id)
+    100
+
+It doesn't delete a variable, but it restores its state upon exit from ``with`` block,
+which is kind of what you may want to achieve by deletion.
+
+So consider using ``with`` block instead of deletion.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ContextVarsRegistry as dict
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:class:`ContextVarsRegistry` implements MutableMapping_ protocol.
+
+.. _MutableMapping:
+   https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping
+
+That means that you can get/set context variables, as if it was just a ``dict``, like this::
+
+    >>> current['locale'] = 'en_US'
+    >>> current['locale']
+    'en_US'
+
+Standard dict operators are supported::
+
+    # `in` operator
+    >>> 'locale' in current
+    True
+
+    # count variables in the dict
+    >>> len(current)
+    3
+
+    # iterate over keys in the dict
+    >>> for key in current:
+    ...     print(key)
+    locale
+    timezone
+    user_id
+
+    # convert to dict() easily
+    >>> dict(current)
+    {'locale': 'en_US', 'timezone': 'UTC', 'user_id': None}
+
+Other ``dict`` methods are supported as well::
+
+    >>> current.update({
+    ...    'locale': 'en',
+    ...    'timezone': 'UTC',
+    ...    'user_id': 42
+    ... })
+
+    >>> current.keys()
+    dict_keys(['locale', 'timezone', 'user_id'])
+
+    >>> current.values()
+    dict_values(['en', 'UTC', 42])
+
+.. NOTE::
+
+    Deletion is not supported.
+
+    An attempt to call ``.pop()`` or use ``del`` operator will always throw an error::
+
+        >>> del current['user_id']
+        Traceback (most recent call last):
+        ...
+        contextvars_extras.descriptor.DeleteIsNotImplementedError: ...
+
+    This is done because in Python, ``ContextVar`` objects cannot be garbage-collected.
+    Deleting a variable causes a memory leak, so we have to forbid deletion.
 """
 from __future__ import annotations
 
