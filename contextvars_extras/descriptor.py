@@ -1,4 +1,4 @@
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from typing import Any, Optional
 
 from contextvars_extras.util import ExceptionDocstringMixin, Missing
@@ -159,9 +159,101 @@ class ContextVarDescriptor:
         self.context_var = context_var
         self.name = context_var.name
 
-        self.get = context_var.get
-        self.set = context_var.set
-        self.reset = context_var.reset
+        self._initialize_get_set_reset_methods()
+
+    def _initialize_get_set_reset_methods(self):
+        # Problem: performance is a must for basic ContextVar.get()/set()/reset() methods.
+        #
+        # Guess this one of the main reasons why they're implemented in C, as Python extensions.
+        #
+        # We don't want to impose any extra Python-level overhead on top of C functions,
+        # so here is a trick: copy methods from underlying ContextVar object.
+        #
+        # So by calling, for example ``ContextVarRegistry.set()``, you're *actually*
+        # directly calling the underlying ``ContextVar.set`` (the low-level C function).
+        self.get = self.context_var.get
+        self.set = self.context_var.set
+        self.reset = self.context_var.reset
+
+    def get(self, default=Missing):
+        """Return a value for the context variable for the current context.
+
+        If there is no value for the variable in the current context,
+        the method will:
+
+          * return the value of the ``default`` argument of the method, if provided; or
+          * return the default value for the context variable, if it was created with one; or
+          * raise a :exc:`LookupError`.
+
+        .. Note::
+
+          This method is a direct referrence to method of the standard ``ContextVar`` class,
+          check this out::
+
+              >>> timezone_var = ContextVarDescriptor('timezone_var')
+
+              >>> timezone_var.get
+              <built-in method get of ContextVar object ...>
+
+              >>> timezone_var.get == timezone_var.context_var.get
+              True
+
+          please check out its documentation: :meth:`contextvars.ContextVar.get`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def set(self, value) -> Token:
+        """Call to set a new value for the context variable in the current context.
+
+        The required *value* argument is the new value for the context variable.
+
+        Returns a :class:`~contextvars.contextvars.Token` object that can be used to restore
+        the variable to its previous value via the :meth:`~ContextVarDescriptor.reset` method.
+
+        .. Note::
+
+          This method is a shortcut to method of the standard ``ContextVar`` class,
+          please check out its documentation: :meth:`contextvars.ContextVar.set`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def reset(self, token: Token):
+        """Reset the context variable to a previous value.
+
+        Reset the context variable to the value it had before the
+        :meth:`ContextVarDescriptor.set` that created the *token* was used.
+
+        For example::
+
+            >>> var = ContextVar('var')
+
+            >>> token = var.set('new value')
+            >>> var.get()
+            'new value'
+
+            # After the reset call the var has no value again,
+            # so var.get() would raise a LookupError.
+            >>> var.reset(token)
+            >>> var.get()
+            Traceback (most recent call last):
+            ...
+            LookupError: ...
+
+        .. Note::
+
+          This method is a shortcut to method of the standard ``ContextVar`` class,
+          please check out its documentation: :meth:`contextvars.ContextVar.reset`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
 
     def __get__(self, instance, _unused_owner_cls):
         if instance is None:
