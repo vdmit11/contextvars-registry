@@ -42,6 +42,11 @@ copybutton_only_copy_prompt_lines = False
 # Shift '>>>' button away from corner, otherwise it conflicts with sphinx_copybutton
 toggleprompt_offset_right = 25
 
+# Allow links to standard Python docs and other documentation sites.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None)
+}
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -53,6 +58,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
