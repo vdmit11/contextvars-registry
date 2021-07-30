@@ -1,10 +1,11 @@
 import functools
 import inspect
 import os
+from typing import Set
 
 
-class MissingType:
-    """Sentinel object that allows to distinguish "no value" from ``None``.
+class Sentinel:
+    """SentinelType object that allows to distinguish "no value" from ``None``.
 
     This is a singleton.
     There should be only one instance of MissingType
@@ -18,24 +19,25 @@ class MissingType:
         attribute is not set
     """
 
-    was_instanciated: bool = False
+    registered_names: Set[str] = set()
 
-    def __init__(self):
-        if MissingType.was_instanciated:
-            raise AssertionError(
-                "The `Missing` object must be a singleton (instanciated only once)."
-            )
-        MissingType.was_instanciated = True
+    def __init__(self, module_name, instance_name):
+        qualified_name = module_name + "." + instance_name
+
+        if qualified_name in self.registered_names:
+            raise AssertionError(f"Sentinel with name `{qualified_name}` is already registered.")
+        self.registered_names.add(qualified_name)
+
+        self.short_name = instance_name
+        self.qualified_name = qualified_name
 
         super().__init__()
 
-    @staticmethod
-    def __str__():
-        return "Missing"
+    def __str__(self):
+        return self.short_name
 
-    @staticmethod
-    def __repr__():
-        return MissingType.__module__ + ".Missing"
+    def __repr__(self):
+        return self.qualified_name
 
     @staticmethod
     def __bool__():
@@ -51,7 +53,7 @@ class MissingType:
         return False
 
 
-Missing = MissingType()
+Missing = Sentinel(__name__, "Missing")
 
 
 class ExceptionDocstringMixin:
