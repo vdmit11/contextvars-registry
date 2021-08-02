@@ -1,7 +1,10 @@
 from contextvars import ContextVar, Token
 from typing import Any, Optional
 
-from contextvars_extras.util import ExceptionDocstringMixin, Missing
+from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
+
+# A special sentinel object that we put into ContextVar when you delete a value from it.
+ContextVarValueDeleted = Sentinel(__name__, "ContextVarValueDeleted")
 
 
 class ContextVarDescriptor:
@@ -159,19 +162,66 @@ class ContextVarDescriptor:
         self.context_var = context_var
         self.name = context_var.name
 
-        self._initialize_get_set_reset_methods()
+        self._initialize_fast_methods()
 
-    def _initialize_get_set_reset_methods(self):
-        # Problem: performance is a must for basic ContextVar.get()/set()/reset() methods.
+    def _initialize_fast_methods(self):
+        # Problem: basic ContextVar.get()/.set()/etc() must have good performance.
         #
-        # Guess this one of the main reasons why they're implemented in C, as Python extensions.
+        # So, I decided to do some evil premature optimization: instead of regular methods,
+        # I define them as functions (closures) here, and then write them as methods to
+        # the ContextVarDescriptor() instance.
         #
-        # We don't want to impose any extra Python-level overhead on top of C functions,
-        # so here is a trick: copy methods from underlying ContextVar object.
+        # Closures, are faster than methods, because they can:
+        #  - take less arguments (each function argument adds some overhead)
+        #  - avoid `self` (because Python's attribute resolution mechanism has some performance hit)
+        #  - avoid `.` - the dot operator (because, again, attribute access is slow)
+        #  - avoid globals (because they're slower than local variables)
         #
-        # So by calling, for example ``ContextVarRegistry.set()``, you're *actually*
-        # directly calling the underlying ``ContextVar.set`` (the low-level C function).
-        self.get = self.context_var.get
+        # Of course, all these overheads are minor, but they add up.
+        # For example .get() call became 2x faster after these optimizations.
+        # So I decided to keep them.
+
+        # The `.` (the dot operator that resoles attributes) has some overhead.
+        # So, do it in advance to avoid dots in closures below.
+        context_var = self.context_var
+        context_var_get = context_var.get
+        context_var_set = context_var.set
+
+        # Local variables are faster than globals.
+        # So, copy all needed globals and thus make them locals.
+        _Missing = Missing
+        _ContextVarValueDeleted = ContextVarValueDeleted
+        _LookupError = LookupError
+
+        # Ok, now define closures that use all the variables prepared above.
+
+        # -> ContextVarDescriptor.get
+        def get(default=_Missing):
+            if default is _Missing:
+                value = context_var_get()
+            else:
+                value = context_var_get(default)
+
+            if value is _ContextVarValueDeleted:
+                if default is not _Missing:
+                    return default
+                raise _LookupError(context_var)
+
+            return value
+
+        self.get = get
+
+        # -> ContextVarDescriptor.delete
+        def delete():
+            context_var_set(_ContextVarValueDeleted)
+
+        self.delete = delete
+
+        # Copy some methods from ContextVar.
+        # These are even better than closures above, because they are C functions.
+        # So by calling, for example ``ContextVarRegistry.set()``, you're *actually* calling
+        # tje low-level C function ``ContextVar.set`` directly, without any Python-level wrappers.
+        self.get_raw = self.context_var.get
         self.set = self.context_var.set
         self.reset = self.context_var.reset
 
@@ -185,23 +235,71 @@ class ContextVarDescriptor:
           * return the default value for the context variable, if it was created with one; or
           * raise a :exc:`LookupError`.
 
-        .. Note::
+        Example usage::
 
-          This method is a direct referrence to method of the standard ``ContextVar`` class,
-          check this out::
+            >>> locale_var = ContextVarDescriptor('locale_var', default='UTC')
 
-              >>> timezone_var = ContextVarDescriptor('timezone_var')
+            >>> locale_var.get()
+            'UTC'
 
-              >>> timezone_var.get
-              <built-in method get of ContextVar object ...>
+            >>> locale_var.set('Europe/London')
+            <Token ...>
 
-              >>> timezone_var.get == timezone_var.context_var.get
-              True
+            >>> locale_var.get()
+            'Europe/London'
 
-          please check out its documentation: :meth:`contextvars.ContextVar.get`.
+
+        Note that if that if there is no ``default`` value, it may raise ``LookupError``::
+
+            >>> locale_var = ContextVarDescriptor('locale_var')
+
+            >>> try:
+            ...     locale_var.get()
+            ... except LookupError:
+            ...     print('LookupError was raised')
+            LookupError was raised
+
+            # The exception can be prevented by supplying the `.get(default)` argument.
+            >>> locale_var.get(default='en')
+            'en'
+
+            >>> locale_var.set('en_GB')
+            <Token ...>
+
+            # The `.get(default=...)` argument is ignored since the value was set above.
+            >>> locale_var.get(default='en')
+            'en_GB'
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # This code is never actually called, see ``_initialize_fast_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def get_raw(self, default=Missing):
+        """Return a value for the context variable, without overhead added by :meth:`get` method.
+
+        This is a more lightweight version of :meth:`get` method.
+        It is faster, but doesn't support some features (like deletion).
+
+        In fact, it is a direct reference to the standard :meth:`contextvars.ContextVar.get` method,
+        which is a built-in method (written in C), check this out::
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var')
+
+            >>> timezone_var.get_raw
+            <built-in method get of ContextVar object ...>
+
+            >>> timezone_var.get_raw == timezone_var.context_var.get
+            True
+
+        So here is absolutely no overhead on top of the standard ``ContextVar.get()`` method,
+        and you can safely use ``.get_raw()`` when you need performance.
+
+        See also, documentation for this method in the standard library:
+        :meth:`contextvars.ContextVar.get`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -219,7 +317,7 @@ class ContextVarDescriptor:
           please check out its documentation: :meth:`contextvars.ContextVar.set`.
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # This code is never actually called, see ``_initialize_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -251,7 +349,80 @@ class ContextVarDescriptor:
           please check out its documentation: :meth:`contextvars.ContextVar.reset`.
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_get_set_reset_methods``.
+        # This code is never actually called, see ``_initialize_fast_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def delete(self):
+        """Delete value stored in the context variable.
+
+        Example::
+
+            # Create a context variable, and set a value.
+            >>> timezone_var = ContextVarDescriptor('timezone_var')
+            >>> timezone_var.set('Europe/London')
+            <Token ...>
+
+            # ...so .get() call doesn't raise an exception and returns the value that was set
+            >>> timezone_var.get()
+            'Europe/London'
+
+            # Call .delete() to erase the value.
+            >>> timezone_var.delete()
+
+            # Once value is deleted, the .get() method raises LookupError.
+            >>> try:
+            ...     timezone_var.get()
+            ... except LookupError:
+            ...     print('LookupError was raised')
+            LookupError was raised
+
+            # The exception can be avoided by passing a `default=...` value.
+            >>> timezone_var.get(default='GMT')
+            'GMT'
+
+        Also note that a ``.delete()`` call doesn't reset value to default::
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var', default='UTC')
+
+            # Before .delete() is called, .get() returns the `default=UTC` that was passed above
+            >>> timezone_var.get()
+            'UTC'
+
+            # Call .delete(). That erases the default value.
+            >>> timezone_var.delete()
+
+            # Now .get() will throw LookupError, as if there was no default value at the beginning.
+            >>> try:
+            ...     timezone_var.get()
+            ... except LookupError:
+            ...     print('LookupError was raised')
+            LookupError was raised
+
+            # ...but you still can provide default as argument to ``.get()``
+            >>> timezone_var.get(default='UTC')
+            'UTC'
+
+        .. Note::
+
+            Python doesn't provide any built-in way to erase a context variable.
+            So, deletion is implemented in a bit hacky way...
+
+            When you call :meth:`~delete`, a special marker object called ``ContextVarValueDeleted``
+            is written into the context variable. The :meth:`~get` method detects that marker,
+            and behaves as if there was no value.
+
+            That happens under the hood, and normally you shouldn't notice that, unless you use
+            lower-level methods like :meth:`get_raw` or :meth:`contextvars.ContextVar.get`::
+
+                >>> timezone_var.get_raw()
+                contextvars_extras.descriptor.ContextVarValueDeleted
+
+                >>> timezone_var.context_var.get()
+                contextvars_extras.descriptor.ContextVarValueDeleted
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -267,8 +438,9 @@ class ContextVarDescriptor:
         assert instance is not None
         self.set(value)
 
-    def __delete__(self, _unused_instance):
-        raise DeleteIsNotImplementedError.format(context_var_name=self.name)
+    def __delete__(self, instance):
+        self.__get__(instance, None)  # needed to raise AttributeError if already deleted
+        self.delete()
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"
@@ -322,36 +494,4 @@ class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError
 
       So, to fit both cases, this exception uses both ``AttributeErrror`` and ``LookupError``
       as base classes.
-    """
-
-
-class DeleteIsNotImplementedError(ExceptionDocstringMixin, NotImplementedError):
-    """Can't delete context variable: '{context_var_name}'.
-
-    This exception is raised when you try to delete an attribute of :class:`ContextVarsRegistry`
-    like this::
-
-        >>> from contextvars_extras.registry import ContextVarsRegistry
-        >>> class Current(ContextVarsRegistry):
-        ...     user_id: int
-        >>> current = Current()
-
-        >>> current.user_id = 42
-        >>> del current.user_id
-        Traceback (most recent call last):
-        ...
-        contextvars_extras.descriptor.DeleteIsNotImplementedError: ...
-
-    This is caused by the fact, that ``contextvars.ContextVar`` object cannot be garbage-collected,
-    so deleting it causes a memory leak. In addition, the standard library doesn't provide any API
-    for erasing values stored inside ``ContextVar`` objects.
-
-    So context variables cannot be deleted or erased.
-    This is a technical limitation. Deal with it.
-
-    A possible workaround is to use a ``with`` block to set context variables temporarily:
-
-        >>> with current(user_id=100):
-        ...    print(current.user_id)
-        100
     """

@@ -288,17 +288,22 @@ def test__hasattr_getattr_setattr_consistency():  # noqa R701
     assert getattr(current, "user_id") == 42
 
 
-def test__deleting_attributes__is_not_allowed():
+def test__deleting_attributes__is_allowed__but_under_the_hood_there_is_special_sentinel_object():
     class CurrentVars(ContextVarsRegistry):
         locale: str = "en"
         timezone: str
 
     current = CurrentVars()
 
-    with raises(NotImplementedError):
+    current.locale
+    del current.locale
+    with raises(AttributeError):
+        current.locale
+
+    with raises(AttributeError):
         del current.locale
 
-    with raises(NotImplementedError):
+    with raises(AttributeError):
         del current.timezone
 
 
@@ -352,15 +357,27 @@ def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
     assert set(current.values()) == {"en_GB", "GMT"}
     assert set(current.items()) == {("locale", "en_GB"), ("timezone", "GMT")}
 
-    # error/edge cases...
+    # `del` operator
+    del current["locale"]
+    with raises(KeyError):
+        current["locale"]
+    current["locale"] = "en_GB"
 
-    # deletion is not supported (because in Python it is impossible to un-set a ContextVar object)
-    with raises(NotImplementedError):
-        del current["locale"]
-    with raises(NotImplementedError):
+    # .pop()
+    assert current.pop("locale") == "en_GB"
+    with raises(KeyError):
         current.pop("locale")
-    with raises(NotImplementedError):
+    current["locale"] = "en_GB"
+
+    # .popitem()
+    assert current.popitem() == ("locale", "en_GB")
+    assert current.popitem() == ("timezone", "GMT")
+    with raises(KeyError):
         current.popitem()
+
+    current.update({"locale": "en_GB", "timezone": "GMT"})
+
+    # error/edge cases...
 
     # an attempt ro read a non-existent variable throws an error
     with raises(KeyError):

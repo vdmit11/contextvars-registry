@@ -62,36 +62,6 @@ ContextVarDescriptor should implement all same attributes and methods as Context
 and thus it can be used instead of ContextVar() object in all cases except isinstance() checks.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-variables cannot be deleted
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. CAUTION::
-
-    It is not possible to delete a context variable.
-
-An attempt to call ``delattr()`` or use ``del`` operator throws an error::
-
-    >>> delattr(current, 'user_id')
-    Traceback (most recent call last):
-    ...
-    contextvars_extras.descriptor.DeleteIsNotImplementedError: ...
-
-This is done because in Python, ``ContextrVar`` objects cannot be garbage-collected.
-Deleting it causes a memory leak, so we have to forbid deletion.
-Once variable is allocated, it has to live forever.
-
-A possible workaround is to use a ``with`` block to set context variables temporarily:
-
-    >>> with current(user_id=100):
-    ...    print(current.user_id)
-    100
-
-It doesn't delete a variable, but it restores its state upon exit from ``with`` block,
-which is kind of what you may want to achieve by deletion.
-
-So consider using ``with`` block instead of deletion.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ContextVarsRegistry as dict
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -141,19 +111,60 @@ Other ``dict`` methods are supported as well::
     >>> current.values()
     dict_values(['en', 'UTC', 42])
 
-.. NOTE::
+    >>> current.pop('locale')
+    'en'
 
-    Deletion is not supported.
+    >>> current.items()
+    dict_items([('timezone', 'UTC'), ('user_id', 42)])
 
-    An attempt to call ``.pop()`` or use ``del`` operator will always throw an error::
 
-        >>> del current['user_id']
-        Traceback (most recent call last):
-        ...
-        contextvars_extras.descriptor.DeleteIsNotImplementedError: ...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A note about deleting variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    This is done because in Python, ``ContextVar`` objects cannot be garbage-collected.
-    Deleting a variable causes a memory leak, so we have to forbid deletion.
+In Python, it is not possible to delete a ``ContextVar`` object.
+(well, technically, it could be deleted, but that leads to a memory leak, so we forbid deletion).
+
+So, we have to do some trickery to implement deletion...
+
+When you call ``del`` or ``delattr()``, we don't actually delete anything,
+but instead we write to the variable a special token object called ``ContextVarValueDeleted``.
+
+Later on, when the variable is read, there is a ``if`` check under the hood,
+that detects the special token and throws an exception.
+
+On the high level, you should never notice this hack.
+Attribute mechanics works as expected, as if the attribute is really deleted, check this out::
+
+
+    >>> hasattr(current, 'user_id')
+    True
+
+    >>> delattr(current, 'user_id')
+
+    >>> hasattr(current, 'user_id')
+    False
+
+    >>> try:
+    ...     current.user_id
+    ... except AttributeError:
+    ...     print("AttributeError raised")
+    ... else:
+    ...     print("not raised")
+    AttributeError raised
+
+    >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
+    'DEFAULT_VALUE'
+
+...but if you try to use :meth:`~.ContextVarDescriptor.get_raw` method,
+you will get that special ``ContextVarValueDeleted`` object stored in the ``ContextVar``::
+
+    >>> CurrentVars.user_id.get_raw()
+    contextvars_extras.descriptor.ContextVarValueDeleted
+
+So, long story short: once allocated, a ``ContextVar`` object lives forever in the registry.
+When you delete it, we only mark it as deleted, but never actually delete it.
+All this thing happens under the hood, and normally you shouln't notice that.
 """
 from __future__ import annotations
 
