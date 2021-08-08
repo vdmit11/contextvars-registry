@@ -19,27 +19,12 @@ from typing import (
 
 from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.registry import ContextVarsRegistry
+from contextvars_extras.util import Decorator, ReturnedValue, WrappedFn
 
 # shortcuts, needed just to make code slightly more readable
 _EMPTY = inspect.Parameter.empty
 _KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
 _POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
-
-
-# Type trickery that that makes the @inject_context_vars decorator friendly towards IDEs.
-# That is, for example here:
-#
-#    @inject_context_vars()
-#    def get_answer() -> int:
-#        ...
-#
-# My IDE is able to determine that the function returns `int`
-# (which didn't work until I added this type trickery).
-#
-# The type definition below basically means that the Decorator preserves ReturnedValue inact.
-ReturnedValue = TypeVar("ReturnedValue")
-WrappedFn = Callable[..., ReturnedValue]
-Decorator = Callable[[WrappedFn], WrappedFn]
 
 
 def inject_context_vars(*configs, **per_arg_configs) -> Decorator:

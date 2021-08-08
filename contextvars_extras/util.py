@@ -1,7 +1,44 @@
 import functools
 import inspect
 import os
-from typing import Set
+from typing import Callable, Set, TypeVar
+
+# Decorator type trickery.
+#
+# Problem: a decorator quite often wraps its input function,
+# and returns a wrapper function, which has a different type signature.
+#
+# That breaks type checkers and various IDE features (like code auto-completion).
+# To fix them, here is some type trickery below.
+#
+# Usage example:
+#
+#    def decorator(wrapped_fn: WrappedFn) -> WrappedFn:
+#        def _wrapper(*args, **kwargs) -> ReturnedValue:
+#            return wrapped_fn(*args, **kwargs)
+#        return _wrapper
+#
+#    @decorator
+#    def do_something_useful():
+#        pass
+#
+# A more complex example, for decorators with arguments:
+#
+#    def decorator_with_args(some_arg) -> Decorator:
+#        def _decorator(wrapped_fn: WrappedFn) -> WrappedFn:
+#            def _wrapper(*args, **kwargs) -> ReturnedValue:
+#                return wrapped_fn(*args, **kwargs)
+#            return _wrapper
+#        return _decorator
+#
+#    @decorator_with_args("some_arg")
+#    def do_something_useful():
+#        pass
+#
+# The type definition below basically means that type of ReturnedValue remains inact.
+ReturnedValue = TypeVar("ReturnedValue")
+WrappedFn = Callable[..., ReturnedValue]
+Decorator = Callable[[WrappedFn], WrappedFn]
 
 
 class Sentinel:
