@@ -23,6 +23,20 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "asgiref"
+version = "3.4.1"
+description = "ASGI specs, helper code, and adapters"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
+
+[package.extras]
+tests = ["pytest", "pytest-asyncio", "mypy (>=0.800)"]
+
+[[package]]
 name = "astroid"
 version = "2.6.6"
 description = "An abstract syntax tree for Python with inference support."
@@ -207,6 +221,7 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
+asgiref = {version = ">=3.2", optional = true, markers = "extra == \"async\""}
 click = ">=7.1.2"
 itsdangerous = ">=2.0"
 Jinja2 = ">=3.0"
@@ -1147,7 +1162,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "c056e2281ae2f5bc6f3d4b45f7f443bbef49179ce2807fe9de9e48825d84e438"
+content-hash = "ed1c82395ac7ecb6a9521c45fadebf618a1eacc6b55e4151572bec49080c1479"
 
 [metadata.files]
 alabaster = [
@@ -1161,6 +1176,10 @@ appdirs = [
 appnope = [
     {file = "appnope-0.1.2-py2.py3-none-any.whl", hash = "sha256:93aa393e9d6c54c5cd570ccadd8edad61ea0c4b9ea7a01409020c9aa019eb442"},
     {file = "appnope-0.1.2.tar.gz", hash = "sha256:dd83cd4b5b460958838f6eb3000c660b1f9caf2a5b1de4264e941512f603258a"},
+]
+asgiref = [
+    {file = "asgiref-3.4.1-py3-none-any.whl", hash = "sha256:ffc141aa908e6f175673e7b1b3b7af4fdb0ecb738fc5c8b88f69f055c2415214"},
+    {file = "asgiref-3.4.1.tar.gz", hash = "sha256:4ef1ab46b484e3c706329cedeff284a5d40824200638503f5768edb6de7d58e9"},
 ]
 astroid = [
     {file = "astroid-2.6.6-py3-none-any.whl", hash = "sha256:ab7f36e8a78b8e54a62028ba6beef7561db4cdb6f2a5009ecc44a6f42b5697ef"},

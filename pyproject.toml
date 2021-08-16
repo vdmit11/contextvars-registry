@@ -26,7 +26,7 @@ black = "^21.7b0"
 isort = "^5.9.3"
 pytest-black = "^0.3.12"
 pytest-isort = "^2.0.0"
-Flask = "^2.0.1"
+Flask = {extras = ["async"], version = "^2.0.1"}
 gevent = "^21.8.0"
 sphinx-rtd-theme = "^0.5.2"
 
