@@ -40,7 +40,7 @@ copybutton_remove_prompts = True
 copybutton_only_copy_prompt_lines = False
 
 # Shift '>>>' button away from corner, otherwise it conflicts with sphinx_copybutton
-toggleprompt_offset_right = 25
+toggleprompt_offset_right = 40
 
 # Allow links to standard Python docs and other documentation sites.
 intersphinx_mapping = {
