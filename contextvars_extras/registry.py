@@ -307,6 +307,10 @@ class ContextVarsRegistry(MutableMapping):
         if ContextVarsRegistry not in cls.__bases__:
             raise RegistryInheritanceError
 
+    # There is a bug in Pylint that gives false-positive warnings for classmethods below.
+    # So, I have to mask that warning completely and wait until the bug in Pylint is fied.
+    # pylint: disable=unused-private-member
+
     @classmethod
     def __init_type_hinted_class_attrs_as_descriptors(cls):
         hinted_attrs = get_type_hints(cls)
