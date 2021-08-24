@@ -3,8 +3,13 @@ from typing import Any, Optional
 
 from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
 
-# A special sentinel object that we put into ContextVar when you delete a value from it.
+# A special sentinel object that we put into ContextVar when you delete a value from it
+# (when ContextVarDescriptor.delete() method is called).
 ContextVarValueDeleted = Sentinel(__name__, "ContextVarValueDeleted")
+
+# Another special marker that we put into ContextVar when you reset it to the default value
+# (when ContextVarDescriptor.reset_to_default() method is called).
+ContextVarValueResetToDefault = Sentinel(__name__, "ContextVarValueResetToDefault")
 
 
 class ContextVarDescriptor:
@@ -121,6 +126,8 @@ class ContextVarDescriptor:
             >>> timezone_descriptor.context_var is timezone_context_var
             True
         """
+        self._default = default
+
         if context_var:
             assert not name and not default
             self._set_context_var(context_var)
@@ -130,8 +137,6 @@ class ContextVarDescriptor:
         elif owner_cls and owner_attr:
             context_var = self._new_context_var_for_owner(owner_cls, owner_attr, default)
             self._set_context_var(context_var)
-        else:
-            self._default = default
 
     def __set_name__(self, owner_cls: type, owner_attr: str):
         if hasattr(self, "context_var"):
@@ -186,11 +191,13 @@ class ContextVarDescriptor:
         context_var = self.context_var
         context_var_get = context_var.get
         context_var_set = context_var.set
+        context_var_default = self._default
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
         _Missing = Missing
         _ContextVarValueDeleted = ContextVarValueDeleted
+        _ContextVarValueResetToDefault = ContextVarValueResetToDefault
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -202,6 +209,15 @@ class ContextVarDescriptor:
             else:
                 value = context_var_get(default)
 
+            # special marker, left by ContextVarDescriptor.reset_to_default()
+            if value is _ContextVarValueResetToDefault:
+                if default is not _Missing:
+                    return default
+                if context_var_default is not _Missing:
+                    return context_var_default
+                raise _LookupError(context_var)
+
+            # special marker, left by ContextVarDescriptor.delete()
             if value is _ContextVarValueDeleted:
                 if default is not _Missing:
                     return default
@@ -210,6 +226,12 @@ class ContextVarDescriptor:
             return value
 
         self.get = get
+
+        # -> ContextVarDescriptor.reset_to_default
+        def reset_to_default():
+            context_var_set(_ContextVarValueResetToDefault)
+
+        self.reset_to_default = reset_to_default
 
         # -> ContextVarDescriptor.delete
         def delete():
@@ -347,6 +369,65 @@ class ContextVarDescriptor:
 
           This method is a shortcut to method of the standard ``ContextVar`` class,
           please check out its documentation: :meth:`contextvars.ContextVar.reset`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_fast_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def reset_to_default(self):
+        """Reset context variable to the default value.
+
+        Example::
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var', default='UTC')
+
+            >>> timezone_var.set('Antarctica/Troll')
+            <Token ...>
+
+            >>> timezone_var.reset_to_default()
+
+            >>> timezone_var.get()
+            'UTC'
+
+            >>> timezone_var.get(default='GMT')
+            'GMT'
+
+        When there is no default value, the value is erased, so ``get()`` raises ``LookupError``::
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var')
+
+            >>> timezone_var.set('Antarctica/Troll')
+            <Token ...>
+
+            >>> timezone_var.reset_to_default()
+
+            # ContextVar has no default value, so .get() call raises LookupError.
+            >>> try:
+            ...     timezone_var.get()
+            ... except LookupError:
+            ...     print('LookupError was raised')
+            LookupError was raised
+
+            # The exception can be avoided by passing a `default=...` value.
+            timezone_var.get(default='UTC')
+            'UTC'
+
+        Also note that this method doesn't work when you re-use an existing
+        :class:`contextvars.ContextVar` instance, like this::
+
+            >>> timezone_var = ContextVar('timezone_var', default='UTC')
+            >>> timezone_descriptor = ContextVarDescriptor(context_var=timezone_var)
+
+            # The descriptor doesn't know a default value of the ContextVar() object,
+            # so .reset_to_default() just erases the value.
+            >>> timezone_descriptor.reset_to_default()
+
+            >>> try:
+            ...     timezone_descriptor.get()
+            ... except LookupError:
+            ...     print('LookupError was raised')
+            LookupError was raised
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_initialize_fast_methods``.
