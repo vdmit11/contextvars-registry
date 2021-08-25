@@ -57,3 +57,18 @@ def test__deferred_default__works_with__is_set__and__reset_to_default__methods()
 def test__deferred_default__cannot_be_used_with_just__default():
     with pytest.raises(AssertionError):
         ContextVarDescriptor("test_var", default={}, deferred_default=dict)
+
+
+def test__deferred_default__is_masked_by__default_arg_of_get_method():
+    def _empty_dict():
+        _empty_dict.call_counter += 1
+        return dict()
+
+    _empty_dict.call_counter = 0
+
+    test_dict_var = ContextVarDescriptor("test_dict_var", deferred_default=_empty_dict)
+
+    # .get(default=...) arg is present, so deferred default is not called
+    value = test_dict_var.get(default=None)
+    assert value is None
+    assert _empty_dict.call_counter == 0
