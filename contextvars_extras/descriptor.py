@@ -58,14 +58,14 @@ class ContextVarDescriptor:
     ):
         """Initialize ContextVarDescriptor object.
 
-        :param default: The default value for the  underlying ``ContextVar`` object.
-                        Returned by the ``get()`` method if the variable is not bound to a value.
-                        If default is missing, then ``get()`` may raise ``LookupError``.
-
         :param name: Name for the underlying ``ContextVar`` object.
                      Needed for introspection and debugging purposes.
                      Ususlly you don't want to set it manually, because it is automatically
                      formatted from owner class/attribute names.
+
+        :param default: The default value for the  underlying ``ContextVar`` object.
+                        Returned by the ``get()`` method if the variable is not bound to a value.
+                        If default is missing, then ``get()`` may raise ``LookupError``.
 
         :param owner_cls: Reference to a class, where the descritor is placed.
                           Usually it is captured automatically by the ``__set_name__`` method,
