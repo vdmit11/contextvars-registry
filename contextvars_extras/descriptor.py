@@ -227,6 +227,16 @@ class ContextVarDescriptor:
 
         self.get = get
 
+        # -> ContextVarDescriptor.is_set
+        def is_set() -> bool:
+            return context_var_get(_Missing) not in (
+                _Missing,
+                _ContextVarValueDeleted,
+                _ContextVarValueResetToDefault,
+            )
+
+        self.is_set = is_set
+
         # -> ContextVarDescriptor.reset_to_default
         def reset_to_default():
             context_var_set(_ContextVarValueResetToDefault)
@@ -319,6 +329,42 @@ class ContextVarDescriptor:
 
         See also, documentation for this method in the standard library:
         :meth:`contextvars.ContextVar.get`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_fast_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def is_set(self) -> bool:
+        """Ceck if the variable has a value.
+
+        Examples::
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var')
+            >>> timezone_var.is_set()
+            False
+
+            >>> timezone_var = ContextVarDescriptor('timezone_var', default='UTC')
+            >>> timezone_var.is_set()
+            False
+
+            >>> timezone_var.set('GMT')
+            <Token ...>
+            >>> timezone_var.is_set()
+            True
+
+            >>> timezone_var.reset_to_default()
+            >>> timezone_var.is_set()
+            False
+
+            >>> timezone_var.set(None)
+            <Token ...>
+            >>> timezone_var.is_set()
+            True
+
+            >>> timezone_var.delete()
+            >>> timezone_var.is_set()
+            False
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_initialize_fast_methods``.
