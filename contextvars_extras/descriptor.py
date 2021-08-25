@@ -1,5 +1,5 @@
 from contextvars import ContextVar, Token
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
 
@@ -7,9 +7,14 @@ from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
 # (when ContextVarDescriptor.delete() method is called).
 ContextVarValueDeleted = Sentinel(__name__, "ContextVarValueDeleted")
 
-# Another special marker that we put into ContextVar when you reset it to the default value
-# (when ContextVarDescriptor.reset_to_default() method is called).
-ContextVarValueResetToDefault = Sentinel(__name__, "ContextVarValueResetToDefault")
+# Another special marker that we put into ContextVar when it is not yet initialized,
+# used in 2 cases:
+#  1. when ContextVarDescriptor(deferred_default=...) argument is used
+#  2. when ContextVarDescriptor.reset_to_default() method is called
+ContextVarNotInitialized = Sentinel(__name__, "ContextVarNotInitialized")
+
+# A no-argument function that produces a default value for ContextVarDescriptor
+DeferredDefaultFn = Callable[[], Any]
 
 
 class ContextVarDescriptor:
@@ -47,11 +52,13 @@ class ContextVarDescriptor:
     context_var: ContextVar
     name: str
     _default: Any
+    _deferred_default: Optional[DeferredDefaultFn]
 
     def __init__(
         self,
         name: Optional[str] = None,
         default: Optional[Any] = Missing,
+        deferred_default: Optional[DeferredDefaultFn] = None,
         owner_cls: Optional[type] = None,
         owner_attr: Optional[str] = None,
         context_var: Optional[ContextVar] = None,
@@ -67,6 +74,11 @@ class ContextVarDescriptor:
                         Returned by the ``get()`` method if the variable is not bound to a value.
                         If default is missing, then ``get()`` may raise ``LookupError``.
 
+        :param deferred_default: A function that produces a default value.
+                                 Called by ``get()`` method, once per context.
+                                 That is, if you spawn 10 threads, then ``deferred_default()``
+                                 is called 10 times, and you get 10 thread-local values.
+
         :param owner_cls: Reference to a class, where the descritor is placed.
                           Usually it is captured automatically by the ``__set_name__`` method,
                           however, you need to pass it manually if you're adding a new descriptor
@@ -80,7 +92,6 @@ class ContextVarDescriptor:
         :param context_var: A reference to an existing ``ContextVar`` object.
                             You need it only if you want to re-use an existing object.
                             If missing, a new ``ContextVar`` object is created automatically.
-
 
         There are 4 ways to initialize a ``ContextVarsDescriptor`` object:
 
@@ -126,7 +137,9 @@ class ContextVarDescriptor:
             >>> timezone_descriptor.context_var is timezone_context_var
             True
         """
+        assert not ((default is not Missing) and (deferred_default is not None))
         self._default = default
+        self._deferred_default = deferred_default
 
         if context_var:
             assert not name and not default
@@ -164,6 +177,13 @@ class ContextVarDescriptor:
     def _set_context_var(self, context_var: ContextVar):
         assert not hasattr(self, "context_var")
 
+        # In case ``deferred_default`` is used, put a special marker object to the variable
+        # (otherwise ContextVar.get() method will not find any value and raise a LookupError)
+        if self._deferred_default:
+            context_var_is_not_initialized = context_var.get(Missing) == Missing
+            if context_var_is_not_initialized:
+                context_var.set(ContextVarNotInitialized)
+
         self.context_var = context_var
         self.name = context_var.name
 
@@ -191,13 +211,14 @@ class ContextVarDescriptor:
         context_var = self.context_var
         context_var_get = context_var.get
         context_var_set = context_var.set
-        context_var_default = self._default
+        descriptor_default = self._default
+        descriptor_deferred_default = self._deferred_default
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
         _Missing = Missing
         _ContextVarValueDeleted = ContextVarValueDeleted
-        _ContextVarValueResetToDefault = ContextVarValueResetToDefault
+        _ContextVarNotInitialized = ContextVarNotInitialized
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -210,11 +231,15 @@ class ContextVarDescriptor:
                 value = context_var_get(default)
 
             # special marker, left by ContextVarDescriptor.reset_to_default()
-            if value is _ContextVarValueResetToDefault:
+            if value is _ContextVarNotInitialized:
                 if default is not _Missing:
                     return default
-                if context_var_default is not _Missing:
-                    return context_var_default
+                if descriptor_default is not _Missing:
+                    return descriptor_default
+                if descriptor_deferred_default is not None:
+                    value = descriptor_deferred_default()
+                    context_var_set(value)
+                    return value
                 raise _LookupError(context_var)
 
             # special marker, left by ContextVarDescriptor.delete()
@@ -232,14 +257,14 @@ class ContextVarDescriptor:
             return context_var_get(_Missing) not in (
                 _Missing,
                 _ContextVarValueDeleted,
-                _ContextVarValueResetToDefault,
+                _ContextVarNotInitialized,
             )
 
         self.is_set = is_set
 
         # -> ContextVarDescriptor.reset_to_default
         def reset_to_default():
-            context_var_set(_ContextVarValueResetToDefault)
+            context_var_set(_ContextVarNotInitialized)
 
         self.reset_to_default = reset_to_default
 
