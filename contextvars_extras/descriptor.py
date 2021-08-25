@@ -262,6 +262,18 @@ class ContextVarDescriptor:
 
         self.is_set = is_set
 
+        # -> ContextVarDescriptor.set_if_not_set
+        def set_if_not_set(new_value) -> Any:
+            existing_value = context_var_get(_Missing)
+
+            if existing_value in (_Missing, _ContextVarValueDeleted, ContextVarNotInitialized):
+                context_var_set(new_value)
+                return new_value
+
+            return existing_value
+
+        self.set_if_not_set = set_if_not_set
+
         # -> ContextVarDescriptor.reset_to_default
         def reset_to_default():
             context_var_set(_ContextVarNotInitialized)
@@ -408,6 +420,40 @@ class ContextVarDescriptor:
 
           This method is a shortcut to method of the standard ``ContextVar`` class,
           please check out its documentation: :meth:`contextvars.ContextVar.set`.
+        """
+        # pylint: disable=no-self-use,method-hidden
+        # This code is never actually called, see ``_initialize_fast_methods``.
+        # It exists only for auto-generated documentation and static code analysis tools.
+        raise AssertionError
+
+    def set_if_not_set(self, value) -> Any:
+        """Set value if not yet set.
+
+        Examples::
+
+            >>> locale_var = ContextVarDescriptor('locale_var', default='en')
+
+            # The context variable has no value set yet (the `default='en'` above isn't
+            # treated as if value was set), so the call to .set_if_not_set() has effect.
+            >>> locale_var.set_if_not_set('en_US')
+            'en_US'
+
+            # The 2nd call to .set_if_not_set() has no effect.
+            >>> locale_var.set_if_not_set('en_GB')
+            'en_US'
+
+            >>> locale_var.get(default='en')
+            'en_US'
+
+            # .delete() method reverts context variable into "not set" state.
+            >>> locale_var.delete()
+            >>> locale_var.set_if_not_set('en_GB')
+            'en_GB'
+
+            # .reset_to_default() also means that variable becomes "not set".
+            >>> locale_var.reset_to_default()
+            >>> locale_var.set_if_not_set('en_AU')
+            'en_AU'
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_initialize_fast_methods``.
