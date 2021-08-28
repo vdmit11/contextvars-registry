@@ -27,7 +27,7 @@ _KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
 _POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
 
 
-def inject_context_vars(*configs, **per_arg_configs) -> Decorator:
+def inject_vars(*configs, **per_arg_configs) -> Decorator:
     """Inject context variables as arguments to a function.
 
     Example of use with ``ContextVarsRegistry``::
@@ -38,7 +38,7 @@ def inject_context_vars(*configs, **per_arg_configs) -> Decorator:
         ...     locale: str = 'en'
         >>> current = Current()
 
-        >>> @inject_context_vars(current)
+        >>> @inject_vars(current)
         ... def print_vars(locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -62,7 +62,7 @@ def inject_context_vars(*configs, **per_arg_configs) -> Decorator:
         >>> timezone_var = ContextVar('my_project.timezone', default='UTC')
         >>> locale_var = ContextVar('my_project.locale', default='en')
 
-        >>> @inject_context_vars(timezone_var, locale_var)
+        >>> @inject_vars(timezone_var, locale_var)
         ... def print_vars(*, locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -73,7 +73,7 @@ def inject_context_vars(*configs, **per_arg_configs) -> Decorator:
 
     Explicitly route variables to parameters::
 
-        >>> @inject_context_vars(
+        >>> @inject_vars(
         ...    timezone=timezone_var,  # use ContextVar object
         ...    locale=Current.locale,  # use ContextVarDescriptor (member of ContextVarsRegistry)
         ...    user_id=current,  # use current.user_id attribute
@@ -89,32 +89,32 @@ def inject_context_vars(*configs, **per_arg_configs) -> Decorator:
         timezone: UTC
     """
 
-    def _decorator__inject_context_vars(wrapped_fn: WrappedFn) -> WrappedFn:
+    def _decorator__inject_vars(wrapped_fn: WrappedFn) -> WrappedFn:
         rules = _generate_injection_rules(wrapped_fn, configs, per_arg_configs)
         rules_list = list(rules)
 
         @functools.wraps(wrapped_fn)
-        def _wrapper__inject_context_vars(*args, **kwargs) -> ReturnedValue:
+        def _wrapper__inject_vars(*args, **kwargs) -> ReturnedValue:
             _execute_injection_rules(rules_list, args, kwargs)
             return wrapped_fn(*args, **kwargs)
 
-        return _wrapper__inject_context_vars
+        return _wrapper__inject_vars
 
-    return _decorator__inject_context_vars
+    return _decorator__inject_vars
 
 
 @dataclasses.dataclass(frozen=True)
 class InjectionConfig:
-    """Structure for arguments of the ``@inject_context_vars`` decorator.
+    """Structure for arguments of the ``@inject_vars`` decorator.
 
-    Arguments to the :func:`inject_context_vars` decorator can come in several different forms.
+    Arguments to the :func:`inject_vars` decorator can come in several different forms.
 
     It is a bit of hassle to take into accoutn all these different forms of arguments everywhere,
     so they're all normalized, and converted to ``InjectionConfig`` objects.
 
     So that, for example, this::
 
-        @inject_context_vars(registry)
+        @inject_vars(registry)
 
     internally is converted to::
 
@@ -125,7 +125,7 @@ class InjectionConfig:
 
     Keyword arguments are also converted to ``InjectionConfig`` objects::
 
-        @inject_context_vars(
+        @inject_vars(
             locale=registry,
             timezone=registry,
             user_id=user_id_context_var,
@@ -140,7 +140,7 @@ class InjectionConfig:
 
     ...and dictionaries are also converted to ``InjectionConfig`` objects::
 
-         @inject_context_vars(
+         @inject_vars(
              {
                  'names': ['locale', 'timezone'],
                  'source': registry,
@@ -156,7 +156,7 @@ class InjectionConfig:
              InjectionConfig(names=['user_id'], source=user_id_context_var),
          ]
 
-    Each argument to ``@inject_context_vars()`` becomes a ``InjectionConfig`` instance.
+    Each argument to ``@inject_vars()`` becomes a ``InjectionConfig`` instance.
     This process is called here "normalization".
 
     So after the normalization procedure, all different forms of arguments become just a stream
@@ -186,10 +186,10 @@ class InjectionConfig:
       - :class:`~contextvars_extras.registry.ContextVarsRegistry`
         (then context variables stored in the registry are injected as function arguments)
 
-      - arbitrary object, e.g.: ``@inject_context_vars(flask.g)``
+      - arbitrary object, e.g.: ``@inject_vars(flask.g)``
         (then object attributes are injected as arguments to the called functions)
 
-      - arbitrary function, e.g.: ``@inject_context_vars(locale=get_current_locale)``
+      - arbitrary function, e.g.: ``@inject_vars(locale=get_current_locale)``
         (then the function is just called to obtain the injected value)
 
     This list of behaviors can be extended via the :func:`choose_inject_getter_fn` function.
@@ -200,7 +200,7 @@ class InjectionConfig:
 
     A source may match to many parameters simultaneously, for example::
 
-        @inject_context_vars({
+        @inject_vars({
             'source': registry,
             'names': ['locale', 'timezone']
         })
@@ -266,7 +266,7 @@ Default = TypeVar("Default")
 GetterFn = Callable[[Default], Union[Any, Default]]
 
 
-# InjectionRuleTuple - a prepared "instruction" for the ``@inject_context_vars`` decorator.
+# InjectionRuleTuple - a prepared "instruction" for the ``@inject_vars`` decorator.
 #
 # Problem: there is some magic in how arguments of the :func:`inject_context_args` decorator
 # are processed, and this magic is a bit slow.
@@ -274,7 +274,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 # Well, maybe not really slow, but there is some overhead, which is summed up and becomes
 # noticeable when you decorate a lot of functions.
 #
-# As a solution, we have a little premature optimization: the :func:`inject_context_vars`
+# As a solution, we have a little premature optimization: the :func:`inject_vars`
 # decorator pre-processes its arguments, and sort of compiles them into rules.
 #
 # One such ``InjectionRuleTuple`` is a primitive instruction that (roughly) says:
@@ -282,7 +282,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 #
 # And later on, when the decorated function is actually called, the prepared rules are executed.
 #
-# So the overhead of the ``@inject_context_vars`` decorator is reduced down to just executing
+# So the overhead of the ``@inject_vars`` decorator is reduced down to just executing
 # primitive rules (basically calling a bunch of prepared getter functions in sequence).
 InjectionRuleTuple = NewType(
     "InjectionRuleTuple",

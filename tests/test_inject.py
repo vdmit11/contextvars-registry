@@ -3,7 +3,7 @@ from contextvars import ContextVar
 import pytest
 
 from contextvars_extras.descriptor import ContextVarDescriptor
-from contextvars_extras.inject import inject_context_vars
+from contextvars_extras.inject import inject_vars
 from contextvars_extras.registry import ContextVarsRegistry
 
 
@@ -11,7 +11,7 @@ def test__inject_from_context_var_objects():
     timezone_var = ContextVar("my_project.namespace.timezone")
     locale_var = ContextVar("my_project.namespace.locale")
 
-    @inject_context_vars(timezone_var, locale_var)
+    @inject_vars(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -33,7 +33,7 @@ def test__inject_from_context_var_descriptors():
     timezone_var = ContextVarDescriptor("my_project.namespace.timezone")
     locale_var = ContextVarDescriptor("my_project.namespace.locale")
 
-    @inject_context_vars(timezone_var, locale_var)
+    @inject_vars(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -57,7 +57,7 @@ def test__inject_vars_from_registry():
 
     current = Current()
 
-    @inject_context_vars(current)
+    @inject_vars(current)
     def _get_values(locale="en", timezone="America/Troll", user_id=None):
         return (locale, timezone, user_id)
 
@@ -90,7 +90,7 @@ def test__inject_from_arbitrary_object_attributes():
 
     some_object = SomeObject()
 
-    @inject_context_vars(some_object)
+    @inject_vars(some_object)
     def _get_values(locale=None, timezone=None):
         return (locale, timezone)
 
@@ -114,7 +114,7 @@ def test__inject_from_getter_function():
     def _get_current_timezone(default):
         return storage.get("timezone", default)
 
-    @inject_context_vars(locale=_get_current_locale, timezone=_get_current_timezone)
+    @inject_vars(locale=_get_current_locale, timezone=_get_current_timezone)
     def _get_values(locale=None, timezone=None):
         return locale, timezone
 
