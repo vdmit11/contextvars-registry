@@ -21,7 +21,7 @@ help:
 
 .PHONY: apidoc
 apidoc:
-	sphinx-apidoc --force -o . ../contextvars_extras
+	sphinx-apidoc --no-toc --separate --module-first --force -o . ../contextvars_extras
 
 .PHONY: browse
 browse: apidoc html
