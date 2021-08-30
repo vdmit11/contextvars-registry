@@ -1,7 +1,29 @@
-contextvars\_extras.integrations.flask module
-=============================================
+﻿contextvars\_extras.integrations.flask
+======================================
 
 .. automodule:: contextvars_extras.integrations.flask
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Flask
+   
+   
+
+   
+   
+   
+
+
+

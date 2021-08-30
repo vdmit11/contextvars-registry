@@ -19,10 +19,6 @@ help:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: apidoc
-apidoc:
-	sphinx-apidoc --no-toc --separate --module-first --force -o . ../contextvars_extras
-
 .PHONY: browse
-browse: apidoc html
+browse: html
 	x-www-browser $(BUILDDIR)/html/index.html

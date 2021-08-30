@@ -7,14 +7,39 @@ contextvars-extras is a set of extensions for the Python's :mod:`contextvars` mo
 
    The code is at the early development stage, and may be unstable.
 
-   Use with caution. 
+   Use with caution.
 
-Contents:
 
+Pages:
+         
 .. toctree::
    :maxdepth: 1
-
+              
    readme
-   contextvars_extras.registry
-   contextvars_extras.inject
-   contextvars_extras.context
+
+
+Modules:
+   
+.. currentmodule:: contextvars_extras
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   registry
+   registry_restore   
+   descriptor
+   inject
+   context
+   context_async
+   util
+   integrations.wsgi   
+   integrations.flask
+   
+
+Indices and tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

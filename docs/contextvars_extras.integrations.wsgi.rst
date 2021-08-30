@@ -1,7 +1,35 @@
-contextvars\_extras.integrations.wsgi module
-============================================
+﻿contextvars\_extras.integrations.wsgi
+=====================================
 
 .. automodule:: contextvars_extras.integrations.wsgi
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      current_environ
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ContextVarsMiddleware
+   
+   
+
+   
+   
+   
+
+
+

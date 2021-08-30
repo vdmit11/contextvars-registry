@@ -1,7 +1,35 @@
-contextvars\_extras.descriptor module
-=====================================
+﻿contextvars\_extras.descriptor
+==============================
 
 .. automodule:: contextvars_extras.descriptor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ContextVarDescriptor
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ContextVarNotSetError
+   
+   
+
+
+

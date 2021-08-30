@@ -25,8 +25,10 @@ author = 'Dmitry Vasilyanov'
 # -- General configuration ---------------------------------------------------
 
 autosummary_generate = True
+autosummary_generate_overwrite = True
 
 autodoc_default_options = {
+    'members': None,
     'member-order': 'bysource',
     'private-members': True,
     'undoc-members': False,

@@ -1,7 +1,29 @@
-contextvars\_extras.context\_async module
-=========================================
+﻿contextvars\_extras.context\_async
+==================================
 
 .. automodule:: contextvars_extras.context_async
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      create_task_in_empty_context
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

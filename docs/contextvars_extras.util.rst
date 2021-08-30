@@ -1,7 +1,36 @@
-contextvars\_extras.util module
-===============================
+﻿contextvars\_extras.util
+========================
 
 .. automodule:: contextvars_extras.util
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      cleandoc_cached
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ExceptionDocstringMixin
+      Sentinel
+   
+   
+
+   
+   
+   
+
+
+

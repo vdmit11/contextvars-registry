@@ -1,7 +1,37 @@
-contextvars\_extras.registry module
-===================================
+﻿contextvars\_extras.registry
+============================
 
 .. automodule:: contextvars_extras.registry
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ContextVarsRegistry
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      RegistryInheritanceError
+      ReservedAttributeError
+      UndeclaredAttributeError
+   
+   
+
+
+
