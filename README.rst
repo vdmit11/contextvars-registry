@@ -11,10 +11,9 @@ contextvars-extras is a set of extensions for the Python's `contextvars`_ module
 In case you're not familiar with the standard `contextvars`_ module,
 it allows you to create `ContextVar`_ objects, like this::
 
-  >>> timezone_var = ContextVar('timezone_var')
-  >>> timezone_var.set('UTC')
-  >>> timezone_var.get()
-  'UTC'
+  timezone_var = ContextVar('timezone_var')
+  timezone_var.set('UTC')
+  timezone_var.get()  # => 'UTC'
 
 The point here is that these variables are thread-safe and async-safe
 (they can act as both thread-local storage and async task-local storage out of the box).
