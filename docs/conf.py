@@ -25,7 +25,7 @@ author = 'Dmitry Vasilyanov'
 # -- General configuration ---------------------------------------------------
 
 autodoc_default_options = {
-    'members': None,
+    'members': True,
     'member-order': 'bysource',
     'private-members': True,
     'undoc-members': False,
