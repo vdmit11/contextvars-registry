@@ -205,12 +205,12 @@ class ContextVarsRegistry(MutableMapping):
         AttributeError: ...
     """
 
-    _var_init_done_descriptors: Dict[str, ContextVarDescriptor]
-    """A dictionary that tracks which attributes were initialized as ContextVarDescriptor objects.
+    _var_descriptors: Dict[str, ContextVarDescriptor]
+    """A dictionary of all context vars in the registry.
 
     Keys are attribute names, and values are instances of :class:`ContextVarDescriptor`.
-    The dictionary can be mutated at run time, because new context variables can be created
-    on the fly, lazily, on 1st set of an attribute.
+
+    The dictionary can be mutated at run time, because new variables can be created on the fly.
 
     Actually, this dictionary isn't strictly required.
     You can derive this mapping by iterating over all class attributes and calling isinstance().
@@ -297,7 +297,7 @@ class ContextVarsRegistry(MutableMapping):
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
-        cls._var_init_done_descriptors = dict()
+        cls._var_descriptors = dict()
         cls._var_init_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
         super().__init_subclass__()
@@ -320,7 +320,7 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __init_class_attr_as_descriptor(cls, attr_name):
         with cls._var_init_lock:
-            if attr_name in cls._var_init_done_descriptors:
+            if attr_name in cls._var_descriptors:
                 return
 
             if attr_name.startswith("_var_"):
@@ -331,7 +331,7 @@ class ContextVarsRegistry(MutableMapping):
 
             descriptor = ContextVarDescriptor(default=value, owner_cls=cls, owner_attr=attr_name)
             setattr(cls, attr_name, descriptor)
-            cls._var_init_done_descriptors[attr_name] = descriptor
+            cls._var_descriptors[attr_name] = descriptor
 
     def __init__(self):
         self.__ensure_subclassed_properly()
@@ -344,12 +344,12 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor:
         try:
-            return cls._var_init_done_descriptors[attr_name]
+            return cls._var_descriptors[attr_name]
         except KeyError:
             cls.__before_set__ensure_not_starts_with_special_var_prefix(attr_name, value)
             cls.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
 
-            return cls._var_init_done_descriptors[attr_name]
+            return cls._var_descriptors[attr_name]
 
     @classmethod
     def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
@@ -364,7 +364,7 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
         assert (
-            attr_name not in cls._var_init_done_descriptors
+            attr_name not in cls._var_descriptors
         ), "This method should not be called when attribute is already initialized as ContextVar"
 
         if not cls._var_init_on_setattr:
@@ -381,7 +381,7 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def _asdict(cls) -> dict:
         out = {}
-        for key, ctx_var in cls._var_init_done_descriptors.items():
+        for key, ctx_var in cls._var_descriptors.items():
             try:
                 out[key] = ctx_var.get()
             except LookupError:
@@ -452,7 +452,7 @@ class ContextVarsRegistry(MutableMapping):
 
     @classmethod
     def __getitem__(cls, key):
-        ctx_var = cls._var_init_done_descriptors[key]
+        ctx_var = cls._var_descriptors[key]
         try:
             return ctx_var.get()
         except LookupError as err:
