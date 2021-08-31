@@ -236,7 +236,7 @@ ParamsDict = NewType(
 def _get_params_available_for_injection(fn: Callable) -> ParamsDict:
     sig = inspect.signature(fn)
 
-    out = dict()
+    out = {}
     position: Optional[int]
 
     for position, param in enumerate(sig.parameters.values()):
