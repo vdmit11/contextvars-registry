@@ -31,7 +31,9 @@ ContextVarsRegistry
 ``ContextVarsRegistry`` provides nice ``@property``-like access to `ContextVar`_ objects:
 
 You just get/set object attributes, and under the hood these operations are translated
-to `ContextVar.get()`_ and `ContextVar.set()`_ calls::
+to `ContextVar.get()`_ and `ContextVar.set()`_ calls:
+
+.. code:: python
 
   from contextvars_extras.registry import ContextVarsRegistry
 
@@ -60,7 +62,9 @@ so you get auto-completion and other helpful features of your IDE.
 Injecting Function Arguments
 ----------------------------
 
-``@inject_vars`` decorator passes values of context variables as function arguments::
+``@inject_vars`` decorator passes values of context variables as function arguments:
+
+.. code:: python
 
   form contextvars_extras.registry import ContextVarsRegistry
   from contextvars_extras.inject import inject_vars
