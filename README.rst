@@ -105,4 +105,8 @@ custom ``lambda: ...`` expressions, and more. Check out its docs for more inform
 more docs 
 ---------
 
-Not done yet :(
+Read the Docs: https://contextvars-extras.readthedocs.io/en/latest/
+
+.. image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
+  :target: https://contextvars-extras.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
