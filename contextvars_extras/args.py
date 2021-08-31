@@ -27,8 +27,8 @@ _KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
 _POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
 
 
-def inject_vars(*configs, **per_arg_configs) -> Decorator:
-    """Inject context variables as arguments to a function.
+def args_from_context(*sources, **per_arg_sources) -> Decorator:
+    """Take arguments from context variables.
 
     Example of use with ``ContextVarsRegistry``::
 
@@ -38,7 +38,7 @@ def inject_vars(*configs, **per_arg_configs) -> Decorator:
         ...     locale: str = 'en'
         >>> current = Current()
 
-        >>> @inject_vars(current)
+        >>> @args_from_context(current)
         ... def print_vars(locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -62,7 +62,7 @@ def inject_vars(*configs, **per_arg_configs) -> Decorator:
         >>> timezone_var = ContextVar('my_project.timezone', default='UTC')
         >>> locale_var = ContextVar('my_project.locale', default='en')
 
-        >>> @inject_vars(timezone_var, locale_var)
+        >>> @args_from_context(timezone_var, locale_var)
         ... def print_vars(*, locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -73,7 +73,7 @@ def inject_vars(*configs, **per_arg_configs) -> Decorator:
 
     Explicitly route variables to parameters::
 
-        >>> @inject_vars(
+        >>> @args_from_context(
         ...    timezone=timezone_var,  # use ContextVar object
         ...    locale=Current.locale,  # use ContextVarDescriptor (member of ContextVarsRegistry)
         ...    user_id=current,  # use current.user_id attribute
@@ -89,58 +89,58 @@ def inject_vars(*configs, **per_arg_configs) -> Decorator:
         timezone: UTC
     """
 
-    def _decorator__inject_vars(wrapped_fn: WrappedFn) -> WrappedFn:
-        rules = _generate_injection_rules(wrapped_fn, configs, per_arg_configs)
+    def _decorator__args_from_context(wrapped_fn: WrappedFn) -> WrappedFn:
+        rules = _generate_injection_rules(wrapped_fn, sources, per_arg_sources)
         rules_list = list(rules)
 
         @functools.wraps(wrapped_fn)
-        def _wrapper__inject_vars(*args, **kwargs) -> ReturnedValue:
+        def _wrapper__args_from_context(*args, **kwargs) -> ReturnedValue:
             _execute_injection_rules(rules_list, args, kwargs)
             return wrapped_fn(*args, **kwargs)
 
-        return _wrapper__inject_vars
+        return _wrapper__args_from_context
 
-    return _decorator__inject_vars
+    return _decorator__args_from_context
 
 
 @dataclasses.dataclass(frozen=True)
-class InjectionConfig:
-    """Structure for arguments of the ``@inject_vars`` decorator.
+class ArgSourceSpec:
+    """Structure for arguments of the ``@args_from_context`` decorator.
 
-    Arguments to the :func:`inject_vars` decorator can come in several different forms.
+    Arguments to the :func:`args_from_context` decorator can come in several different forms.
 
     It is a bit of hassle to take into accoutn all these different forms of arguments everywhere,
-    so they're all normalized, and converted to ``InjectionConfig`` objects.
+    so they're all normalized, and converted to ``ArgSourceSpec`` objects.
 
     So that, for example, this::
 
-        @inject_vars(registry)
+        @args_from_context(registry)
 
     internally is converted to::
 
         [
-            InjectionConfig(source=registry)
+            ArgSourceSpec(source=registry)
         ]
 
 
-    Keyword arguments are also converted to ``InjectionConfig`` objects::
+    Keyword arguments are also converted to ``ArgSourceSpec`` objects::
 
-        @inject_vars(
+        @args_from_context(
             locale=registry,
             timezone=registry,
             user_id=user_id_context_var,
         )
         # internally converted to:
         [
-            InjectionConfig(names=['locale'], source=registry),
-            InjectionConfig(names=['timezone'], source=registry),
-            InjectionConfig(names=['user_id'], source=user_id_context_var),
+            ArgSourceSpec(names=['locale'], source=registry),
+            ArgSourceSpec(names=['timezone'], source=registry),
+            ArgSourceSpec(names=['user_id'], source=user_id_context_var),
         ]
 
 
-    ...and dictionaries are also converted to ``InjectionConfig`` objects::
+    ...and dictionaries are also converted to ``ArgSourceSpec`` objects::
 
-         @inject_vars(
+         @args_from_context(
              {
                  'names': ['locale', 'timezone'],
                  'source': registry,
@@ -152,15 +152,15 @@ class InjectionConfig:
          )
          # internally converted to:
          [
-             InjectionConfig(names=['locale', 'timezone'], source=registry),
-             InjectionConfig(names=['user_id'], source=user_id_context_var),
+             ArgSourceSpec(names=['locale', 'timezone'], source=registry),
+             ArgSourceSpec(names=['user_id'], source=user_id_context_var),
          ]
 
-    Each argument to ``@inject_vars()`` becomes a ``InjectionConfig`` instance.
+    Each argument to ``@args_from_context()`` becomes a ``ArgSourceSpec`` instance.
     This process is called here "normalization".
 
     So after the normalization procedure, all different forms of arguments become just a stream
-    of ``InjectionConfig`` objects, with well-known structure, which is easy to deal with
+    of ``ArgSourceSpec`` objects, with well-known structure, which is easy to deal with
     (much easier than coding if/else branches to support several forms of arguments everywhere).
 
     .. NOTE::
@@ -169,7 +169,7 @@ class InjectionConfig:
       It shouldn't be used outside of this module.
 
       However, you can still use it as documentation to get an idea of
-      which keys you can use when you pass dictionary configs to the decorator.
+      which keys you can use when you pass dictionary sources to the decorator.
     """
 
     source: Any
@@ -178,7 +178,7 @@ class InjectionConfig:
     It can be:
 
       - a ``contextvars.ContextVar`` object
-        (then its ``.get()`` method is called to obtain the injected value)
+        (then its ``.get()`` method is called to obtain the value)
 
       - :class:`~contextvars_extras.descriptor.ContextVarDescriptor`
         (same as ``ContextVar``: the ``.get()`` method is called)
@@ -186,13 +186,13 @@ class InjectionConfig:
       - :class:`~contextvars_extras.registry.ContextVarsRegistry`
         (then context variables stored in the registry are injected as function arguments)
 
-      - arbitrary object, e.g.: ``@inject_vars(flask.g)``
+      - arbitrary object, e.g.: ``@args_from_context(flask.g)``
         (then object attributes are injected as arguments to the called functions)
 
-      - arbitrary function, e.g.: ``@inject_vars(locale=get_current_locale)``
-        (then the function is just called to obtain the injected value)
+      - arbitrary function, e.g.: ``@args_from_context(locale=get_current_locale)``
+        (then the function is just called to obtain the value)
 
-    This list of behaviors can be extended via the :func:`choose_inject_getter_fn` function.
+    This list of behaviors can be extended via the :func:`choose_arg_getter_fn` function.
     """
 
     names: Optional[Collection[str]] = None
@@ -200,7 +200,7 @@ class InjectionConfig:
 
     A source may match to many parameters simultaneously, for example::
 
-        @inject_vars({
+        @args_from_context({
             'source': registry,
             'names': ['locale', 'timezone']
         })
@@ -217,7 +217,7 @@ class InjectionConfig:
       - for ``ContextVarRegistry``, and all other types of sources, the ``names`` list by
         default is filled with all function parameters (so ALL arguments become injected).
 
-    This name guessing behavior can be extended via the :func:`choose_inject_names` function.
+    This name guessing behavior can be extended via the :func:`choose_arg_names` function.
     """
 
 
@@ -266,7 +266,7 @@ Default = TypeVar("Default")
 GetterFn = Callable[[Default], Union[Any, Default]]
 
 
-# InjectionRuleTuple - a prepared "instruction" for the ``@inject_vars`` decorator.
+# InjectionRuleTuple - a prepared "instruction" for the ``@args_from_context`` decorator.
 #
 # Problem: there is some magic in how arguments of the :func:`inject_context_args` decorator
 # are processed, and this magic is a bit slow.
@@ -274,7 +274,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 # Well, maybe not really slow, but there is some overhead, which is summed up and becomes
 # noticeable when you decorate a lot of functions.
 #
-# As a solution, we have a little premature optimization: the :func:`inject_vars`
+# As a solution, we have a little premature optimization: the :func:`args_from_context`
 # decorator pre-processes its arguments, and sort of compiles them into rules.
 #
 # One such ``InjectionRuleTuple`` is a primitive instruction that (roughly) says:
@@ -282,7 +282,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 #
 # And later on, when the decorated function is actually called, the prepared rules are executed.
 #
-# So the overhead of the ``@inject_vars`` decorator is reduced down to just executing
+# So the overhead of the ``@args_from_context`` decorator is reduced down to just executing
 # primitive rules (basically calling a bunch of prepared getter functions in sequence).
 InjectionRuleTuple = NewType(
     "InjectionRuleTuple",
@@ -321,72 +321,72 @@ def _execute_injection_rules(rules: Sequence[InjectionRuleTuple], args: tuple, k
 
 def _generate_injection_rules(
     wrapped_fn: Callable,
-    configs: tuple,
-    per_arg_configs: dict,
+    sources: tuple,
+    per_arg_sources: dict,
 ) -> Iterable[InjectionRuleTuple]:
     params = _get_params_available_for_injection(wrapped_fn)
 
-    for name, value in per_arg_configs.items():
-        config = _normalize_inject_decorator_arg(name, value)
-        yield from _generate_rules_for_single_config(config, params)
+    for name, source in per_arg_sources.items():
+        source_spec = _normalize_source_spec(name, source)
+        yield from _generate_rules_for_single_source(source_spec, params)
 
-    for value in configs:
-        config = _normalize_inject_decorator_arg(None, value)
-        yield from _generate_rules_for_single_config(config, params)
+    for source in sources:
+        source_spec = _normalize_source_spec(None, source)
+        yield from _generate_rules_for_single_source(source_spec, params)
 
 
-def _generate_rules_for_single_config(
-    config: InjectionConfig, params: ParamsDict
+def _generate_rules_for_single_source(
+    source_spec: ArgSourceSpec, params: ParamsDict
 ) -> Iterable[InjectionRuleTuple]:
-    names = config.names or choose_inject_names(config.source, available_names=params.keys())
+    names = source_spec.names or choose_arg_names(source_spec.source, available_names=params.keys())
     for name in names:
         position, default = params[name]
-        getter_fn = choose_inject_getter_fn(config.source, name=name)
+        getter_fn = choose_arg_getter_fn(source_spec.source, name=name)
         rule: InjectionRuleTuple = InjectionRuleTuple((name, position, default, getter_fn))
         yield rule
 
 
-def _normalize_inject_decorator_arg(name, value) -> InjectionConfig:
-    if isinstance(value, dict):
+def _normalize_source_spec(name, source) -> ArgSourceSpec:
+    if isinstance(source, dict):
         if name:
-            config = InjectionConfig(**value, names=[name])
+            source_spec = ArgSourceSpec(**source, names=[name])
         else:
-            config = InjectionConfig(**value)
+            source_spec = ArgSourceSpec(**source)
     else:
         if name:
-            config = InjectionConfig(source=value, names=[name])
+            source_spec = ArgSourceSpec(source=source, names=[name])
         else:
-            config = InjectionConfig(source=value)
+            source_spec = ArgSourceSpec(source=source)
 
-    return config
+    return source_spec
 
 
 @functools.singledispatch
-def choose_inject_names(source: Any, available_names: Collection[str], **kwargs) -> Collection[str]:
+def choose_arg_names(source: Any, available_names: Collection[str], **kwargs) -> Collection[str]:
     return available_names
 
 
 _identifier_regex = re.compile(r"[^\d\W]\w*\Z")
 
 
-@choose_inject_names.register(contextvars.ContextVar)
-@choose_inject_names.register(ContextVarDescriptor)
-def _injected_names_for_context_var(ctx_var, available_names, **kwargs):
+@choose_arg_names.register(contextvars.ContextVar)
+@choose_arg_names.register(ContextVarDescriptor)
+def _arg_names_for_context_var(ctx_var, available_names, **kwargs):
     found_names = _identifier_regex.findall(ctx_var.name)
     assert len(found_names) == 1
     return found_names
 
 
 @functools.singledispatch
-def choose_inject_getter_fn(source: object, name: str, **kwargs) -> GetterFn:
+def choose_arg_getter_fn(source: object, name: str, **kwargs) -> GetterFn:
     if callable(source):
         return source
 
     return functools.partial(getattr, source, name)
 
 
-@choose_inject_getter_fn.register(contextvars.ContextVar)
-@choose_inject_getter_fn.register(ContextVarDescriptor)
+@choose_arg_getter_fn.register(contextvars.ContextVar)
+@choose_arg_getter_fn.register(ContextVarDescriptor)
 def _getter_for_context_var(ctx_var: contextvars.ContextVar, **kwargs) -> GetterFn:
     def _get_ctxvar_value_or_default(default):
         try:
@@ -397,6 +397,6 @@ def _getter_for_context_var(ctx_var: contextvars.ContextVar, **kwargs) -> Getter
     return _get_ctxvar_value_or_default
 
 
-@choose_inject_getter_fn.register
+@choose_arg_getter_fn.register
 def _getter_for_registry(registry: ContextVarsRegistry, name: str, **kwargs) -> GetterFn:
     return functools.partial(getattr, registry, name)

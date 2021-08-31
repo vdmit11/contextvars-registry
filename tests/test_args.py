@@ -2,16 +2,16 @@ from contextvars import ContextVar
 
 import pytest
 
+from contextvars_extras.args import args_from_context
 from contextvars_extras.descriptor import ContextVarDescriptor
-from contextvars_extras.inject import inject_vars
 from contextvars_extras.registry import ContextVarsRegistry
 
 
-def test__inject_from_context_var_objects():
+def test__args_from_context_var_objects():
     timezone_var = ContextVar("my_project.namespace.timezone")
     locale_var = ContextVar("my_project.namespace.locale")
 
-    @inject_vars(timezone_var, locale_var)
+    @args_from_context(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -29,11 +29,11 @@ def test__inject_from_context_var_objects():
 
 
 # same as the test above, but with use of ContextVarDescriptor (instead of ContextVar) objects
-def test__inject_from_context_var_descriptors():
+def test__args_from_context_var_descriptors():
     timezone_var = ContextVarDescriptor("my_project.namespace.timezone")
     locale_var = ContextVarDescriptor("my_project.namespace.locale")
 
-    @inject_vars(timezone_var, locale_var)
+    @args_from_context(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -50,14 +50,14 @@ def test__inject_from_context_var_descriptors():
     assert _get_values("en_GB", "GMT") == ("en_GB", "GMT")
 
 
-def test__inject_vars_from_registry():
+def test__args_from_registry():
     class Current(ContextVarsRegistry):
         locale: str
         timezone: str = "UTC"
 
     current = Current()
 
-    @inject_vars(current)
+    @args_from_context(current)
     def _get_values(locale="en", timezone="America/Troll", user_id=None):
         return (locale, timezone, user_id)
 
@@ -84,13 +84,13 @@ def test__inject_vars_from_registry():
                 assert _get_values() == ("en_GB", "Antarctica/Troll", None)
 
 
-def test__inject_from_arbitrary_object_attributes():
+def test__args_from_arbitrary_object_attributes():
     class SomeObject:
         locale = "en"
 
     some_object = SomeObject()
 
-    @inject_vars(some_object)
+    @args_from_context(some_object)
     def _get_values(locale=None, timezone=None):
         return (locale, timezone)
 
@@ -105,8 +105,8 @@ def test__inject_from_arbitrary_object_attributes():
     assert _get_values() == ("en_GB", "GMT")
 
 
-def test__inject_from_getter_function():
-    storage = dict()
+def test__args_from_getter_function():
+    storage = {}
 
     def _get_current_locale(default):
         return storage.get("locale", default)
@@ -114,7 +114,7 @@ def test__inject_from_getter_function():
     def _get_current_timezone(default):
         return storage.get("timezone", default)
 
-    @inject_vars(locale=_get_current_locale, timezone=_get_current_timezone)
+    @args_from_context(locale=_get_current_locale, timezone=_get_current_timezone)
     def _get_values(locale=None, timezone=None):
         return locale, timezone
 

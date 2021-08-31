@@ -1,7 +1,7 @@
 ﻿contextvars\_extras.inject
 ==========================
 
-.. automodule:: contextvars_extras.inject
+.. automodule:: contextvars_extras.args
 
    
    
@@ -12,12 +12,10 @@
    .. rubric:: Functions
 
    .. autosummary::
-   
-      choose_inject_getter_fn
-      choose_inject_names
-      inject_vars
-   
-   
+
+      args_from_context
+      choose_arg_names      
+      choose_arg_getter_fn
 
    
    
@@ -25,7 +23,7 @@
 
    .. autosummary::
    
-      InjectionConfig
+      ArgSourceSpec
    
    
 

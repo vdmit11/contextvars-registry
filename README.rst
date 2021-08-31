@@ -62,12 +62,12 @@ so you get auto-completion and other helpful features of your IDE.
 Injecting Function Arguments
 ----------------------------
 
-``@inject_vars`` decorator passes values of context variables as function arguments:
+``@args_from_context`` decorator passes values of context variables as function arguments:
 
 .. code:: python
 
   form contextvars_extras.registry import ContextVarsRegistry
-  from contextvars_extras.inject import inject_vars
+  from contextvars_extras.args import args_from_context
 
   class CurrentVars(ContextVarsRegistry):
       locale: str = 'en'
@@ -76,7 +76,7 @@ Injecting Function Arguments
 
   current = CurrentVars()
 
-  @inject_vars(current)
+  @args_from_context(current)
   def get_values(user_id=None, locale=None, timezone=None):
       return (user_id, locale, timezone)
 
@@ -96,9 +96,9 @@ Have you ever experienced a need of passing some minor thing, like the "current 
 to some low-level deeply nested function? Like yeah, you could just pass it as an argument,
 but it turns out that you need to modify like 30 parent functions, and some of them are located
 in 3-rd party packages... Know that feeling, huh?
-So then ``@inject_vars`` could help you to solve the problem.
+So then ``@args_from_context`` could help you to solve the problem.
 
-``@inject_vars`` also can get values from different sources: registries, classic `ContextVar`_ objects,
+``@args_from_context`` also can get values from different sources: registries, classic `ContextVar`_ objects,
 custom ``lambda: ...`` expressions, and more. Check out its docs for more information.
 
 
