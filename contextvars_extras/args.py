@@ -366,7 +366,7 @@ def _generate_rules_for_single_source(
         yield rule
 
 
-_ALLOWED_PARAM_KINDS = (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+_INJECTABLE_PARAM_KINDS = (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
 
 
 def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signature):
@@ -388,9 +388,9 @@ def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signa
         #
         # Besides, you rarely want to inject positional arguments,
         # and you never want to inject variable (e.g, *args/*kwargs) arguments.
-        if param.kind not in _ALLOWED_PARAM_KINDS:
+        if param.kind not in _INJECTABLE_PARAM_KINDS:
             kind = str(param.kind)
-            allowed_kinds = [str(kind) for kind in _ALLOWED_PARAM_KINDS]
+            allowed_kinds = [str(kind) for kind in _INJECTABLE_PARAM_KINDS]
             raise AssertionError(
                 f"Parameter '{name}' ({kind}) cannot be used with @args_from_context "
                 f"(only these kinds of parameters are allowed: {allowed_kinds})"
@@ -401,7 +401,7 @@ def _get_injectable_param_names(wrapped_fn_sig: inspect.Signature) -> Collection
     return {
         param.name
         for param in wrapped_fn_sig.parameters.values()
-        if param.kind in _ALLOWED_PARAM_KINDS
+        if param.kind in _INJECTABLE_PARAM_KINDS
     }
 
 
