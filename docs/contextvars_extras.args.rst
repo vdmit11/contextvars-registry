@@ -14,8 +14,8 @@
    .. autosummary::
 
       args_from_context
-      choose_arg_names      
-      choose_arg_getter_fn
+      make_arg_getter
+      SkipArgGetter
 
    
    

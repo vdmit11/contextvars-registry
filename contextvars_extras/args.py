@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import inspect
 import re
+from collections import abc
 from typing import (
     Any,
     Callable,
@@ -338,10 +339,29 @@ def _generate_injection_rules(
 def _generate_rules_for_single_source(
     source_spec: ArgSourceSpec, params: ParamsDict
 ) -> Iterable[InjectionRuleTuple]:
-    names = source_spec.names or choose_arg_names(source_spec.source, available_names=params.keys())
+    # The line below means that if parameter name is omitted, then match all parameters.
+    #
+    # That is, this example:
+    #    @args_from_context(timezone=registry)
+    #    def get_values(locale, timezone, user_id): ...
+    # will result in:
+    #    names = ["timezone"
+    #
+    # and this example:
+    #    @args_from_context(registry)
+    #    def get_values(locale, timezone, user_id): ...
+    # will result in:
+    #    names = ["locale", "timezone", "user_id"]
+    names = source_spec.names or params.keys()
+
+    # produce 1 rule for each function parameter
     for name in names:
         position, default = params[name]
-        getter_fn = choose_arg_getter_fn(source_spec.source, name=name)
+
+        getter_fn = make_arg_getter(source_spec.source, name=name)
+        if getter_fn is SkipArgGetter:
+            continue
+
         rule: InjectionRuleTuple = InjectionRuleTuple((name, position, default, getter_fn))
         yield rule
 
@@ -362,33 +382,181 @@ def _normalize_source_spec(name, source) -> ArgSourceSpec:
 
 
 @functools.singledispatch
-def choose_arg_names(source: Any, available_names: Collection[str], **kwargs) -> Collection[str]:
-    return available_names
+def make_arg_getter(source: object, name: str) -> GetterFn:
+    """Produce getter for function arguments.
 
+    This is a helper function for the :func:`args_from_context` decorator.
 
-_identifier_regex = re.compile(r"[^\d\W]\w*\Z")
+    The :func:`@args_from_context` decorator analyzes function signature,
+    and for each parameter, it calls this :func:`make_arg_getter`.
+    The resulting getter knows how to get value from a context variable or some other source.
 
+    Take an example::
 
-@choose_arg_names.register(contextvars.ContextVar)
-@choose_arg_names.register(ContextVarDescriptor)
-def _arg_names_for_context_var(ctx_var, available_names, **kwargs):
-    found_names = _identifier_regex.findall(ctx_var.name)
-    assert len(found_names) == 1
-    return found_names
+        >>> from contextvars_extras.registry import ContextVarsRegistry
 
+        >>> class Current(ContextVarsRegistry):
+        ...     locale: str = 'en'
+        ...     timezone: str = 'UTC'
 
-@functools.singledispatch
-def choose_arg_getter_fn(source: object, name: str, **kwargs) -> GetterFn:
-    if callable(source):
-        return source
+        >>> current = Current()
 
+        >>> @args_from_context(current)
+        ... def print_values(user_id, locale, timezone, *args, **kwargs):
+        ...     print(user_id, locale, timezone, args, kwargs)
+
+    In this example above, the function will be triggered 3 times::
+
+        make_arg_getter(current, 'user_id')
+        make_arg_getter(current, 'locale')
+        make_arg_getter(current, 'timezone')
+
+    That is, it is triggered for "normal" parameters, and NOT triggered for:
+
+      - variable parameters (e.g., `*args, **kwargs`)
+      - positional-only parameters (PEP 570, implemented in Python v3.8)
+
+    Also note that this is a generic function, and its behavior depends on type of the 1st argument
+    (see :func:`functools.singledispatch`). That is:
+
+     - ``source=ContextVar()`` will result in ``ContextVar.get()`` call
+     - ``source=ContextVarsRegistry()`` will result in ``ContextVarsRegistry.{name}.get()``
+     - ``source=lambda: ...`` will just call the source lambda
+     - ``source=object()`` will result in ``getattr(object, name)``
+
+    The list of implementations can be extended.
+    Imagine that you want to get arguments from OS environment variables.
+    Then you could do something like this:
+
+        >>> from functools import partial
+        >>> from contextvars_extras.args import make_arg_getter, SkipArgGetter
+
+        >>> class EnvVarsStorage:
+        ...    def __init__(self, environ: dict):
+        ...        self.environ = environ
+        ...
+        ...    def is_set(self, name):
+        ...        return name in self.environ
+        ...
+        ...    def get(self, name, default):
+        ...        return self.environ.get(name, default)
+
+        >>> @make_arg_getter.register
+        ... def make_arg_getter_for_env_var(env_vars: EnvVarsStorage, name):
+        ...     env_var_name = name.upper()
+        ...
+        ...     # Here we assume that `os.environ` is immutable.
+        ...     # So, if the variable is not set here, then it will never be set, so we can skip it.
+        ...     if not env_vars.is_set(env_var_name):
+        ...         return SkipArgGetter
+        ...
+        ...     return partial(env_vars.get, env_var_name)
+
+    That could allow to inject OS environment variables as arguments using ``@args_from_context``::
+
+        >>> import os
+        >>> import os.path
+
+        >>> env_vars_storage = EnvVarsStorage(os.environ)
+
+        >>> @args_from_context(env_vars_storage)
+        ... def get_tmp_path(file_name, tmpdir):
+        ...    return os.path.join(tmpdir, file_name)
+
+        >>> get_tmp_path('foo')
+        '/tmp/foo'
+
+        >>> get_tmp_path('foo', tmpdir='/var/tmp')
+        '/var/tmp/foo'
+    """
+    # A default implementation of make_arg_getter(), that is triggered for just objects,
+    # that don't have any special implementation.
+    #
+    # Here we just trigger getattr()
+    #
+    # That is, for example, if you do this:
+    #
+    #    @args_from_context(some_object)
+    #    def do_something_useful(foo, bar, baz):
+    #        pass
+    #
+    # then, the effect will be (roughly) this:
+    #
+    #    do_something_useful(
+    #        foo=getattr(some_object, 'foo')
+    #        bar=getattr(some_object, 'bar')
+    #        baz=getattr(some_object, 'baz')
+    #    )
     return functools.partial(getattr, source, name)
 
 
-@choose_arg_getter_fn.register(contextvars.ContextVar)
-@choose_arg_getter_fn.register(ContextVarDescriptor)
-def _getter_for_context_var(ctx_var: contextvars.ContextVar, **kwargs) -> GetterFn:
+@make_arg_getter.register
+def make_arg_getter_for_callable(source: abc.Callable, name: str) -> GetterFn:
+    # make_arg_getter() implementation for lambdas and other callables
+    #
+    # That is, for example, if you do this:
+    #
+    #    @args_from_context(
+    #        locale=get_current_locale,
+    #        timezone=get_current_timezone,
+    #    )
+    #    def do_something-_useful(locale='en', timezone='UTC'):
+    #        ...
+    #
+    # Then, on call, the effect will be (roughly) this:
+    #
+    #     do_something_useful(
+    #         locale=get_current_locale('en'),
+    #         timezone=get_current_timezone('UTC'),
+    #     )
+
+    # So, here we just use the ``source`` callable as a getter function, as-is.
+    # The value of the argument will be just the value returned by the getter function.
+    return source
+
+
+@make_arg_getter.register
+def make_arg_getter_for_registry(registry: ContextVarsRegistry, name: str) -> GetterFn:
+    # make_arg_getter() implementation for ContextVarsRegistry objects
+    #
+    # It is the same as the default implementation for just object()s.
+    # I had to add it because ContextVarsRegistry is callable, so an implementation for Callable
+    # will be triggered unless I override it with a special implementation for ContextVarsRegistry.
+    return functools.partial(getattr, registry, name)
+
+
+@make_arg_getter.register(contextvars.ContextVar)
+@make_arg_getter.register(ContextVarDescriptor)
+def make_arg_getter_for_context_var(ctx_var: contextvars.ContextVar, name: str) -> GetterFn:
+    # Skip parameters, that don't match to context variable by name.
+    #
+    # This is needed for cases like this:
+    #
+    #    timezone_var = ContextVar('timezone', default='UTC')
+    #
+    #    @args_from_context(locale_var)
+    #    def do_something_useful(user_id, locale, timezone):
+    #        pass
+    #
+    # Since parameter name is not specified, make_arg_getter() is called 3 times:
+    #    make_arg_getter(timezone_var, 'user_id')
+    #    make_arg_getter(timezone_var, 'locale')
+    #    make_arg_getter(timezone_var, 'timezone')
+    #
+    # So the line below is needed to leave only the last getter
+    if not _is_context_var_matching_to_param(ctx_var, name):
+        return SkipArgGetter
+
     def _get_ctxvar_value_or_default(default):
+        # Why try/except instead of just ctx_var.get(default)?
+        #
+        # Because there is also ContextVar's internal default value
+        # (supplied to ContextVar(default=...) constructor).
+        #
+        # So, in case of ctx_var.get(default), the ContextVar's default is always ignored,
+        # which is not what we want.
+        #
+        # We want to use ContextVar's default value, so we have to use get() without arguments.
         try:
             return ctx_var.get()
         except LookupError:
@@ -397,6 +565,63 @@ def _getter_for_context_var(ctx_var: contextvars.ContextVar, **kwargs) -> Getter
     return _get_ctxvar_value_or_default
 
 
-@choose_arg_getter_fn.register
-def _getter_for_registry(registry: ContextVarsRegistry, name: str, **kwargs) -> GetterFn:
-    return functools.partial(getattr, registry, name)
+# This regex matches letters and digits at the end of the string.
+#
+# Example matches:
+#   "foo.bar.baz" => "baz"
+#   "my var1" => "var1"
+#   "namespace:name" => "name"
+_trailing_identifier_regex = re.compile(r"[^\d\W]\w*\Z")
+
+
+def _is_context_var_matching_to_param(ctx_var: contextvars.ContextVar, param_name: str) -> bool:
+    found = _trailing_identifier_regex.findall(ctx_var.name)
+    assert len(found) == 1
+    trailing_identifier_from_context_var_name = found[0]
+
+    return param_name == trailing_identifier_from_context_var_name
+
+
+def SkipArgGetter(default):
+    """Skip argument (a special marker that may be returned by :func:`make_arg_getter` function).
+
+    This is needed for cases like this::
+
+       timezone_var = ContextVar('timezone', default='UTC')
+
+       @args_from_context(locale_var)
+       def do_something_useful(user_id, locale, timezone):
+           pass
+
+    In this case, :func:`@args_from_context` decorator will trigger
+    :func:`make_arg_getter` 3 times, like this::
+
+       make_arg_getter(timezone_var, 'user_id')
+       make_arg_getter(timezone_var, 'locale')
+       make_arg_getter(timezone_var, 'timezone')
+
+    That happens just because in ``@args_from_context(locale_var)`` there is only ``locale_var``,
+    without binding to any specific parameter. So, since parameter name is not specified,
+    the ``@args_from_context`` decorator calls ``make_arg_getter()`` for all 3 parameters.
+
+    Obviously, we don't need to inject all 3 arguments.
+    We need to somehow guess which one is matching to the ``timezone_var``.
+
+    To resolve the issue, there is a special convention:
+
+    :func:`make_arg_getter` may return a special marker :func:`SkipArgGetter`,
+    that means: "There is no match for this argument, please skip it.".
+
+    You can use it for extending :func:`make_arg_getter` for your custom types, like this::
+
+        @make_arg_getter.register
+        def make_arg_getter_for_my_custom_storage(storage: MyCustomStorage, name: str) -> GetterFn:
+            if name not in storage:
+                return SkipArgGetter
+
+            def _my_custom_storage_getter(default):
+                return storage.get(name, default)
+
+            return _my_custom_storage_getter
+    """
+    raise AssertionError("This getter should be ignored, and never be called.")
