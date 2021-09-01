@@ -358,7 +358,7 @@ def _generate_rules_for_single_source(
         if getter_fn is SkipArgGetter:
             continue
 
-        maybe_position = position if (param.kind is param.POSITIONAL_OR_KEYWORD) else None
+        maybe_position = position if (param.kind is _POSITIONAL_OR_KEYWORD) else None
         default = param.default
         rule: InjectionRuleTuple = InjectionRuleTuple(
             (param.name, maybe_position, default, getter_fn)
@@ -366,7 +366,7 @@ def _generate_rules_for_single_source(
         yield rule
 
 
-_INJECTABLE_PARAM_KINDS = (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+_INJECTABLE_PARAM_KINDS = (_KEYWORD_ONLY, _POSITIONAL_OR_KEYWORD)
 
 
 def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signature):
