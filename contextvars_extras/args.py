@@ -222,6 +222,31 @@ class ArgSourceSpec:
     """
 
 
+def _normalize_source_spec(name, source) -> ArgSourceSpec:
+    # There are 4 different ways to specify arguments for the @args_from_context() decorator.
+    # Here we recognize all 4 different cases, and convert them to ArgSourceSpec object.
+    #
+    # So, after the normalization procedure, the messy arguments to @args_from_context decorator
+    # become just a sequence of ArgSourceSpec objects, which is much easier to reason about,
+    # since ArgSourceSpec has a well-defined structure.
+    if isinstance(source, dict):
+        if name:
+            # @args_from_context(timezone={'source': registry})
+            source_spec = ArgSourceSpec(**source, names=[name])
+        else:
+            # @args_from_context({'source': registry, 'names': ['locale', 'timezone']})
+            source_spec = ArgSourceSpec(**source)
+    else:
+        if name:
+            # @args_from_context(locale=registry, timezone=registry)
+            source_spec = ArgSourceSpec(source=source, names=[name])
+        else:
+            # @args_from_context(registry)
+            source_spec = ArgSourceSpec(source=source)
+
+    return source_spec
+
+
 ParamsDict = NewType(
     "ParamsDict",
     Dict[
@@ -364,21 +389,6 @@ def _generate_rules_for_single_source(
 
         rule: InjectionRuleTuple = InjectionRuleTuple((name, position, default, getter_fn))
         yield rule
-
-
-def _normalize_source_spec(name, source) -> ArgSourceSpec:
-    if isinstance(source, dict):
-        if name:
-            source_spec = ArgSourceSpec(**source, names=[name])
-        else:
-            source_spec = ArgSourceSpec(**source)
-    else:
-        if name:
-            source_spec = ArgSourceSpec(source=source, names=[name])
-        else:
-            source_spec = ArgSourceSpec(source=source)
-
-    return source_spec
 
 
 @functools.singledispatch
