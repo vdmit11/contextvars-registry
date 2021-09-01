@@ -348,7 +348,7 @@ def _generate_rules_for_single_source(
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["locale", "timezone", "user_id"]
-    names = source_spec.names or _get_all_available_param_names(wrapped_fn_sig)
+    names = source_spec.names or _get_injectable_param_names(wrapped_fn_sig)
 
     for position, param in enumerate(wrapped_fn_sig.parameters.values()):
         if param.name not in names:
@@ -397,7 +397,7 @@ def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signa
             )
 
 
-def _get_all_available_param_names(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
+def _get_injectable_param_names(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
     return {
         param.name
         for param in wrapped_fn_sig.parameters.values()
