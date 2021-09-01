@@ -129,3 +129,65 @@ def test__args_from_getter_function():
 
     assert _get_values("en", "UTC") == ("en", "UTC")
     assert _get_values(locale="en", timezone="UTC") == ("en", "UTC")
+
+
+def test__error_is_raised__for_non_existent_parameter():
+    with pytest.raises(AssertionError):
+        # check simple `name=source` form the decorator
+        @args_from_context(non_existent_parameter=lambda default: default)
+        def _get_values(locale=None, timezone=None):
+            return locale, timezone
+
+    with pytest.raises(AssertionError):
+        # check a more complex form, with multiple parameter names
+        @args_from_context(
+            {
+                "source": lambda default: default,
+                "names": ["locale", "timezone", "non_existent_parameter"],
+            }
+        )
+        def _get_values_2(locale=None, timezone=None):
+            return locale, timezone
+
+
+def test__only_keyword_parameters_are_allowed():
+    class Storage:
+        pass
+
+    # pylint: disable=attribute-defined-outside-init
+    storage = Storage()
+
+    with pytest.raises(AssertionError):
+        storage.args = [1, 2, 3]
+
+        @args_from_context(args=storage)
+        def _args(*args):
+            return args
+
+    with pytest.raises(AssertionError):
+        storage.kwargs = {"foo": 1, "bar": 2}
+
+        @args_from_context(kwargs=storage)
+        def _kwargs(**kwargs):
+            return kwargs
+
+    # Unfortunately, Positional-Only parameters cannot be tested,
+    # because the syntax was added in Python v3.8,
+    # whereas tests are executed in Python v3.7
+    #
+    # with pytest.raises(AssertionError):
+    #     storage.positional_only_arg = 'positional only arg'
+    #
+    #     @args_from_context(positional_only_arg=storage)
+    #     def _positional_only(positional_only_arg=None, /, keyword_or_positional_arg=None):
+    #         return positional_only_arg
+
+    # ...but, at least we can test that KEYWORD_ONLY parameters work
+    # (keyword-only parameters they were added in Python v3.0)
+    storage.keyword_only_arg = "keyword only arg"
+
+    @args_from_context(keyword_only_arg=storage)
+    def _keyword_only(keyword_or_positional_arg=None, *, keyword_only_arg=None):
+        return keyword_only_arg
+
+    assert _keyword_only() == "keyword only arg"

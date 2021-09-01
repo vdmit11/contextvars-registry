@@ -331,6 +331,10 @@ def _generate_rules_for_single_source(
     wrapped_fn: Callable,
     wrapped_fn_sig: inspect.Signature,
 ) -> Iterable[InjectionRuleTuple]:
+    # Ensure we get only valid parameter names in ArgSourceSpec.names list.
+    # Otherwise the code below will not work correctly.
+    _check_param_names(source_spec, wrapped_fn_sig)
+
     # The expression below means that if parameter name is omitted, then match all parameters.
     #
     # That is, this example:
@@ -363,6 +367,34 @@ def _generate_rules_for_single_source(
 
 
 _ALLOWED_PARAM_KINDS = (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+
+
+def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signature):
+    if not source_spec.names:
+        return
+
+    for name in source_spec.names:
+        param = wrapped_fn_sig.parameters.get(name)
+        if not param:
+            raise AssertionError(f"no such parameter: {name}")
+
+        # Why do we allow only keyword parameters?
+        # Beacuse the _execute_injection_rules() function can only pass arguments by keyword.
+        #
+        # ...but why such limitation exists?
+        # Well, it was added for simplicity and performance, because positional/variadic
+        # arguments are tricky, there is a lot of corner cases.
+        # So I decided to not support them to keep the code fast and readable.
+        #
+        # Besides, you rarely want to inject positional arguments,
+        # and you never want to inject variable (e.g, *args/*kwargs) arguments.
+        if param.kind not in _ALLOWED_PARAM_KINDS:
+            kind = str(param.kind)
+            allowed_kinds = [str(kind) for kind in _ALLOWED_PARAM_KINDS]
+            raise AssertionError(
+                f"Parameter '{name}' ({kind}) cannot be used with @args_from_context "
+                f"(only these kinds of parameters are allowed: {allowed_kinds})"
+            )
 
 
 def _get_all_available_param_names(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
