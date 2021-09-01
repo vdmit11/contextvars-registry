@@ -8,7 +8,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Dict,
     Iterable,
     NewType,
     Optional,
@@ -247,40 +246,6 @@ def _normalize_source_spec(name, source) -> ArgSourceSpec:
     return source_spec
 
 
-ParamsDict = NewType(
-    "ParamsDict",
-    Dict[
-        str,  # parameter name
-        Tuple[
-            Optional[int],  # position
-            Any,  # default value
-        ],
-    ],
-)
-
-
-def _get_params_available_for_injection(fn: Callable) -> ParamsDict:
-    sig = inspect.signature(fn)
-
-    out = {}
-    position: Optional[int]
-
-    for position, param in enumerate(sig.parameters.values()):
-        # I can't imagine a situation, where you really need to inject a positional parameter,
-        # or you need to inject those variable *args/**kwargs parameters. So ignore them.
-        if param.kind not in (_KEYWORD_ONLY, _POSITIONAL_OR_KEYWORD):
-            continue
-
-        if param.kind is _KEYWORD_ONLY:
-            position = None
-
-        out[param.name] = (position, param.default)
-
-    return ParamsDict(out)
-
-
-# GetterFn - type definition for getter functions.
-#
 # We call "getter" a function of 1 parameter, that (roughly) looks like this:
 #
 #     def getter(default):
@@ -350,45 +315,62 @@ def _generate_injection_rules(
     sources: tuple,
     per_arg_sources: dict,
 ) -> Iterable[InjectionRuleTuple]:
-    params = _get_params_available_for_injection(wrapped_fn)
+    wrapped_fn_sig = inspect.signature(wrapped_fn)
 
     for name, source in per_arg_sources.items():
         source_spec = _normalize_source_spec(name, source)
-        yield from _generate_rules_for_single_source(source_spec, params)
+        yield from _generate_rules_for_single_source(source_spec, wrapped_fn, wrapped_fn_sig)
 
     for source in sources:
         source_spec = _normalize_source_spec(None, source)
-        yield from _generate_rules_for_single_source(source_spec, params)
+        yield from _generate_rules_for_single_source(source_spec, wrapped_fn, wrapped_fn_sig)
 
 
 def _generate_rules_for_single_source(
-    source_spec: ArgSourceSpec, params: ParamsDict
+    source_spec: ArgSourceSpec,
+    wrapped_fn: Callable,
+    wrapped_fn_sig: inspect.Signature,
 ) -> Iterable[InjectionRuleTuple]:
-    # The line below means that if parameter name is omitted, then match all parameters.
+    # The expression below means that if parameter name is omitted, then match all parameters.
     #
     # That is, this example:
     #    @args_from_context(timezone=registry)
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
-    #    names = ["timezone"
+    #    names = ["timezone"]
     #
     # and this example:
     #    @args_from_context(registry)
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["locale", "timezone", "user_id"]
-    names = source_spec.names or params.keys()
+    names = source_spec.names or _get_all_available_param_names(wrapped_fn_sig)
 
-    # produce 1 rule for each function parameter
-    for name in names:
-        position, default = params[name]
+    for position, param in enumerate(wrapped_fn_sig.parameters.values()):
+        if param.name not in names:
+            continue
 
-        getter_fn = make_arg_getter(source_spec.source, name=name)
+        getter_fn = make_arg_getter(source_spec.source, param.name)
         if getter_fn is SkipArgGetter:
             continue
 
-        rule: InjectionRuleTuple = InjectionRuleTuple((name, position, default, getter_fn))
+        maybe_position = position if (param.kind is param.POSITIONAL_OR_KEYWORD) else None
+        default = param.default
+        rule: InjectionRuleTuple = InjectionRuleTuple(
+            (param.name, maybe_position, default, getter_fn)
+        )
         yield rule
+
+
+_ALLOWED_PARAM_KINDS = (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+
+
+def _get_all_available_param_names(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
+    return {
+        param.name
+        for param in wrapped_fn_sig.parameters.values()
+        if param.kind in _ALLOWED_PARAM_KINDS
+    }
 
 
 @functools.singledispatch
