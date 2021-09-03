@@ -7,7 +7,7 @@ from contextvars_extras.descriptor import ContextVarDescriptor
 def test__deferred_default__is_called_by_get_method__once_per_context():
     def _empty_dict():
         _empty_dict.call_counter += 1
-        return dict()
+        return {}
 
     _empty_dict.call_counter = 0
 
@@ -32,7 +32,7 @@ def test__deferred_default__is_called_by_get_method__once_per_context():
 def test__deferred_default__works_with__is_set__and__reset_to_default__methods():
     def _empty_dict():
         _empty_dict.call_counter += 1
-        return dict()
+        return {}
 
     _empty_dict.call_counter = 0
 
@@ -62,7 +62,7 @@ def test__deferred_default__cannot_be_used_with_just__default():
 def test__deferred_default__is_masked_by__default_arg_of_get_method():
     def _empty_dict():
         _empty_dict.call_counter += 1
-        return dict()
+        return {}
 
     _empty_dict.call_counter = 0
 

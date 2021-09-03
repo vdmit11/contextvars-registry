@@ -297,7 +297,7 @@ class ContextVarsRegistry(MutableMapping):
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
-        cls._var_descriptors = dict()
+        cls._var_descriptors = {}
         cls._var_init_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
         super().__init_subclass__()
