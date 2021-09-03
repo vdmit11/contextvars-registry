@@ -70,8 +70,8 @@ There are some more features, check out the full documentation...
 - Read the Docs: https://contextvars-extras.readthedocs.io/en/latest/
 
 
-.. |tests badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/python-app.yml/badge.svg
-  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/python-app.yml
+.. |tests badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml/badge.svg
+  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml
   :alt: Tests Status
 
 .. |docs badge| image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
