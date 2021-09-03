@@ -172,10 +172,11 @@ import threading
 from collections.abc import ItemsView, KeysView, MutableMapping, ValuesView
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
-from typing import Dict, List, Tuple, get_type_hints
+from typing import Dict, List, Tuple, get_type_hints, overload
 
+import contextvars_extras.args
 from contextvars_extras.descriptor import ContextVarDescriptor
-from contextvars_extras.util import ExceptionDocstringMixin, Missing
+from contextvars_extras.util import Decorator, ExceptionDocstringMixin, Missing, WrappedFn
 
 
 class ContextVarsRegistry(MutableMapping):
@@ -477,6 +478,60 @@ class ContextVarsRegistry(MutableMapping):
         """
         ctx_var = self.__before_set__ensure_initialized(key, None)
         ctx_var.__delete__(self)
+
+    @overload
+    def as_args(self, wrapped_fn: WrappedFn) -> WrappedFn:
+        ...
+
+    @overload
+    def as_args(self, *arg_names: str) -> Decorator:
+        ...
+
+    def as_args(self, *arg_names):
+        """Inject context variables as arguments to a function.
+
+        :param arg_names: Names of arguments to be injected. By default, all arguments are used.
+        :returns: a wrapped function.
+
+        Example::
+
+            >>> from contextvars_extras.registry import ContextVarsRegistry
+
+            >>> class Current(ContextVarsRegistry):
+            ...     locale: str = 'en'
+            ...     timezone: str = 'UTC'
+
+            >>> current = Current()
+
+            >>> @current.as_args
+            ... def get_values(locale=None, timezone=None, user_id=None):
+            ...     return (locale, timezone, user_id)
+
+            >>> with current(locale='es', user_id=42):
+            ...     get_values()
+            ('es', 'UTC', 42)
+
+        By default, the decorator tries to all parameters of your function.
+        If you don't need all of them, you can explicitly list arguments that you need, like this::
+
+            # inject only 'timezone' and 'user_id' arguments
+            >>> @current.as_args('timezone', 'user_id')
+            ... def get_values(locale=None, timezone=None, user_id=None):
+            ...     return (locale, timezone, user_id)
+
+            >>> with current(locale='es', user_id=42):
+            ...     get_values()
+            (None, 'UTC', 42)
+
+        See also :func:`contextvars_extras.args.args_from_context` - the underlying decorator,
+        that actually does all the job of injecting arguments.
+        """
+        if len(arg_names) == 1 and callable(arg_names[0]):
+            fn = arg_names[0]
+            decorator = contextvars_extras.args.args_from_context(self)
+            return decorator(fn)
+
+        return contextvars_extras.args.args_from_context({"names": arg_names, "source": self})
 
 
 class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):
