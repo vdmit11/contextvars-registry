@@ -481,7 +481,12 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
         >>> import os
         >>> import os.path
 
-        >>> env_vars_storage = EnvVarsStorage(os.environ)
+        # Let's assume that TMPDIR=/tmp.
+        # I need it to be constant, because the example is executed (by doctest) on different hosts.
+        >>> environ = os.environ.copy()
+        >>> environ['TMPDIR'] = '/tmp'
+
+        >>> env_vars_storage = EnvVarsStorage(environ)
 
         >>> @args_from_context(env_vars_storage)
         ... def get_tmp_path(file_name, tmpdir):
