@@ -1,112 +1,79 @@
-README
-======
+contextvars-extras
+==================
 
-**Warning! The code is at the early development stage, and may be unstable. Use with caution.**
+|tests badge| |docs badge|
 
-contextvars-extras is a set of extensions for the Python's `contextvars`_ module.
+**Warning!**
+
+**The code is at the early development stage, and may be unstable. Use with caution.**
+
+``contextvars-extras`` is a set of extensions for the Python's `contextvars`_ module.
+
+In case you are not familiar with the `contextvars`_ module, its `ContextVar`_ objects
+work like Thread-Local storage, but better: they are both thread-safe and async task-safe,
+and they can be copied (all existing vars copied in O(1) time), and then you can run
+a function in the copied and isolated context.
 
 .. _contextvars: https://docs.python.org/3/library/contextvars.html
 .. _ContextVar: https://docs.python.org/3/library/contextvars.html#contextvars.ContextVar
 
-In case you're not familiar with the standard `contextvars`_ module,
-it allows you to create `ContextVar`_ objects, like this::
+The `contextvars`_ is a powerful module, but its API seems too low-level.
 
-  timezone_var = ContextVar('timezone_var')
-  timezone_var.set('UTC')
-  timezone_var.get()  # => 'UTC'
-
-The point here is that these variables are thread-safe and async-safe
-(they can act as both thread-local storage and async task-local storage out of the box).
-
-`contextvars`_ is a good package, but its API seem too low-level.
-
-So this `contextvars_extras` provides some higher-level additions on top of the standard API.
-
-Here is a brief overview of them...
-
-
-ContextVarsRegistry
--------------------
-
-``ContextVarsRegistry`` provides nice ``@property``-like access to `ContextVar`_ objects:
-
-You just get/set object attributes, and under the hood these operations are translated
-to `ContextVar.get()`_ and `ContextVar.set()`_ calls:
+So this ``contextvars_extras`` package provides some higher-level additions on top of the
+standard API, like, for example, organizing `ContextVar`_ objects into registry classes,
+with nice ``@property``-like access:
 
 .. code:: python
 
-  from contextvars_extras.registry import ContextVarsRegistry
+    from contextvars_extras.registry import ContextVarsRegistry
 
-  class CurrentVars(ContextVarsRegistry):
-      timezone: str = 'UTC'
+    class CurrentVars(ContextVarsRegistry):
+        locale: str = 'en'
+        timezone: str = 'UTC'
 
-  current = CurrentVars()
+    current = CurrentVars()
 
-  # calls ContextVar.get() under the hood
-  current.timezone  # => 'UTC'
+    # calls ContextVar.get() under the hood
+    current.timezone  # => 'UTC'
 
-  # calls ContextVar.set() under the hood
-  current.timezone = 'GMT'
+    # calls ContextVar.set() under the hood
+    current.timezone = 'GMT'
 
-  # ContextVar() objects can be reached as lass members
-  CurrentVars.timezone.get()  # => 'GMT'
+    # ContextVar() objects can be reached as lass members
+    CurrentVars.timezone.get()  # => 'GMT'
 
-.. _ContextVar.get(): https://docs.python.org/3/library/contextvars.html#contextvars.ContextVar.get
-.. _ContextVar.set(): https://docs.python.org/3/library/contextvars.html#contextvars.ContextVar.set
+That makes your code more readable (no more noisy ``.get()`` calls),
+and it is naturally firendly to `typing`_, so static code analysis features
+(like type checkers and auto-completion in your IDE) work nicely.
+
+.. _typing: https://docs.python.org/3/library/typing.html
   
-It has a lot of other features (check out the docs), but the nicest thing is that it just makes
-your code more readable (no more noisy ``.get()`` calls), and it naturally firendly to `typing`_,
-so you get auto-completion and other helpful features of your IDE.
-
-
-Injecting Function Arguments
-----------------------------
-
-``@args_from_context`` decorator passes values of context variables as function arguments:
+It also allows things like injecting context variables as arguments to functions:
 
 .. code:: python
 
-  form contextvars_extras.registry import ContextVarsRegistry
-  from contextvars_extras.args import args_from_context
+    @current.as_args
+    def do_something_useful(locale: str, timezone: str):
+        print(f"locale={locale!r}, timezone={timezone!r}")
 
-  class CurrentVars(ContextVarsRegistry):
-      locale: str = 'en'
-      timezone: str = 'UTC'
-      user_id: int
+    do_something_useful()  # prints: locale='UTC', timezone='en'
 
-  current = CurrentVars()
+and overriding the values:
 
-  @args_from_context(current)
-  def get_values(user_id=None, locale=None, timezone=None):
-      return (user_id, locale, timezone)
+.. code::
+   
+    with current(locale='en_GB', timezone='GMT'):
+        do_something_useful()  # prints: locale='en_GB', timezone='GMT'
 
-  # Missing arguments are filled in from context variables.
-  get_values()  # => (None, 'en', 'UTC')
+There are some more features, check out the full documentation...
 
-  # Setting the context variable affects the function.
-  current.user_id = 42
-  get_values()  # => (42, 'en', 'UTC')
-
-  # Arguments can also be passed manually (that "overrides" context variables).
-  get_values(locale='en_GB' timezone='GMT', user_id=None)  # => (None, 'en_GB', 'GMT')
-
-This is useful for passing arguments deeply along the call stack.
-
-Have you ever experienced a need of passing some minor thing, like the "current timezone"
-to some low-level deeply nested function? Like yeah, you could just pass it as an argument,
-but it turns out that you need to modify like 30 parent functions, and some of them are located
-in 3-rd party packages... Know that feeling, huh?
-So then ``@args_from_context`` could help you to solve the problem.
-
-``@args_from_context`` also can get values from different sources: registries, classic `ContextVar`_ objects,
-custom ``lambda: ...`` expressions, and more. Check out its docs for more information.
+- Read the Docs: https://contextvars-extras.readthedocs.io/en/latest/
 
 
-more docs 
----------
+.. |tests badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/python-app.yml/badge.svg
+  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/python-app.yml
+  :alt: Tests Status
 
-Read the Docs: https://contextvars-extras.readthedocs.io/en/latest/
-
-.. image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
+.. |docs badge| image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
   :target: https://contextvars-extras.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
