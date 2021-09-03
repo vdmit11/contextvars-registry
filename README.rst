@@ -60,7 +60,7 @@ It also allows things like injecting context variables as arguments to functions
 
 and overriding the values:
 
-.. code::
+.. code:: python
    
     with current(locale='en_GB', timezone='GMT'):
         do_something_useful()  # prints: locale='en_GB', timezone='GMT'
