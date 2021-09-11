@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "contextvars-extras"
-version = "0.1.0"
-description = "contextvars made easy"
+version = "0.0.1"
+description = "Contextvars made easy (WARNING: unstable alpha version. Things may break)."
 authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
 exclude = []
 
