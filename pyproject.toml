@@ -1,9 +1,27 @@
 [tool.poetry]
 name = "contextvars-extras"
-version = "0.0.1"
+version = "0.0.2"
 description = "Contextvars made easy (WARNING: unstable alpha version. Things may break)."
+license = "MIT"
 authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
+readme = "README.rst"
+repository = "https://github.com/vdmit11/contextvars-extras"
+documentation = "https://contextvars-extras.readthedocs.io"
+keywords = ["contextvars", "context", "async", "threading", "gevent"]
 exclude = []
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
 
 [tool.poetry.dependencies]
 python = "^3.7.1"
