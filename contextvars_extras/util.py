@@ -42,16 +42,17 @@ Decorator = Callable[[WrappedFn], WrappedFn]
 
 
 class Sentinel:
-    """SentinelType object that allows to distinguish "no value" from ``None``.
+    """A class that allows to create special marker objects.
 
-    This is a singleton.
-    There should be only one instance of MissingType
+    Mostly useful for distinguishing "value is not set" and "value is set to None" cases,
+    as shown in this example::
 
-    Example::
+        >>> from contextvars_extras.util import Sentinel
 
-        >>> from contextvars_extras.util import Missing
-        >>> value = getattr(object, 'some_attribute', Missing)
-        >>> if value is Missing:
+        >>> NotSet = Sentinel(__name__, 'NotSet')
+
+        >>> value = getattr(object, 'some_attribute', NotSet)
+        >>> if value is NotSet:
         ...    print('attribute is not set')
         attribute is not set
     """
