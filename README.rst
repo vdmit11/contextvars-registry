@@ -1,7 +1,7 @@
 contextvars-extras
 ==================
 
-|tests badge| |docs badge|
+|pypi badge| |tests badge| |docs badge|
 
 **Warning!**
 
@@ -65,10 +65,20 @@ and overriding the values:
     with current(locale='en_GB', timezone='GMT'):
         do_something_useful()  # prints: locale='en_GB', timezone='GMT'
 
-There are some more features, check out the full documentation...
+There are some more features, check out
+the `full documentation <https://contextvars-extras.readthedocs.io>`_
 
-- Read the Docs: https://contextvars-extras.readthedocs.io/en/latest/
+Links
+-----
 
+ - Read the Docs: https://contextvars-extras.readthedocs.io
+ - GitHub repository: https://github.com/vdmit11/contextvars-extras
+ - Python package: https://pypi.org/project/contextvars-extras/
+
+
+.. |pypi badge| image:: https://img.shields.io/pypi/v/contextvars-extras.svg
+  :target: https://pypi.org/project/contextvars-extras/
+  :alt: Python package version
 
 .. |tests badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml/badge.svg
   :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml
@@ -77,3 +87,4 @@ There are some more features, check out the full documentation...
 .. |docs badge| image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
   :target: https://contextvars-extras.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
+
