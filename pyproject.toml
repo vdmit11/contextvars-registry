@@ -47,6 +47,7 @@ pytest-isort = "^2.0.0"
 Flask = {extras = ["async"], version = "^2.0.1"}
 gevent = "^21.8.0"
 sphinx-rtd-theme = "^0.5.2"
+pytest-cov = "^2.12.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
