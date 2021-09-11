@@ -71,9 +71,9 @@ the `full documentation <https://contextvars-extras.readthedocs.io>`_
 Links
 -----
 
- - Read the Docs: https://contextvars-extras.readthedocs.io
- - GitHub repository: https://github.com/vdmit11/contextvars-extras
- - Python package: https://pypi.org/project/contextvars-extras/
+- Read the Docs: https://contextvars-extras.readthedocs.io
+- GitHub repository: https://github.com/vdmit11/contextvars-extras
+- Python package: https://pypi.org/project/contextvars-extras/
 
 
 .. |pypi badge| image:: https://img.shields.io/pypi/v/contextvars-extras.svg
