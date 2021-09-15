@@ -88,12 +88,12 @@ def supply_args(*sources, **per_arg_sources) -> Decorator:
     """
 
     def _decorator__supply_args(wrapped_fn: WrappedFn) -> WrappedFn:
-        rules = _generate_injection_rules(wrapped_fn, sources, per_arg_sources)
+        rules = _generate_supply_rules(wrapped_fn, sources, per_arg_sources)
         rules_list = list(rules)
 
         @functools.wraps(wrapped_fn)
         def _wrapper__supply_args(*args, **kwargs) -> ReturnedValue:
-            _execute_injection_rules(rules_list, args, kwargs)
+            _execute_supply_rules(rules_list, args, kwargs)
             return wrapped_fn(*args, **kwargs)
 
         return _wrapper__supply_args
@@ -171,7 +171,7 @@ class SupplySpec:
     """
 
     source: Any
-    """Source of values injected as arguments to functions.
+    """Source of vlaues that are supplied as arguments to functions.
 
     It can be:
 
@@ -182,10 +182,10 @@ class SupplySpec:
         (same as ``ContextVar``: the ``.get()`` method is called)
 
       - :class:`~contextvars_extras.registry.ContextVarsRegistry`
-        (then context variables stored in the registry are injected as function arguments)
+        (then context variables stored in the registry are supplied as function arguments)
 
       - arbitrary object, e.g.: ``@supply_args(flask.g)``
-        (then object attributes are injected as arguments to the called functions)
+        (then object attributes are supplied as arguments to the called functions)
 
       - arbitrary function, e.g.: ``@supply_args(locale=get_current_locale)``
         (then the function is just called to obtain the value)
@@ -194,9 +194,9 @@ class SupplySpec:
     """
 
     names: Optional[Collection[str]] = None
-    """Names of injected parameters.
+    """Names of function arguments that affected..
 
-    A source may match to many parameters simultaneously, for example::
+    A source may match to many arguments simultaneously, for example::
 
         @supply_args({
             'source': registry,
@@ -205,15 +205,15 @@ class SupplySpec:
         def fn(user_id=None, timezone=None, locale=None):
             pass
 
-    In that example, the ``registry`` object is used to inject both ``locale`` and ``timezone``
-    (whereas ``user_id`` is not injected at all).
+    In that example, ``locale`` and ``timezone`` are taken from ``registry``
+    (whereas ``user_id`` argument is ignored).
 
     This ``names`` member is optional.
     If not provided, the ``names`` are chosen automatically, depending on the ``source``:
 
       - for ``ContextVar`` objects, the parameter name is guessed from ``ContextVar.name`` attribute
       - for ``ContextVarRegistry``, and all other types of sources, the ``names`` list by
-        default is filled with all function parameters (so ALL arguments become injected).
+        default is filled with all function parameters (so ALL arguments become affected).
 
     This name guessing behavior can be extended via the :func:`choose_arg_names` function.
     """
@@ -255,7 +255,7 @@ Default = TypeVar("Default")
 GetterFn = Callable[[Default], Union[Any, Default]]
 
 
-# InjectionRuleTuple - a prepared "instruction" for the ``@supply_args`` decorator.
+# SupplyRuleTuple - a prepared "instruction" for the ``@supply_args`` decorator.
 #
 # Problem: there is some magic in how arguments of the :func:`inject_context_args` decorator
 # are processed, and this magic is a bit slow.
@@ -266,15 +266,15 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 # As a solution, we have a little premature optimization: the :func:`supply_args`
 # decorator pre-processes its arguments, and sort of compiles them into rules.
 #
-# One such ``InjectionRuleTuple`` is a primitive instruction that (roughly) says:
+# One such ``SupplyRuleTuple`` is a primitive instruction that (roughly) says:
 #   - "call this getter function, and put the returned value to function arguments"
 #
 # And later on, when the decorated function is actually called, the prepared rules are executed.
 #
 # So the overhead of the ``@supply_args`` decorator is reduced down to just executing
 # primitive rules (basically calling a bunch of prepared getter functions in sequence).
-InjectionRuleTuple = NewType(
-    "InjectionRuleTuple",
+SupplyRuleTuple = NewType(
+    "SupplyRuleTuple",
     Tuple[
         # parameter name
         str,
@@ -288,11 +288,11 @@ InjectionRuleTuple = NewType(
 )
 
 
-def _execute_injection_rules(rules: Sequence[InjectionRuleTuple], args: tuple, kwargs: dict):
+def _execute_supply_rules(rules: Sequence[SupplyRuleTuple], args: tuple, kwargs: dict):
     args_count = len(args)
 
     for (name, position, default, getter) in rules:
-        # Argument is passed? No need to inject anything then.
+        # Argument is already passed? Nothing to do then.
         if name in kwargs:
             continue
 
@@ -308,27 +308,27 @@ def _execute_injection_rules(rules: Sequence[InjectionRuleTuple], args: tuple, k
         kwargs[name] = value
 
 
-def _generate_injection_rules(
+def _generate_supply_rules(
     wrapped_fn: Callable,
     sources: tuple,
     per_arg_sources: dict,
-) -> Iterable[InjectionRuleTuple]:
+) -> Iterable[SupplyRuleTuple]:
     wrapped_fn_sig = inspect.signature(wrapped_fn)
 
     for name, source in per_arg_sources.items():
         spec = _normalize_spec(name, source)
-        yield from _generate_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
+        yield from _generate_supply_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
 
     for source in sources:
         spec = _normalize_spec(None, source)
-        yield from _generate_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
+        yield from _generate_supply_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
 
 
-def _generate_rules_for_single_source(
+def _generate_supply_rules_for_single_source(
     spec: SupplySpec,
     wrapped_fn: Callable,
     wrapped_fn_sig: inspect.Signature,
-) -> Iterable[InjectionRuleTuple]:
+) -> Iterable[SupplyRuleTuple]:
     # Ensure we get only valid parameter names in SupplySpec.names list.
     # Otherwise the code below will not work correctly.
     _check_param_names(spec, wrapped_fn_sig)
@@ -346,7 +346,7 @@ def _generate_rules_for_single_source(
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["locale", "timezone", "user_id"]
-    names = spec.names or _get_injectable_param_names(wrapped_fn_sig)
+    names = spec.names or _get_params_available_for_supply(wrapped_fn_sig)
 
     for position, param in enumerate(wrapped_fn_sig.parameters.values()):
         if param.name not in names:
@@ -358,13 +358,11 @@ def _generate_rules_for_single_source(
 
         maybe_position = position if (param.kind is _POSITIONAL_OR_KEYWORD) else None
         default = param.default
-        rule: InjectionRuleTuple = InjectionRuleTuple(
-            (param.name, maybe_position, default, getter_fn)
-        )
+        rule: SupplyRuleTuple = SupplyRuleTuple((param.name, maybe_position, default, getter_fn))
         yield rule
 
 
-_INJECTABLE_PARAM_KINDS = (_KEYWORD_ONLY, _POSITIONAL_OR_KEYWORD)
+_PARAM_KINDS_AVAILABLE_FOR_SUPPLY = (_KEYWORD_ONLY, _POSITIONAL_OR_KEYWORD)
 
 
 def _check_param_names(spec: SupplySpec, wrapped_fn_sig: inspect.Signature):
@@ -377,29 +375,29 @@ def _check_param_names(spec: SupplySpec, wrapped_fn_sig: inspect.Signature):
             raise AssertionError(f"no such parameter: {name}")
 
         # Why do we allow only keyword parameters?
-        # Beacuse the _execute_injection_rules() function can only pass arguments by keyword.
+        # Beacuse the _execute_supply_rules() function can only pass arguments by keyword.
         #
         # ...but why such limitation exists?
         # Well, it was added for simplicity and performance, because positional/variadic
         # arguments are tricky, there is a lot of corner cases.
         # So I decided to not support them to keep the code fast and readable.
         #
-        # Besides, you rarely want to inject positional arguments,
-        # and you never want to inject variable (e.g, *args/*kwargs) arguments.
-        if param.kind not in _INJECTABLE_PARAM_KINDS:
+        # Besides, you rarely want to use @supply_args with positional arguments,
+        # and you never want to use it with variable (e.g, *args/*kwargs) arguments.
+        if param.kind not in _PARAM_KINDS_AVAILABLE_FOR_SUPPLY:
             kind = str(param.kind)
-            allowed_kinds = [str(kind) for kind in _INJECTABLE_PARAM_KINDS]
+            allowed_kinds = [str(kind) for kind in _PARAM_KINDS_AVAILABLE_FOR_SUPPLY]
             raise AssertionError(
                 f"Parameter '{name}' ({kind}) cannot be used with @supply_args "
                 f"(only these kinds of parameters are allowed: {allowed_kinds})"
             )
 
 
-def _get_injectable_param_names(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
+def _get_params_available_for_supply(wrapped_fn_sig: inspect.Signature) -> Collection[str]:
     return {
         param.name
         for param in wrapped_fn_sig.parameters.values()
-        if param.kind in _INJECTABLE_PARAM_KINDS
+        if param.kind in _PARAM_KINDS_AVAILABLE_FOR_SUPPLY
     }
 
 
@@ -474,7 +472,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
         ...
         ...     return partial(env_vars.get, env_var_name)
 
-    That could allow to inject OS environment variables as arguments using ``@supply_args``::
+    That could allow to access OS environment variables as arguments using ``@supply_args``::
 
         >>> import os
         >>> import os.path
@@ -620,7 +618,7 @@ def SkipArgGetter(default):
     without binding to any specific parameter. So, since parameter name is not specified,
     the ``@supply_args`` decorator calls ``make_arg_getter()`` for all 3 parameters.
 
-    Obviously, we don't need to inject all 3 arguments.
+    Obviously, we don't need to affect all 3 arguments.
     We need to somehow guess which one is matching to the ``timezone_var``.
 
     To resolve the issue, there is a special convention:
