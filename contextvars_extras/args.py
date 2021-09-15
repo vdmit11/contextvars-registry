@@ -25,7 +25,7 @@ _KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
 _POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
 
 
-def args_from_context(*sources, **per_arg_sources) -> Decorator:
+def supply_args(*sources, **per_arg_sources) -> Decorator:
     """Take arguments from context variables.
 
     Example of use with ``ContextVarsRegistry``::
@@ -36,7 +36,7 @@ def args_from_context(*sources, **per_arg_sources) -> Decorator:
         ...     locale: str = 'en'
         >>> current = Current()
 
-        >>> @args_from_context(current)
+        >>> @supply_args(current)
         ... def print_vars(locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -60,7 +60,7 @@ def args_from_context(*sources, **per_arg_sources) -> Decorator:
         >>> timezone_var = ContextVar('my_project.timezone', default='UTC')
         >>> locale_var = ContextVar('my_project.locale', default='en')
 
-        >>> @args_from_context(timezone_var, locale_var)
+        >>> @supply_args(timezone_var, locale_var)
         ... def print_vars(*, locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
@@ -71,7 +71,7 @@ def args_from_context(*sources, **per_arg_sources) -> Decorator:
 
     Explicitly route variables to parameters::
 
-        >>> @args_from_context(
+        >>> @supply_args(
         ...    timezone=timezone_var,  # use ContextVar object
         ...    locale=Current.locale,  # use ContextVarDescriptor (member of ContextVarsRegistry)
         ...    user_id=current,  # use current.user_id attribute
@@ -87,32 +87,32 @@ def args_from_context(*sources, **per_arg_sources) -> Decorator:
         timezone: UTC
     """
 
-    def _decorator__args_from_context(wrapped_fn: WrappedFn) -> WrappedFn:
+    def _decorator__supply_args(wrapped_fn: WrappedFn) -> WrappedFn:
         rules = _generate_injection_rules(wrapped_fn, sources, per_arg_sources)
         rules_list = list(rules)
 
         @functools.wraps(wrapped_fn)
-        def _wrapper__args_from_context(*args, **kwargs) -> ReturnedValue:
+        def _wrapper__supply_args(*args, **kwargs) -> ReturnedValue:
             _execute_injection_rules(rules_list, args, kwargs)
             return wrapped_fn(*args, **kwargs)
 
-        return _wrapper__args_from_context
+        return _wrapper__supply_args
 
-    return _decorator__args_from_context
+    return _decorator__supply_args
 
 
 @dataclasses.dataclass(frozen=True)
 class ArgSourceSpec:
-    """Structure for arguments of the ``@args_from_context`` decorator.
+    """Structure for arguments of the ``@supply_args`` decorator.
 
-    Arguments to the :func:`args_from_context` decorator can come in several different forms.
+    Arguments to the :func:`supply_args` decorator can come in several different forms.
 
     It is a bit of hassle to take into accoutn all these different forms of arguments everywhere,
     so they're all normalized, and converted to ``ArgSourceSpec`` objects.
 
     So that, for example, this::
 
-        @args_from_context(registry)
+        @supply_args(registry)
 
     internally is converted to::
 
@@ -123,7 +123,7 @@ class ArgSourceSpec:
 
     Keyword arguments are also converted to ``ArgSourceSpec`` objects::
 
-        @args_from_context(
+        @supply_args(
             locale=registry,
             timezone=registry,
             user_id=user_id_context_var,
@@ -138,7 +138,7 @@ class ArgSourceSpec:
 
     ...and dictionaries are also converted to ``ArgSourceSpec`` objects::
 
-         @args_from_context(
+         @supply_args(
              {
                  'names': ['locale', 'timezone'],
                  'source': registry,
@@ -154,7 +154,7 @@ class ArgSourceSpec:
              ArgSourceSpec(names=['user_id'], source=user_id_context_var),
          ]
 
-    Each argument to ``@args_from_context()`` becomes a ``ArgSourceSpec`` instance.
+    Each argument to ``@supply_args()`` becomes a ``ArgSourceSpec`` instance.
     This process is called here "normalization".
 
     So after the normalization procedure, all different forms of arguments become just a stream
@@ -184,10 +184,10 @@ class ArgSourceSpec:
       - :class:`~contextvars_extras.registry.ContextVarsRegistry`
         (then context variables stored in the registry are injected as function arguments)
 
-      - arbitrary object, e.g.: ``@args_from_context(flask.g)``
+      - arbitrary object, e.g.: ``@supply_args(flask.g)``
         (then object attributes are injected as arguments to the called functions)
 
-      - arbitrary function, e.g.: ``@args_from_context(locale=get_current_locale)``
+      - arbitrary function, e.g.: ``@supply_args(locale=get_current_locale)``
         (then the function is just called to obtain the value)
 
     This list of behaviors can be extended via the :func:`choose_arg_getter_fn` function.
@@ -198,7 +198,7 @@ class ArgSourceSpec:
 
     A source may match to many parameters simultaneously, for example::
 
-        @args_from_context({
+        @supply_args({
             'source': registry,
             'names': ['locale', 'timezone']
         })
@@ -220,25 +220,25 @@ class ArgSourceSpec:
 
 
 def _normalize_source_spec(name, source) -> ArgSourceSpec:
-    # There are 4 different ways to specify arguments for the @args_from_context() decorator.
+    # There are 4 different ways to specify arguments for the @supply_args() decorator.
     # Here we recognize all 4 different cases, and convert them to ArgSourceSpec object.
     #
-    # So, after the normalization procedure, the messy arguments to @args_from_context decorator
+    # So, after the normalization procedure, the messy arguments to @supply_args decorator
     # become just a sequence of ArgSourceSpec objects, which is much easier to reason about,
     # since ArgSourceSpec has a well-defined structure.
     if isinstance(source, dict):
         if name:
-            # @args_from_context(timezone={'source': registry})
+            # @supply_args(timezone={'source': registry})
             source_spec = ArgSourceSpec(**source, names=[name])
         else:
-            # @args_from_context({'source': registry, 'names': ['locale', 'timezone']})
+            # @supply_args({'source': registry, 'names': ['locale', 'timezone']})
             source_spec = ArgSourceSpec(**source)
     else:
         if name:
-            # @args_from_context(locale=registry, timezone=registry)
+            # @supply_args(locale=registry, timezone=registry)
             source_spec = ArgSourceSpec(source=source, names=[name])
         else:
-            # @args_from_context(registry)
+            # @supply_args(registry)
             source_spec = ArgSourceSpec(source=source)
 
     return source_spec
@@ -255,7 +255,7 @@ Default = TypeVar("Default")
 GetterFn = Callable[[Default], Union[Any, Default]]
 
 
-# InjectionRuleTuple - a prepared "instruction" for the ``@args_from_context`` decorator.
+# InjectionRuleTuple - a prepared "instruction" for the ``@supply_args`` decorator.
 #
 # Problem: there is some magic in how arguments of the :func:`inject_context_args` decorator
 # are processed, and this magic is a bit slow.
@@ -263,7 +263,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 # Well, maybe not really slow, but there is some overhead, which is summed up and becomes
 # noticeable when you decorate a lot of functions.
 #
-# As a solution, we have a little premature optimization: the :func:`args_from_context`
+# As a solution, we have a little premature optimization: the :func:`supply_args`
 # decorator pre-processes its arguments, and sort of compiles them into rules.
 #
 # One such ``InjectionRuleTuple`` is a primitive instruction that (roughly) says:
@@ -271,7 +271,7 @@ GetterFn = Callable[[Default], Union[Any, Default]]
 #
 # And later on, when the decorated function is actually called, the prepared rules are executed.
 #
-# So the overhead of the ``@args_from_context`` decorator is reduced down to just executing
+# So the overhead of the ``@supply_args`` decorator is reduced down to just executing
 # primitive rules (basically calling a bunch of prepared getter functions in sequence).
 InjectionRuleTuple = NewType(
     "InjectionRuleTuple",
@@ -336,13 +336,13 @@ def _generate_rules_for_single_source(
     # The expression below means that if parameter name is omitted, then match all parameters.
     #
     # That is, this example:
-    #    @args_from_context(timezone=registry)
+    #    @supply_args(timezone=registry)
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["timezone"]
     #
     # and this example:
-    #    @args_from_context(registry)
+    #    @supply_args(registry)
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["locale", "timezone", "user_id"]
@@ -390,7 +390,7 @@ def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signa
             kind = str(param.kind)
             allowed_kinds = [str(kind) for kind in _INJECTABLE_PARAM_KINDS]
             raise AssertionError(
-                f"Parameter '{name}' ({kind}) cannot be used with @args_from_context "
+                f"Parameter '{name}' ({kind}) cannot be used with @supply_args "
                 f"(only these kinds of parameters are allowed: {allowed_kinds})"
             )
 
@@ -407,9 +407,9 @@ def _get_injectable_param_names(wrapped_fn_sig: inspect.Signature) -> Collection
 def make_arg_getter(source: object, name: str) -> GetterFn:
     """Produce getter for function arguments.
 
-    This is a helper function for the :func:`args_from_context` decorator.
+    This is a helper function for the :func:`supply_args` decorator.
 
-    The :func:`@args_from_context` decorator analyzes function signature,
+    The :func:`@supply_args` decorator analyzes function signature,
     and for each parameter, it calls this :func:`make_arg_getter`.
     The resulting getter knows how to get value from a context variable or some other source.
 
@@ -423,7 +423,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
 
         >>> current = Current()
 
-        >>> @args_from_context(current)
+        >>> @supply_args(current)
         ... def print_values(user_id, locale, timezone, *args, **kwargs):
         ...     print(user_id, locale, timezone, args, kwargs)
 
@@ -474,7 +474,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
         ...
         ...     return partial(env_vars.get, env_var_name)
 
-    That could allow to inject OS environment variables as arguments using ``@args_from_context``::
+    That could allow to inject OS environment variables as arguments using ``@supply_args``::
 
         >>> import os
         >>> import os.path
@@ -486,7 +486,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
 
         >>> env_vars_storage = EnvVarsStorage(environ)
 
-        >>> @args_from_context(env_vars_storage)
+        >>> @supply_args(env_vars_storage)
         ... def get_tmp_path(file_name, tmpdir):
         ...    return os.path.join(tmpdir, file_name)
 
@@ -503,7 +503,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
     #
     # That is, for example, if you do this:
     #
-    #    @args_from_context(some_object)
+    #    @supply_args(some_object)
     #    def do_something_useful(foo, bar, baz):
     #        pass
     #
@@ -523,7 +523,7 @@ def make_arg_getter_for_callable(source: abc.Callable, name: str) -> GetterFn:
     #
     # That is, for example, if you do this:
     #
-    #    @args_from_context(
+    #    @supply_args(
     #        locale=get_current_locale,
     #        timezone=get_current_timezone,
     #    )
@@ -550,7 +550,7 @@ def make_arg_getter_for_context_var(ctx_var: contextvars.ContextVar, name: str) 
     #
     #    timezone_var = ContextVar('timezone', default='UTC')
     #
-    #    @args_from_context(locale_var)
+    #    @supply_args(locale_var)
     #    def do_something_useful(user_id, locale, timezone):
     #        pass
     #
@@ -605,20 +605,20 @@ def SkipArgGetter(default):
 
        timezone_var = ContextVar('timezone', default='UTC')
 
-       @args_from_context(locale_var)
+       @supply_args(locale_var)
        def do_something_useful(user_id, locale, timezone):
            pass
 
-    In this case, :func:`@args_from_context` decorator will trigger
+    In this case, :func:`@supply_args` decorator will trigger
     :func:`make_arg_getter` 3 times, like this::
 
        make_arg_getter(timezone_var, 'user_id')
        make_arg_getter(timezone_var, 'locale')
        make_arg_getter(timezone_var, 'timezone')
 
-    That happens just because in ``@args_from_context(locale_var)`` there is only ``locale_var``,
+    That happens just because in ``@supply_args(locale_var)`` there is only ``locale_var``,
     without binding to any specific parameter. So, since parameter name is not specified,
-    the ``@args_from_context`` decorator calls ``make_arg_getter()`` for all 3 parameters.
+    the ``@supply_args`` decorator calls ``make_arg_getter()`` for all 3 parameters.
 
     Obviously, we don't need to inject all 3 arguments.
     We need to somehow guess which one is matching to the ``timezone_var``.

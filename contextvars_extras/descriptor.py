@@ -645,7 +645,7 @@ class ContextVarDescriptor:
         return f"<{self.__class__.__name__} name={self.name!r}>"
 
 
-# Register getter function for the @args_from_context decotaror.
+# Register getter function for the @supply_
 # The decorator doesn't know about the ContetVarDescriptor class, so we have to teach it.
 #
 # Here we just re-use the existing make_arg_getter_for_context_var() function.

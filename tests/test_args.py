@@ -2,16 +2,16 @@ from contextvars import ContextVar
 
 import pytest
 
-from contextvars_extras.args import args_from_context
+from contextvars_extras.args import supply_args
 from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.registry import ContextVarsRegistry
 
 
-def test__args_from_context_var_objects():
+def test__supply_args_var_objects():
     timezone_var = ContextVar("my_project.namespace.timezone")
     locale_var = ContextVar("my_project.namespace.locale")
 
-    @args_from_context(timezone_var, locale_var)
+    @supply_args(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -29,11 +29,11 @@ def test__args_from_context_var_objects():
 
 
 # same as the test above, but with use of ContextVarDescriptor (instead of ContextVar) objects
-def test__args_from_context_var_descriptors():
+def test__supply_args_var_descriptors():
     timezone_var = ContextVarDescriptor("my_project.namespace.timezone")
     locale_var = ContextVarDescriptor("my_project.namespace.locale")
 
-    @args_from_context(timezone_var, locale_var)
+    @supply_args(timezone_var, locale_var)
     def _get_values(locale, timezone="UTC"):
         return (locale, timezone)
 
@@ -57,7 +57,7 @@ def test__args_from_registry():
 
     current = Current()
 
-    @args_from_context(current)
+    @supply_args(current)
     def _get_values(locale="en", timezone="America/Troll", user_id=None):
         return (locale, timezone, user_id)
 
@@ -90,7 +90,7 @@ def test__args_from_arbitrary_object_attributes():
 
     some_object = SomeObject()
 
-    @args_from_context(some_object)
+    @supply_args(some_object)
     def _get_values(locale=None, timezone=None):
         return (locale, timezone)
 
@@ -114,7 +114,7 @@ def test__args_from_getter_function():
     def _get_current_timezone(default):
         return storage.get("timezone", default)
 
-    @args_from_context(locale=_get_current_locale, timezone=_get_current_timezone)
+    @supply_args(locale=_get_current_locale, timezone=_get_current_timezone)
     def _get_values(locale=None, timezone=None):
         return locale, timezone
 
@@ -134,13 +134,13 @@ def test__args_from_getter_function():
 def test__error_is_raised__for_non_existent_parameter():
     with pytest.raises(AssertionError):
         # check simple `name=source` form the decorator
-        @args_from_context(non_existent_parameter=lambda default: default)
+        @supply_args(non_existent_parameter=lambda default: default)
         def _get_values(locale=None, timezone=None):
             return locale, timezone
 
     with pytest.raises(AssertionError):
         # check a more complex form, with multiple parameter names
-        @args_from_context(
+        @supply_args(
             {
                 "source": lambda default: default,
                 "names": ["locale", "timezone", "non_existent_parameter"],
@@ -160,14 +160,14 @@ def test__only_keyword_parameters_are_allowed():
     with pytest.raises(AssertionError):
         storage.args = [1, 2, 3]
 
-        @args_from_context(args=storage)
+        @supply_args(args=storage)
         def _args(*args):
             return args
 
     with pytest.raises(AssertionError):
         storage.kwargs = {"foo": 1, "bar": 2}
 
-        @args_from_context(kwargs=storage)
+        @supply_args(kwargs=storage)
         def _kwargs(**kwargs):
             return kwargs
 
@@ -178,7 +178,7 @@ def test__only_keyword_parameters_are_allowed():
     # with pytest.raises(AssertionError):
     #     storage.positional_only_arg = 'positional only arg'
     #
-    #     @args_from_context(positional_only_arg=storage)
+    #     @supply_args(positional_only_arg=storage)
     #     def _positional_only(positional_only_arg=None, /, keyword_or_positional_arg=None):
     #         return positional_only_arg
 
@@ -186,7 +186,7 @@ def test__only_keyword_parameters_are_allowed():
     # (keyword-only parameters they were added in Python v3.0)
     storage.keyword_only_arg = "keyword only arg"
 
-    @args_from_context(keyword_only_arg=storage)
+    @supply_args(keyword_only_arg=storage)
     def _keyword_only(keyword_or_positional_arg=None, *, keyword_only_arg=None):
         return keyword_only_arg
 

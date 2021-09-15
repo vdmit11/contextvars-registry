@@ -13,7 +13,7 @@
 
    .. autosummary::
 
-      args_from_context
+      supply_args
       make_arg_getter
       SkipArgGetter
 
