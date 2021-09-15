@@ -14,7 +14,7 @@
    .. autosummary::
 
       supply_args
-      make_arg_getter
+      make_supply_arg_getter
       SkipArgGetter
 
    

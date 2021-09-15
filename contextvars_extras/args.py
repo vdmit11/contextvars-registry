@@ -244,15 +244,15 @@ def _normalize_spec(name, source) -> SupplySpec:
     return spec
 
 
-# We call "getter" a function of 1 parameter, that (roughly) looks like this:
+# We call "argument getter" a function of 1 parameter, that (roughly) looks like this:
 #
-#     def getter(default):
+#     def arg_getter(default):
 #         return some_value or default
 #
-# A getter function should somehow get a value, or return the ``default`` argument
-# (a special marker object) to indicate that value is not available.
+# Such getter function should somehow get a value,
+# or return the ``default`` argument in case the value is not available.
 Default = TypeVar("Default")
-GetterFn = Callable[[Default], Union[Any, Default]]
+SupplyArgGetterFn = Callable[[Default], Union[Any, Default]]
 
 
 # SupplyRuleTuple - a prepared "instruction" for the ``@supply_args`` decorator.
@@ -282,8 +282,8 @@ SupplyRuleTuple = NewType(
         Optional[int],
         # parameter default value
         Any,
-        # getter function that fetches value from some context variable
-        GetterFn,
+        # getter function that knows how to fetch the value for the parameter
+        SupplyArgGetterFn,
     ],
 )
 
@@ -291,7 +291,7 @@ SupplyRuleTuple = NewType(
 def _execute_supply_rules(rules: Sequence[SupplyRuleTuple], args: tuple, kwargs: dict):
     args_count = len(args)
 
-    for (name, position, default, getter) in rules:
+    for (name, position, default, arg_getter_fn) in rules:
         # Argument is already passed? Nothing to do then.
         if name in kwargs:
             continue
@@ -300,7 +300,7 @@ def _execute_supply_rules(rules: Sequence[SupplyRuleTuple], args: tuple, kwargs:
             continue
 
         # call the getter function that somehow fetches the value from the global variable
-        value = getter(default)
+        value = arg_getter_fn(default)
         if value is _EMPTY:
             continue
 
@@ -352,13 +352,15 @@ def _generate_supply_rules_for_single_source(
         if param.name not in names:
             continue
 
-        getter_fn = make_arg_getter(spec.source, param.name)
-        if getter_fn is SkipArgGetter:
+        arg_getter_fn = make_supply_arg_getter(spec.source, param.name)
+        if arg_getter_fn is SkipArgGetter:
             continue
 
         maybe_position = position if (param.kind is _POSITIONAL_OR_KEYWORD) else None
         default = param.default
-        rule: SupplyRuleTuple = SupplyRuleTuple((param.name, maybe_position, default, getter_fn))
+        rule: SupplyRuleTuple = SupplyRuleTuple(
+            (param.name, maybe_position, default, arg_getter_fn)
+        )
         yield rule
 
 
@@ -402,13 +404,13 @@ def _get_params_available_for_supply(wrapped_fn_sig: inspect.Signature) -> Colle
 
 
 @functools.singledispatch
-def make_arg_getter(source: object, name: str) -> GetterFn:
-    """Produce getter for function arguments.
+def make_supply_arg_getter(source: object, name: str) -> SupplyArgGetterFn:
+    """Produce argument getter function.
 
     This is a helper function for the :func:`supply_args` decorator.
 
     The :func:`@supply_args` decorator analyzes function signature,
-    and for each parameter, it calls this :func:`make_arg_getter`.
+    and for each parameter, it calls this :func:`make_supply_arg_getter`.
     The resulting getter knows how to get value from a context variable or some other source.
 
     Take an example::
@@ -427,9 +429,9 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
 
     In this example above, the function will be triggered 3 times::
 
-        make_arg_getter(current, 'user_id')
-        make_arg_getter(current, 'locale')
-        make_arg_getter(current, 'timezone')
+        make_supply_arg_getter(current, 'user_id')
+        make_supply_arg_getter(current, 'locale')
+        make_supply_arg_getter(current, 'timezone')
 
     That is, it is triggered for "normal" parameters, and NOT triggered for:
 
@@ -449,7 +451,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
     Then you could do something like this:
 
         >>> from functools import partial
-        >>> from contextvars_extras.args import make_arg_getter, SkipArgGetter
+        >>> from contextvars_extras.args import make_supply_arg_getter, SkipArgGetter
 
         >>> class EnvVarsStorage:
         ...    def __init__(self, environ: dict):
@@ -461,8 +463,8 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
         ...    def get(self, name, default):
         ...        return self.environ.get(name, default)
 
-        >>> @make_arg_getter.register
-        ... def make_arg_getter_for_env_var(env_vars: EnvVarsStorage, name):
+        >>> @make_supply_arg_getter.register
+        ... def make_supply_arg_getter_for_env_var(env_vars: EnvVarsStorage, name):
         ...     env_var_name = name.upper()
         ...
         ...     # Here we assume that `os.environ` is immutable.
@@ -494,7 +496,7 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
         >>> get_tmp_path('foo', tmpdir='/var/tmp')
         '/var/tmp/foo'
     """
-    # A default implementation of make_arg_getter(), that is triggered for just objects,
+    # A default implementation of make_supply_arg_getter(), that is triggered for just objects,
     # that don't have any special implementation.
     #
     # Here we just trigger getattr()
@@ -515,9 +517,9 @@ def make_arg_getter(source: object, name: str) -> GetterFn:
     return functools.partial(getattr, source, name)
 
 
-@make_arg_getter.register
-def make_arg_getter_for_callable(source: abc.Callable, name: str) -> GetterFn:
-    # make_arg_getter() implementation for lambdas and other callables
+@make_supply_arg_getter.register
+def make_supply_arg_getter_for_callable(source: abc.Callable, name: str) -> SupplyArgGetterFn:
+    # make_supply_arg_getter() implementation for lambdas and other callables
     #
     # That is, for example, if you do this:
     #
@@ -540,8 +542,10 @@ def make_arg_getter_for_callable(source: abc.Callable, name: str) -> GetterFn:
     return source
 
 
-@make_arg_getter.register
-def make_arg_getter_for_context_var(ctx_var: contextvars.ContextVar, name: str) -> GetterFn:
+@make_supply_arg_getter.register
+def make_supply_arg_getter_for_context_var(
+    ctx_var: contextvars.ContextVar, name: str
+) -> SupplyArgGetterFn:
     # Skip parameters, that don't match to context variable by name.
     #
     # This is needed for cases like this:
@@ -552,10 +556,10 @@ def make_arg_getter_for_context_var(ctx_var: contextvars.ContextVar, name: str) 
     #    def do_something_useful(user_id, locale, timezone):
     #        pass
     #
-    # Since parameter name is not specified, make_arg_getter() is called 3 times:
-    #    make_arg_getter(timezone_var, 'user_id')
-    #    make_arg_getter(timezone_var, 'locale')
-    #    make_arg_getter(timezone_var, 'timezone')
+    # Since parameter name is not specified, make_supply_arg_getter() is called 3 times:
+    #    make_supply_arg_getter(timezone_var, 'user_id')
+    #    make_supply_arg_getter(timezone_var, 'locale')
+    #    make_supply_arg_getter(timezone_var, 'timezone')
     #
     # So the line below is needed to leave only the last getter
     if not _is_context_var_matching_to_param(ctx_var, name):
@@ -597,7 +601,7 @@ def _is_context_var_matching_to_param(ctx_var: contextvars.ContextVar, param_nam
 
 
 def SkipArgGetter(default):
-    """Skip argument (a special marker that may be returned by :func:`make_arg_getter` function).
+    """Skip argument (a special marker returned by :func:`make_supply_arg_getter`).
 
     This is needed for cases like this::
 
@@ -608,28 +612,30 @@ def SkipArgGetter(default):
            pass
 
     In this case, :func:`@supply_args` decorator will trigger
-    :func:`make_arg_getter` 3 times, like this::
+    :func:`make_supply_arg_getter` 3 times, like this::
 
-       make_arg_getter(timezone_var, 'user_id')
-       make_arg_getter(timezone_var, 'locale')
-       make_arg_getter(timezone_var, 'timezone')
+       make_supply_arg_getter(timezone_var, 'user_id')
+       make_supply_arg_getter(timezone_var, 'locale')
+       make_supply_arg_getter(timezone_var, 'timezone')
 
     That happens just because in ``@supply_args(locale_var)`` there is only ``locale_var``,
     without binding to any specific parameter. So, since parameter name is not specified,
-    the ``@supply_args`` decorator calls ``make_arg_getter()`` for all 3 parameters.
+    the ``@supply_args`` decorator calls ``make_supply_arg_getter()`` for all 3 parameters.
 
     Obviously, we don't need to affect all 3 arguments.
     We need to somehow guess which one is matching to the ``timezone_var``.
 
     To resolve the issue, there is a special convention:
 
-    :func:`make_arg_getter` may return a special marker :func:`SkipArgGetter`,
+    :func:`make_supply_arg_getter` may return a special marker :func:`SkipArgGetter`,
     that means: "There is no match for this argument, please skip it.".
 
-    You can use it for extending :func:`make_arg_getter` for your custom types, like this::
+    You can use it for extending :func:`make_supply_arg_getter` for your custom types, like this::
 
-        @make_arg_getter.register
-        def make_arg_getter_for_my_custom_storage(storage: MyCustomStorage, name: str) -> GetterFn:
+        @make_supply_arg_getter.register
+        def make_supply_arg_getter_for_my_custom_storage(
+            storage: MyCustomStorage, name: str
+        ) -> SupplyArgGetterFn:
             if name not in storage:
                 return SkipArgGetter
 

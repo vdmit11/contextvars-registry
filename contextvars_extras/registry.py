@@ -175,7 +175,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from typing import Callable, Dict, List, Tuple, get_type_hints, overload
 
-from contextvars_extras.args import make_arg_getter, supply_args
+from contextvars_extras.args import make_supply_arg_getter, supply_args
 from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.util import Decorator, ExceptionDocstringMixin, Missing, WrappedFn
 
@@ -535,9 +535,9 @@ class ContextVarsRegistry(MutableMapping):
         return supply_args({"names": arg_names, "source": self})
 
 
-@make_arg_getter.register
-def make_arg_getter_for_registry(registry: ContextVarsRegistry, name: str) -> Callable:
-    # make_arg_getter() implementation for ContextVarsRegistry objects
+@make_supply_arg_getter.register
+def make_supply_arg_getter_for_registry(registry: ContextVarsRegistry, name: str) -> Callable:
+    # make_supply_arg_getter() implementation for ContextVarsRegistry objects
     #
     # It is the same as the default implementation for just object()s: it just dumb getattr().
     # I had to add it because ContextVarsRegistry is callable, so an implementation for Callable
