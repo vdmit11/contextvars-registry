@@ -1,6 +1,7 @@
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
+from contextvars_extras.args import make_arg_getter, make_arg_getter_for_context_var
 from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
 
 # A special sentinel object that we put into ContextVar when you delete a value from it
@@ -642,6 +643,15 @@ class ContextVarDescriptor:
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"
+
+
+# Register getter function for the @args_from_context decotaror.
+# The decorator doesn't know about the ContetVarDescriptor class, so we have to teach it.
+#
+# Here we just re-use the existing make_arg_getter_for_context_var() function.
+# It works with standard ContextVar objects, but ContextVarDescriptor is fully compatible
+# with them, so that should work smoothly.
+make_arg_getter.register(ContextVarDescriptor, make_arg_getter_for_context_var)
 
 
 class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError):

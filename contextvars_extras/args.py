@@ -17,8 +17,6 @@ from typing import (
     Union,
 )
 
-from contextvars_extras.descriptor import ContextVarDescriptor
-from contextvars_extras.registry import ContextVarsRegistry
 from contextvars_extras.util import Decorator, ReturnedValue, WrappedFn
 
 # shortcuts, needed just to make code slightly more readable
@@ -545,17 +543,6 @@ def make_arg_getter_for_callable(source: abc.Callable, name: str) -> GetterFn:
 
 
 @make_arg_getter.register
-def make_arg_getter_for_registry(registry: ContextVarsRegistry, name: str) -> GetterFn:
-    # make_arg_getter() implementation for ContextVarsRegistry objects
-    #
-    # It is the same as the default implementation for just object()s.
-    # I had to add it because ContextVarsRegistry is callable, so an implementation for Callable
-    # will be triggered unless I override it with a special implementation for ContextVarsRegistry.
-    return functools.partial(getattr, registry, name)
-
-
-@make_arg_getter.register(contextvars.ContextVar)
-@make_arg_getter.register(ContextVarDescriptor)
 def make_arg_getter_for_context_var(ctx_var: contextvars.ContextVar, name: str) -> GetterFn:
     # Skip parameters, that don't match to context variable by name.
     #

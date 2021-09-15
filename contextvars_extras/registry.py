@@ -168,13 +168,14 @@ All this thing happens under the hood, and normally you shouln't notice that.
 """
 from __future__ import annotations
 
+import functools
 import threading
 from collections.abc import ItemsView, KeysView, MutableMapping, ValuesView
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
-from typing import Dict, List, Tuple, get_type_hints, overload
+from typing import Callable, Dict, List, Tuple, get_type_hints, overload
 
-import contextvars_extras.args
+from contextvars_extras.args import args_from_context, make_arg_getter
 from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.util import Decorator, ExceptionDocstringMixin, Missing, WrappedFn
 
@@ -528,10 +529,20 @@ class ContextVarsRegistry(MutableMapping):
         """
         if len(arg_names) == 1 and callable(arg_names[0]):
             fn = arg_names[0]
-            decorator = contextvars_extras.args.args_from_context(self)
+            decorator = args_from_context(self)
             return decorator(fn)
 
-        return contextvars_extras.args.args_from_context({"names": arg_names, "source": self})
+        return args_from_context({"names": arg_names, "source": self})
+
+
+@make_arg_getter.register
+def make_arg_getter_for_registry(registry: ContextVarsRegistry, name: str) -> Callable:
+    # make_arg_getter() implementation for ContextVarsRegistry objects
+    #
+    # It is the same as the default implementation for just object()s: it just dumb getattr().
+    # I had to add it because ContextVarsRegistry is callable, so an implementation for Callable
+    # will be triggered unless I override it with a special implementation for ContextVarsRegistry.
+    return functools.partial(getattr, registry, name)
 
 
 class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):
