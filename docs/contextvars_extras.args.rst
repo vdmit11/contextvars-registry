@@ -23,7 +23,7 @@
 
    .. autosummary::
    
-      ArgSourceSpec
+      SupplySpec
    
    
 

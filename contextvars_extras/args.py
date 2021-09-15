@@ -102,13 +102,13 @@ def supply_args(*sources, **per_arg_sources) -> Decorator:
 
 
 @dataclasses.dataclass(frozen=True)
-class ArgSourceSpec:
+class SupplySpec:
     """Structure for arguments of the ``@supply_args`` decorator.
 
     Arguments to the :func:`supply_args` decorator can come in several different forms.
 
     It is a bit of hassle to take into accoutn all these different forms of arguments everywhere,
-    so they're all normalized, and converted to ``ArgSourceSpec`` objects.
+    so they're all normalized, and converted to ``SupplySpec`` objects.
 
     So that, for example, this::
 
@@ -117,11 +117,11 @@ class ArgSourceSpec:
     internally is converted to::
 
         [
-            ArgSourceSpec(source=registry)
+            SupplySpec(source=registry)
         ]
 
 
-    Keyword arguments are also converted to ``ArgSourceSpec`` objects::
+    Keyword arguments are also converted to ``SupplySpec`` objects::
 
         @supply_args(
             locale=registry,
@@ -130,13 +130,13 @@ class ArgSourceSpec:
         )
         # internally converted to:
         [
-            ArgSourceSpec(names=['locale'], source=registry),
-            ArgSourceSpec(names=['timezone'], source=registry),
-            ArgSourceSpec(names=['user_id'], source=user_id_context_var),
+            SupplySpec(names=['locale'], source=registry),
+            SupplySpec(names=['timezone'], source=registry),
+            SupplySpec(names=['user_id'], source=user_id_context_var),
         ]
 
 
-    ...and dictionaries are also converted to ``ArgSourceSpec`` objects::
+    ...and dictionaries are also converted to ``SupplySpec`` objects::
 
          @supply_args(
              {
@@ -150,15 +150,15 @@ class ArgSourceSpec:
          )
          # internally converted to:
          [
-             ArgSourceSpec(names=['locale', 'timezone'], source=registry),
-             ArgSourceSpec(names=['user_id'], source=user_id_context_var),
+             SupplySpec(names=['locale', 'timezone'], source=registry),
+             SupplySpec(names=['user_id'], source=user_id_context_var),
          ]
 
-    Each argument to ``@supply_args()`` becomes a ``ArgSourceSpec`` instance.
+    Each argument to ``@supply_args()`` becomes a ``SupplySpec`` instance.
     This process is called here "normalization".
 
     So after the normalization procedure, all different forms of arguments become just a stream
-    of ``ArgSourceSpec`` objects, with well-known structure, which is easy to deal with
+    of ``SupplySpec`` objects, with well-known structure, which is easy to deal with
     (much easier than coding if/else branches to support several forms of arguments everywhere).
 
     .. NOTE::
@@ -219,29 +219,29 @@ class ArgSourceSpec:
     """
 
 
-def _normalize_source_spec(name, source) -> ArgSourceSpec:
+def _normalize_spec(name, source) -> SupplySpec:
     # There are 4 different ways to specify arguments for the @supply_args() decorator.
-    # Here we recognize all 4 different cases, and convert them to ArgSourceSpec object.
+    # Here we recognize all 4 different cases, and convert them to SupplySpec object.
     #
     # So, after the normalization procedure, the messy arguments to @supply_args decorator
-    # become just a sequence of ArgSourceSpec objects, which is much easier to reason about,
-    # since ArgSourceSpec has a well-defined structure.
+    # become just a sequence of SupplySpec objects, which is much easier to reason about,
+    # since SupplySpec has a well-defined structure.
     if isinstance(source, dict):
         if name:
             # @supply_args(timezone={'source': registry})
-            source_spec = ArgSourceSpec(**source, names=[name])
+            spec = SupplySpec(**source, names=[name])
         else:
             # @supply_args({'source': registry, 'names': ['locale', 'timezone']})
-            source_spec = ArgSourceSpec(**source)
+            spec = SupplySpec(**source)
     else:
         if name:
             # @supply_args(locale=registry, timezone=registry)
-            source_spec = ArgSourceSpec(source=source, names=[name])
+            spec = SupplySpec(source=source, names=[name])
         else:
             # @supply_args(registry)
-            source_spec = ArgSourceSpec(source=source)
+            spec = SupplySpec(source=source)
 
-    return source_spec
+    return spec
 
 
 # We call "getter" a function of 1 parameter, that (roughly) looks like this:
@@ -316,22 +316,22 @@ def _generate_injection_rules(
     wrapped_fn_sig = inspect.signature(wrapped_fn)
 
     for name, source in per_arg_sources.items():
-        source_spec = _normalize_source_spec(name, source)
-        yield from _generate_rules_for_single_source(source_spec, wrapped_fn, wrapped_fn_sig)
+        spec = _normalize_spec(name, source)
+        yield from _generate_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
 
     for source in sources:
-        source_spec = _normalize_source_spec(None, source)
-        yield from _generate_rules_for_single_source(source_spec, wrapped_fn, wrapped_fn_sig)
+        spec = _normalize_spec(None, source)
+        yield from _generate_rules_for_single_source(spec, wrapped_fn, wrapped_fn_sig)
 
 
 def _generate_rules_for_single_source(
-    source_spec: ArgSourceSpec,
+    spec: SupplySpec,
     wrapped_fn: Callable,
     wrapped_fn_sig: inspect.Signature,
 ) -> Iterable[InjectionRuleTuple]:
-    # Ensure we get only valid parameter names in ArgSourceSpec.names list.
+    # Ensure we get only valid parameter names in SupplySpec.names list.
     # Otherwise the code below will not work correctly.
-    _check_param_names(source_spec, wrapped_fn_sig)
+    _check_param_names(spec, wrapped_fn_sig)
 
     # The expression below means that if parameter name is omitted, then match all parameters.
     #
@@ -346,13 +346,13 @@ def _generate_rules_for_single_source(
     #    def get_values(locale, timezone, user_id): ...
     # will result in:
     #    names = ["locale", "timezone", "user_id"]
-    names = source_spec.names or _get_injectable_param_names(wrapped_fn_sig)
+    names = spec.names or _get_injectable_param_names(wrapped_fn_sig)
 
     for position, param in enumerate(wrapped_fn_sig.parameters.values()):
         if param.name not in names:
             continue
 
-        getter_fn = make_arg_getter(source_spec.source, param.name)
+        getter_fn = make_arg_getter(spec.source, param.name)
         if getter_fn is SkipArgGetter:
             continue
 
@@ -367,11 +367,11 @@ def _generate_rules_for_single_source(
 _INJECTABLE_PARAM_KINDS = (_KEYWORD_ONLY, _POSITIONAL_OR_KEYWORD)
 
 
-def _check_param_names(source_spec: ArgSourceSpec, wrapped_fn_sig: inspect.Signature):
-    if not source_spec.names:
+def _check_param_names(spec: SupplySpec, wrapped_fn_sig: inspect.Signature):
+    if not spec.names:
         return
 
-    for name in source_spec.names:
+    for name in spec.names:
         param = wrapped_fn_sig.parameters.get(name)
         if not param:
             raise AssertionError(f"no such parameter: {name}")
