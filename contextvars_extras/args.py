@@ -28,61 +28,18 @@ _POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
 def supply_args(*sources, **per_arg_sources) -> Decorator:
     """Take arguments from context variables.
 
-    Example of use with ``ContextVarsRegistry``::
-
-        >>> from contextvars_extras.registry import ContextVarsRegistry
-        >>> class Current(ContextVarsRegistry):
-        ...     timezone: str = 'UTC'
-        ...     locale: str = 'en'
-        >>> current = Current()
-
-        >>> @supply_args(current)
-        ... def print_vars(locale, timezone):
-        ...     print(f"locale: {locale}")
-        ...     print(f"timezone: {timezone}")
-
-        >>> print_vars()
-        locale: en
-        timezone: UTC
-
-        >>> print_vars(timezone='Antarctica/Troll')
-        locale: en
-        timezone: Antarctica/Troll
-
-        >>> with current(locale='nb', timezone='Antarctica/Troll'):
-        ...     print_vars()
-        locale: nb
-        timezone: Antarctica/Troll
-
-    Use with classic ``ContextVar`` objects (without registry)::
+    Example usage::
 
         >>> from contextvars import ContextVar
         >>> timezone_var = ContextVar('my_project.timezone', default='UTC')
         >>> locale_var = ContextVar('my_project.locale', default='en')
 
-        >>> @supply_args(timezone_var, locale_var)
+        >>> @supply_args(locale=locale_var, timezone=timezone_var)
         ... def print_vars(*, locale, timezone):
         ...     print(f"locale: {locale}")
         ...     print(f"timezone: {timezone}")
 
         >>> print_vars()
-        locale: en
-        timezone: UTC
-
-    Explicitly route variables to parameters::
-
-        >>> @supply_args(
-        ...    timezone=timezone_var,  # use ContextVar object
-        ...    locale=Current.locale,  # use ContextVarDescriptor (member of ContextVarsRegistry)
-        ...    user_id=current,  # use current.user_id attribute
-        ... )
-        ... def print_vars(user_id=None, timezone=None, locale=None):
-        ...     print(f"user_id: {user_id}")
-        ...     print(f"locale: {locale}")
-        ...     print(f"timezone: {timezone}")
-
-        >>> print_vars()
-        user_id: None
         locale: en
         timezone: UTC
     """
@@ -177,12 +134,6 @@ class SupplySpec:
 
       - a ``contextvars.ContextVar`` object
         (then its ``.get()`` method is called to obtain the value)
-
-      - :class:`~contextvars_extras.descriptor.ContextVarDescriptor`
-        (same as ``ContextVar``: the ``.get()`` method is called)
-
-      - :class:`~contextvars_extras.registry.ContextVarsRegistry`
-        (then context variables stored in the registry are supplied as function arguments)
 
       - arbitrary object, e.g.: ``@supply_args(flask.g)``
         (then object attributes are supplied as arguments to the called functions)
@@ -415,23 +366,21 @@ def make_supply_arg_getter(source: object, name: str) -> SupplyArgGetterFn:
 
     Take an example::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
-
-        >>> class Current(ContextVarsRegistry):
+        >>> class Config:
         ...     locale: str = 'en'
         ...     timezone: str = 'UTC'
 
-        >>> current = Current()
+        >>> config = Config()
 
-        >>> @supply_args(current)
+        >>> @supply_args(config)
         ... def print_values(user_id, locale, timezone, *args, **kwargs):
         ...     print(user_id, locale, timezone, args, kwargs)
 
     In this example above, the function will be triggered 3 times::
 
-        make_supply_arg_getter(current, 'user_id')
-        make_supply_arg_getter(current, 'locale')
-        make_supply_arg_getter(current, 'timezone')
+        make_supply_arg_getter(config, 'user_id')
+        make_supply_arg_getter(config, 'locale')
+        make_supply_arg_getter(config, 'timezone')
 
     That is, it is triggered for "normal" parameters, and NOT triggered for:
 
@@ -442,7 +391,6 @@ def make_supply_arg_getter(source: object, name: str) -> SupplyArgGetterFn:
     (see :func:`functools.singledispatch`). That is:
 
      - ``source=ContextVar()`` will result in ``ContextVar.get()`` call
-     - ``source=ContextVarsRegistry()`` will result in ``ContextVarsRegistry.{name}.get()``
      - ``source=lambda: ...`` will just call the source lambda
      - ``source=object()`` will result in ``getattr(object, name)``
 
