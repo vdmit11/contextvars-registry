@@ -175,7 +175,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from typing import Callable, Dict, List, Tuple, get_type_hints, overload
 
-from contextvars_extras.args import make_supply_arg_getter, supply_args
+from supply_args import make_supply_arg_getter, supply_args
+
 from contextvars_extras.descriptor import ContextVarDescriptor
 from contextvars_extras.util import Decorator, ExceptionDocstringMixin, Missing, WrappedFn
 
@@ -524,7 +525,7 @@ class ContextVarsRegistry(MutableMapping):
             ...     get_values()
             (None, 'UTC', 42)
 
-        See also :func:`contextvars_extras.args.supply_args` - the underlying decorator,
+        See also :func:`supply_args.supply_args` - the underlying decorator,
         that actually does all the job of injecting arguments.
         """
         if len(arg_names) == 1 and callable(arg_names[0]):

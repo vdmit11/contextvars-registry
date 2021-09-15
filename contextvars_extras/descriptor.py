@@ -1,7 +1,8 @@
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
-from contextvars_extras.args import make_supply_arg_getter, make_supply_arg_getter_for_context_var
+from supply_args.decorator import make_supply_arg_getter, make_supply_arg_getter_for_context_var
+
 from contextvars_extras.util import ExceptionDocstringMixin, Missing, Sentinel
 
 # A special sentinel object that we put into ContextVar when you delete a value from it
