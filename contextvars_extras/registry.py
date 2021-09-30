@@ -181,8 +181,8 @@ from contextvars_extras.util import ExceptionDocstringMixin, Missing
 class ContextVarsRegistry(MutableMapping):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
-    _registry_init_on_setattr: bool = True
-    """Automatically initialize missing ContextVar() objects when setting attributes?
+    _registry_auto_create_vars: bool = True
+    """Automatically create ContextVar() objects when setting attributes?
 
     If set to True (default), missing ContextVar() objects are automatically created when
     setting attributes. That is, you can define an empty class, and then set arbitrary attributes:
@@ -197,7 +197,7 @@ class ContextVarsRegistry(MutableMapping):
     However, if you find this behavior weak, you may disable it, like this:
 
         >>> class CurrentVars(ContextVarsRegistry):
-        ...     _registry_init_on_setattr = False
+        ...     _registry_auto_create_vars = False
         ...     locale: str = 'en'
 
         >>> current = CurrentVars()
@@ -367,7 +367,7 @@ class ContextVarsRegistry(MutableMapping):
             attr_name not in cls._registry_descriptors
         ), "This method should not be called when attribute is already initialized as ContextVar"
 
-        if not cls._registry_init_on_setattr:
+        if not cls._registry_auto_create_vars:
             raise UndeclaredAttributeError.format(
                 class_name=cls.__name__,
                 attr_name=attr_name,
@@ -539,9 +539,9 @@ class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     that disables dyanmic variable initialization::
 
         class {class_name}(ContextVarsRegistry):
-            _registry_init_on_setattr = False
+            _registry_auto_create_vars = False
 
-    Because of ``_registry_init_on_setattr=False``, you can use only pre-defined variables.
+    Because of ``_registry_auto_create_vars=False``, you can use only pre-defined variables.
     An attempt to set any other attribute will raise this exception.
 
     So, you have 3 options to solve the problem:
@@ -554,7 +554,7 @@ class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     2. Enable dynamic initialization of new context variables, like this::
 
         class {class_name}(ContextVarsRegistry):
-            _registry_init_on_setattr = True
+            _registry_auto_create_vars = True
 
     3. Check the name of the attribute: '{attr_name}'.
        Maybe there is a typo in the name?

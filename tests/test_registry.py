@@ -101,11 +101,11 @@ def test__missing_vars__are_automatically_created__on_setattr():
     current.timezone = "Europe/Moscow"
     assert CurrentVars.timezone.get() == "Europe/Moscow"
 
-    # ...but this feature may be disabled by setting `_registry_init_on_setattr = False`
+    # ...but this feature may be disabled by setting `_registry_auto_create_vars = False`
     # Let's test that:
 
     class CurrentVars(ContextVarsRegistry):
-        _registry_init_on_setattr = False
+        _registry_auto_create_vars = False
 
     current = CurrentVars()
 
@@ -175,7 +175,7 @@ def test__with_context_manager__throws_error__when_setting_reserved_registry_att
 
 def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
     class CurrentVars(ContextVarsRegistry):
-        _registry_init_on_setattr = False
+        _registry_auto_create_vars = False
         locale: str = "en"
 
     current = CurrentVars()
@@ -185,7 +185,7 @@ def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled()
 
     # an attempt to set current.timezone will raise AttributeError
     # Because the variable wasn't declared in the class definition
-    # (and dynamic creation of variables is disabled by ``_registry_init_on_setattr = False``)
+    # (and dynamic creation of variables is disabled by ``_registry_auto_create_vars = False``)
     with raises(AttributeError):
         with current(locale="en_US", timezone="America/New_York"):
             pass
