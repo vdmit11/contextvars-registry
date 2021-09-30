@@ -1013,14 +1013,6 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
-name = "supply-args"
-version = "0.0.3"
-description = "Take function arguments from context variables and various other sources (WARNING: unstable alpha version. Things may break)."
-category = "main"
-optional = false
-python-versions = ">=3.7.0,<4.0.0"
-
-[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -1197,7 +1189,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "3909069ae6d0d769252c4bab8d8f8485a20aa90a64f9c081872e32d806cbd73a"
+content-hash = "640d1ab8ae91654efe01c39143f76aed647c810e7cc98cf9d3467cb5df08b652"
 
 [metadata.files]
 alabaster = [
@@ -1824,10 +1816,6 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
-]
-supply-args = [
-    {file = "supply-args-0.0.3.tar.gz", hash = "sha256:f86a454f6b00fbc36ed0e0d6e9b79c5c332e0ceeae0512933ae7d6e30c646539"},
-    {file = "supply_args-0.0.3-py3-none-any.whl", hash = "sha256:b180f3d74e752189d2d2f314e139284584ac8e714f010b3c1a503167fa03b2f8"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
