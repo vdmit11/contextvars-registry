@@ -217,8 +217,8 @@ class ContextVarsRegistry(MutableMapping):
     It is just kept for the convenience, and maybe small performance improvements.
     """
 
-    _registry_init_lock: threading.RLock
-    """A lock that protects initialization of the class attributes as context variables.
+    _registry_var_create_lock: threading.RLock
+    """A lock that protects against race conditions during cration of new ContextVar() objects.
 
     ContextVar() objects are lazily created on 1st attempt to set an attribute.
     So a race condition is possible: multiple concurrent threads (or co-routines)
@@ -298,7 +298,7 @@ class ContextVarsRegistry(MutableMapping):
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
         cls._registry_descriptors = {}
-        cls._registry_init_lock = threading.RLock()
+        cls._registry_var_create_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
         super().__init_subclass__()
 
@@ -319,7 +319,7 @@ class ContextVarsRegistry(MutableMapping):
 
     @classmethod
     def __init_class_attr_as_descriptor(cls, attr_name):
-        with cls._registry_init_lock:
+        with cls._registry_var_create_lock:
             if attr_name in cls._registry_descriptors:
                 return
 
