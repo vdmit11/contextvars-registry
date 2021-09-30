@@ -464,17 +464,6 @@ class ContextVarsRegistry(MutableMapping):
         ctx_var.set(value)
 
     def __delitem__(self, key):
-        """Delete member of the registry (NOT IMPLEMENTED, ALWAYS THROWS ERROR).
-
-        This method always throws :class:`contextvars_extras.descriptor.DeleteIsNotImplementedError`
-
-        This is done because Python's context variables cannot be garbage-collected.
-        Once a ``ContextVar`` object is created, it has to live forever.
-        If you delete it, you get a memory leak.
-
-        To avoid memory leaks, we have to completely ban deletion of context variables,
-        and thus this method always throws an error.
-        """
         ctx_var = self.__before_set__ensure_initialized(key, None)
         ctx_var.__delete__(self)
 
