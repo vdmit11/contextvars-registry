@@ -181,7 +181,7 @@ from contextvars_extras.util import ExceptionDocstringMixin, Missing
 class ContextVarsRegistry(MutableMapping):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
-    _var_init_on_setattr: bool = True
+    _registry_init_on_setattr: bool = True
     """Automatically initialize missing ContextVar() objects when setting attributes?
 
     If set to True (default), missing ContextVar() objects are automatically created when
@@ -197,7 +197,7 @@ class ContextVarsRegistry(MutableMapping):
     However, if you find this behavior weak, you may disable it, like this:
 
         >>> class CurrentVars(ContextVarsRegistry):
-        ...     _var_init_on_setattr = False
+        ...     _registry_init_on_setattr = False
         ...     locale: str = 'en'
 
         >>> current = CurrentVars()
@@ -205,7 +205,7 @@ class ContextVarsRegistry(MutableMapping):
         AttributeError: ...
     """
 
-    _var_descriptors: Dict[str, ContextVarDescriptor]
+    _registry_descriptors: Dict[str, ContextVarDescriptor]
     """A dictionary of all context vars in the registry.
 
     Keys are attribute names, and values are instances of :class:`ContextVarDescriptor`.
@@ -217,7 +217,7 @@ class ContextVarsRegistry(MutableMapping):
     It is just kept for the convenience, and maybe small performance improvements.
     """
 
-    _var_init_lock: threading.RLock
+    _registry_init_lock: threading.RLock
     """A lock that protects initialization of the class attributes as context variables.
 
     ContextVar() objects are lazily created on 1st attempt to set an attribute.
@@ -297,8 +297,8 @@ class ContextVarsRegistry(MutableMapping):
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
-        cls._var_descriptors = {}
-        cls._var_init_lock = threading.RLock()
+        cls._registry_descriptors = {}
+        cls._registry_init_lock = threading.RLock()
         cls.__init_type_hinted_class_attrs_as_descriptors()
         super().__init_subclass__()
 
@@ -319,11 +319,11 @@ class ContextVarsRegistry(MutableMapping):
 
     @classmethod
     def __init_class_attr_as_descriptor(cls, attr_name):
-        with cls._var_init_lock:
-            if attr_name in cls._var_descriptors:
+        with cls._registry_init_lock:
+            if attr_name in cls._registry_descriptors:
                 return
 
-            if attr_name.startswith("_var_"):
+            if attr_name.startswith("_registry_"):
                 return
 
             value = getattr(cls, attr_name, Missing)
@@ -331,7 +331,7 @@ class ContextVarsRegistry(MutableMapping):
 
             descriptor = ContextVarDescriptor(default=value, owner_cls=cls, owner_attr=attr_name)
             setattr(cls, attr_name, descriptor)
-            cls._var_descriptors[attr_name] = descriptor
+            cls._registry_descriptors[attr_name] = descriptor
 
     def __init__(self):
         self.__ensure_subclassed_properly()
@@ -344,16 +344,16 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor:
         try:
-            return cls._var_descriptors[attr_name]
+            return cls._registry_descriptors[attr_name]
         except KeyError:
-            cls.__before_set__ensure_not_starts_with_special_var_prefix(attr_name, value)
+            cls.__before_set__ensure_not_starts_with_special_registry_prefix(attr_name, value)
             cls.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
 
-            return cls._var_descriptors[attr_name]
+            return cls._registry_descriptors[attr_name]
 
     @classmethod
-    def __before_set__ensure_not_starts_with_special_var_prefix(cls, attr_name, value):
-        if attr_name.startswith("_var_"):
+    def __before_set__ensure_not_starts_with_special_registry_prefix(cls, attr_name, value):
+        if attr_name.startswith("_registry_"):
             raise ReservedAttributeError.format(
                 class_name=cls.__name__,
                 attr_name=attr_name,
@@ -364,10 +364,10 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
         assert (
-            attr_name not in cls._var_descriptors
+            attr_name not in cls._registry_descriptors
         ), "This method should not be called when attribute is already initialized as ContextVar"
 
-        if not cls._var_init_on_setattr:
+        if not cls._registry_init_on_setattr:
             raise UndeclaredAttributeError.format(
                 class_name=cls.__name__,
                 attr_name=attr_name,
@@ -381,7 +381,7 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def _asdict(cls) -> dict:
         out = {}
-        for key, ctx_var in cls._var_descriptors.items():
+        for key, ctx_var in cls._registry_descriptors.items():
             try:
                 out[key] = ctx_var.get()
             except LookupError:
@@ -452,7 +452,7 @@ class ContextVarsRegistry(MutableMapping):
 
     @classmethod
     def __getitem__(cls, key):
-        ctx_var = cls._var_descriptors[key]
+        ctx_var = cls._registry_descriptors[key]
         try:
             return ctx_var.get()
         except LookupError as err:
@@ -512,13 +512,13 @@ class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):
 
 
 class ReservedAttributeError(ExceptionDocstringMixin, AttributeError):
-    """Can't set attribute: {class_name}.{attr_name} because of the special '_var_' prefix.
+    """Can't set attribute: {class_name}.{attr_name} because of the special '_registry_' prefix.
 
     This exception is raised when you try to set a special attribute::
 
         instance.{attr_name} = {attr_value!r}
 
-    The ``_var_*`` prefix is reserved for configuration of the :class:`ContextVarRegistry`.
+    The ``_registry_*`` prefix is reserved for configuration of the :class:`ContextVarRegistry`.
     You can't have a context variable with such name.
 
     If you want to configure the registry class itself, you should do it when defining
@@ -539,9 +539,9 @@ class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     that disables dyanmic variable initialization::
 
         class {class_name}(ContextVarsRegistry):
-            _var_init_on_setattr = False
+            _registry_init_on_setattr = False
 
-    Because of ``_var_init_on_setattr=False``, you can use only pre-defined variables.
+    Because of ``_registry_init_on_setattr=False``, you can use only pre-defined variables.
     An attempt to set any other attribute will raise this exception.
 
     So, you have 3 options to solve the problem:
@@ -554,7 +554,7 @@ class UndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     2. Enable dynamic initialization of new context variables, like this::
 
         class {class_name}(ContextVarsRegistry):
-            _var_init_on_setattr = True
+            _registry_init_on_setattr = True
 
     3. Check the name of the attribute: '{attr_name}'.
        Maybe there is a typo in the name?

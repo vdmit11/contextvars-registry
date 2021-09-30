@@ -8,7 +8,7 @@ def save_context_vars_registry(registry: ContextVarsRegistry) -> dict:
     The resulting dict can be used as argument to :func:`restore_context_vars_registry`.
     """
     # pylint: disable=protected-access
-    return {key: descriptor.get_raw() for key, descriptor in registry._var_descriptors.items()}
+    return {key: descriptor.get_raw() for key, descriptor in registry._registry_descriptors.items()}
 
 
 def restore_context_vars_registry(registry: ContextVarsRegistry, saved_registry_state: dict):
@@ -82,5 +82,5 @@ def restore_context_vars_registry(registry: ContextVarsRegistry, saved_registry_
     get_saved_value = saved_registry_state.get
 
     # pylint: disable=protected-access
-    for key, descriptor in registry._var_descriptors.items():
+    for key, descriptor in registry._registry_descriptors.items():
         descriptor.set(get_saved_value(key, ContextVarValueDeleted))

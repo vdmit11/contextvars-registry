@@ -101,11 +101,11 @@ def test__missing_vars__are_automatically_created__on_setattr():
     current.timezone = "Europe/Moscow"
     assert CurrentVars.timezone.get() == "Europe/Moscow"
 
-    # ...but this feature may be disabled by setting `_var_init_on_setattr = False`
+    # ...but this feature may be disabled by setting `_registry_init_on_setattr = False`
     # Let's test that:
 
     class CurrentVars(ContextVarsRegistry):
-        _var_init_on_setattr = False
+        _registry_init_on_setattr = False
 
     current = CurrentVars()
 
@@ -113,19 +113,21 @@ def test__missing_vars__are_automatically_created__on_setattr():
         current.timezone = "Europe/Moscow"
 
 
-def test__var_prefix__is_reserved__and_cannot_be_used_for_context_variables():
+def test__registry_prefix__is_reserved__and_cannot_be_used_for_context_variables():
     class CurrentVars(ContextVarsRegistry):
-        _var_foo: str = "foo"
+        _registry_foo: str = "foo"
 
     current = CurrentVars()
 
-    # _var_* attributes cannot be set on instance level
+    # _registry_* attributes cannot be set on instance level
     with raises(AttributeError):
-        current._var_foo = "bar"
+        current._registry_foo = "bar"
 
     # and they don't become ContextVar() objects,
     # even though they were declared with type hints on the class level
-    assert isinstance(CurrentVars._var_foo, str)  # normally you expect ContextVarDescriptor here
+    assert isinstance(
+        CurrentVars._registry_foo, str
+    )  # normally you expect ContextVarDescriptor here
 
 
 def test__with_context_manager__sets_variables__temporarily():
@@ -156,24 +158,24 @@ def test__with_context_manager__sets_variables__temporarily():
     assert CurrentVars.locale.get("FALLBACK_VALUE") == "FALLBACK_VALUE"
 
 
-def test__with_context_manager__throws_error__when_setting_reserved_var_attribute():
+def test__with_context_manager__throws_error__when_setting_reserved_registry_attribute():
     class CurrentVars(ContextVarsRegistry):
-        _var_foo: str = "not a ContextVar because of special _var_ prefix"
+        _registry_foo: str = "not a ContextVar because of special _registry_ prefix"
 
     current = CurrentVars()
 
     with raises(AttributeError):
-        with current(_var_foo="foo"):
+        with current(_registry_foo="foo"):
             pass
 
     with raises(AttributeError):
-        with current(_var_bar="bar"):
+        with current(_registry_bar="bar"):
             pass
 
 
 def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
     class CurrentVars(ContextVarsRegistry):
-        _var_init_on_setattr = False
+        _registry_init_on_setattr = False
         locale: str = "en"
 
     current = CurrentVars()
@@ -183,7 +185,7 @@ def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled()
 
     # an attempt to set current.timezone will raise AttributeError
     # Because the variable wasn't declared in the class definition
-    # (and dynamic creation of variables is disabled by ``_var_init_on_setattr = False``)
+    # (and dynamic creation of variables is disabled by ``_registry_init_on_setattr = False``)
     with raises(AttributeError):
         with current(locale="en_US", timezone="America/New_York"):
             pass
