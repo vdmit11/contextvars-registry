@@ -26,9 +26,9 @@ Modules:
    :toctree:
    :recursive:
 
+   descriptor
    registry
    registry_restore   
-   descriptor
    context
    context_async
    util

@@ -1,3 +1,5 @@
+"""ContextVarDescriptor - an improved version of built-in ContextVar."""
+
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
@@ -18,37 +20,6 @@ DeferredDefaultFn = Callable[[], Any]
 
 
 class ContextVarDescriptor:
-    """A ``ContextVar`` wrapper that behaves like ``@property`` when attached to a class.
-
-    This thing is designed to be placed in as class attribute, like this::
-
-        >>> class MyVars:
-        ...     locale = ContextVarDescriptor(default='en')
-        >>> my_vars = MyVars()
-
-    and it provides ``@property``-like access to the context variable.
-
-    That is, you just get/set object attributes, and under the hood it calls methods of
-    the underlying ``ContextVar`` object::
-
-        >>> my_vars.locale
-        'en'
-        >>> my_vars.locale = 'en_US'
-        >>> my_vars.locale
-        'en_US'
-
-    The underlying :class:`contextvars.ContextVar` methods can be reached via class attributes::
-
-        >>> MyVars.locale.get()
-        'en_US'
-        >>> token = MyVars.locale.set('en_GB')
-        >>> MyVars.locale.get()
-        'en_GB'
-        >>> MyVars.locale.reset(token)
-        >>> MyVars.locale.get()
-        'en_US'
-    """
-
     context_var: ContextVar
     name: str
     _default: Any
@@ -578,46 +549,6 @@ class ContextVarDescriptor:
             # The exception can be avoided by passing a `default=...` value.
             >>> timezone_var.get(default='GMT')
             'GMT'
-
-        Also note that a ``.delete()`` call doesn't reset value to default::
-
-            >>> timezone_var = ContextVarDescriptor('timezone_var', default='UTC')
-
-            # Before .delete() is called, .get() returns the `default=UTC` that was passed above
-            >>> timezone_var.get()
-            'UTC'
-
-            # Call .delete(). That erases the default value.
-            >>> timezone_var.delete()
-
-            # Now .get() will throw LookupError, as if there was no default value at the beginning.
-            >>> try:
-            ...     timezone_var.get()
-            ... except LookupError:
-            ...     print('LookupError was raised')
-            LookupError was raised
-
-            # ...but you still can provide default as argument to ``.get()``
-            >>> timezone_var.get(default='UTC')
-            'UTC'
-
-        .. Note::
-
-            Python doesn't provide any built-in way to erase a context variable.
-            So, deletion is implemented in a bit hacky way...
-
-            When you call :meth:`~delete`, a special marker object called ``ContextVarValueDeleted``
-            is written into the context variable. The :meth:`~get` method detects that marker,
-            and behaves as if there was no value.
-
-            That happens under the hood, and normally you shouldn't notice that, unless you use
-            lower-level methods like :meth:`get_raw` or :meth:`contextvars.ContextVar.get`::
-
-                >>> timezone_var.get_raw()
-                contextvars_extras.descriptor.ContextVarValueDeleted
-
-                >>> timezone_var.context_var.get()
-                contextvars_extras.descriptor.ContextVarValueDeleted
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_initialize_fast_methods``.
