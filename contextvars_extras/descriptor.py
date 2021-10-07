@@ -233,30 +233,6 @@ class ContextVarDescriptor:
 
         self.is_set = is_set
 
-        # -> ContextVarDescriptor.set_if_not_set
-        def set_if_not_set(new_value) -> Any:
-            existing_value = context_var_get(_Missing)
-
-            if existing_value in (_Missing, _ContextVarValueDeleted, ContextVarNotInitialized):
-                context_var_set(new_value)
-                return new_value
-
-            return existing_value
-
-        self.set_if_not_set = set_if_not_set
-
-        # -> ContextVarDescriptor.reset_to_default
-        def reset_to_default():
-            context_var_set(_ContextVarNotInitialized)
-
-        self.reset_to_default = reset_to_default
-
-        # -> ContextVarDescriptor.delete
-        def delete():
-            context_var_set(_ContextVarValueDeleted)
-
-        self.delete = delete
-
         # Copy some methods from ContextVar.
         # These are even better than closures above, because they are C functions.
         # So by calling, for example ``ContextVarRegistry.set()``, you're *actually* calling
@@ -426,10 +402,13 @@ class ContextVarDescriptor:
             >>> locale_var.set_if_not_set('en_AU')
             'en_AU'
         """
-        # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
-        # It exists only for auto-generated documentation and static code analysis tools.
-        raise AssertionError
+        existing_value = self.get(_NotSet)
+
+        if existing_value is _NotSet:
+            self.set(value)
+            return value
+
+        return existing_value
 
     def reset(self, token: Token):
         """Reset the context variable to a previous value.
@@ -517,10 +496,7 @@ class ContextVarDescriptor:
             ...     print('LookupError was raised')
             LookupError was raised
         """
-        # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
-        # It exists only for auto-generated documentation and static code analysis tools.
-        raise AssertionError
+        self.set(ContextVarNotInitialized)
 
     def delete(self):
         """Delete value stored in the context variable.
@@ -550,10 +526,7 @@ class ContextVarDescriptor:
             >>> timezone_var.get(default='GMT')
             'GMT'
         """
-        # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
-        # It exists only for auto-generated documentation and static code analysis tools.
-        raise AssertionError
+        self.set(ContextVarValueDeleted)
 
     def __get__(self, instance, _unused_owner_cls):
         if instance is None:
@@ -573,6 +546,10 @@ class ContextVarDescriptor:
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"
+
+
+# A special sentinel object, used only by the ContextVarDescriptor.set_if_not_set() method.
+_NotSet = Sentinel(__name__, "_NotSet")
 
 
 class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError):
