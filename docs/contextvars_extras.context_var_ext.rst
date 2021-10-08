@@ -206,14 +206,14 @@ You can provide an existing object as the :class:`ContextVarExt(context_var=...)
   # create a lower-level ContextVar object
   >>> locale_var = ContextVar('locale_var', default='en')
 
-  # create a descriptor, passing the existing ContextVar as argument
-  >>> locale_descriptor = ContextVarExt(context_var=locale_var)
+  # create a ContextVarExt() object, passing the existing ContextVar as argument
+  >>> locale_var_ext = ContextVarExt(context_var=locale_var)
 
   # so then, .context_var attribute will be set to our existing ContextVar object
-  >>> assert locale_descriptor.context_var is locale_var
+  >>> assert locale_var_ext.context_var is locale_var
 
   # and, .name is copied from ContextVar.name
-  >>> locale_descriptor.name
+  >>> locale_var_ext.name
   'locale_var'
 
 
@@ -233,14 +233,14 @@ I can't provide an extensive benchmark yet, but here is a very rough measurement
   >>> from contextvars import ContextVar
 
   >>> timezone_var = ContextVar('timezone_var', default='UTC')
-  >>> timezone_descriptor = ContextVarExt(context_var=timezone_var)
+  >>> timezone_var_ext = ContextVarExt(context_var=timezone_var)
 
   # ContextVar.get() method call
   %timeit timezone_var.get()
   80.6 ns ± 1.43 ns per loop (mean ± std. dev. of 7 runs, 10000000 loops each)
 
   # ContextVarExt.get() method call
-  %timeit timezone_descriptor.get()
+  %timeit timezone_var_ext.get()
   220 ns ± 1.88 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each
 
   # cost of attribute lookup for comparison
