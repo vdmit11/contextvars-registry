@@ -160,7 +160,7 @@ Attribute mechanics works as expected, as if the attribute is really deleted, ch
 you will get that special ``ContextVarValueDeleted`` object stored in the ``ContextVar``::
 
     >>> CurrentVars.user_id.get_raw()
-    contextvars_extras.descriptor.ContextVarValueDeleted
+    contextvars_extras.context_var_ext.ContextVarValueDeleted
 
 So, long story short: once allocated, a ``ContextVar`` object lives forever in the registry.
 When you delete it, we only mark it as deleted, but never actually delete it.
@@ -174,7 +174,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from typing import Dict, List, Tuple, get_type_hints
 
-from contextvars_extras.descriptor import ContextVarDescriptor
+from contextvars_extras.context_var_descriptor import ContextVarDescriptor
 from contextvars_extras.util import ExceptionDocstringMixin, Missing
 
 

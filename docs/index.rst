@@ -26,7 +26,8 @@ Modules:
    :toctree:
    :recursive:
 
-   descriptor
+   context_var_ext
+   context_var_descriptor
    registry
    registry_restore   
    context

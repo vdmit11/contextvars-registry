@@ -1,4 +1,4 @@
-from contextvars_extras.descriptor import ContextVarValueDeleted
+from contextvars_extras.context_var_ext import ContextVarValueDeleted
 from contextvars_extras.registry import ContextVarsRegistry
 
 
