@@ -72,3 +72,31 @@ def test__deferred_default__is_masked_by__default_arg_of_get_method():
     value = test_dict_var.get(default=None)
     assert value is None
     assert _empty_dict.call_counter == 0
+
+
+def test__context_var_ext__has_optimized_method_stubs():
+    # This test doesn't test anything useful.
+    # It is only needed to achieve 100% test coverage.
+    #
+    # It just triggers some code that is never executed under normal circumstances
+    # (it is never executed because methods are replaced with performance-boosted closures
+    # when the ContextVarExt class is instanciated).
+    # So here we just trigger empty method stubs just to achieve 100% test coverage.
+
+    timezone_var = ContextVarExt("timezone_var", default="UTC")
+
+    with pytest.raises(AssertionError):
+        ContextVarExt.get(timezone_var)
+
+    with pytest.raises(AssertionError):
+        ContextVarExt.get_raw(timezone_var)
+
+    with pytest.raises(AssertionError):
+        ContextVarExt.is_set(timezone_var)
+
+    with pytest.raises(AssertionError):
+        ContextVarExt.set(timezone_var, "GMT")
+
+    token = timezone_var.set("GMT")
+    with pytest.raises(AssertionError):
+        ContextVarExt.reset(timezone_var, token)
