@@ -1,7 +1,7 @@
 import pytest
 
 from contextvars_extras.context import bind_to_sandbox_context
-from contextvars_extras.context_var_descriptor import ContextVarDescriptor
+from contextvars_extras.context_var_ext import ContextVarExt
 
 
 def test__deferred_default__is_called_by_get_method__once_per_context():
@@ -11,7 +11,7 @@ def test__deferred_default__is_called_by_get_method__once_per_context():
 
     _empty_dict.call_counter = 0
 
-    test_dict_var = ContextVarDescriptor("test_dict_var", deferred_default=_empty_dict)
+    test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
     @bind_to_sandbox_context
     def modify_test_dict(**values):
@@ -36,7 +36,7 @@ def test__deferred_default__works_with__is_set__and__reset_to_default__methods()
 
     _empty_dict.call_counter = 0
 
-    test_dict_var = ContextVarDescriptor("test_dict_var", deferred_default=_empty_dict)
+    test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
     assert not test_dict_var.is_set()
     assert _empty_dict.call_counter == 0
@@ -56,7 +56,7 @@ def test__deferred_default__works_with__is_set__and__reset_to_default__methods()
 
 def test__deferred_default__cannot_be_used_with_just__default():
     with pytest.raises(AssertionError):
-        ContextVarDescriptor("test_var", default={}, deferred_default=dict)
+        ContextVarExt("test_var", default={}, deferred_default=dict)
 
 
 def test__deferred_default__is_masked_by__default_arg_of_get_method():
@@ -66,7 +66,7 @@ def test__deferred_default__is_masked_by__default_arg_of_get_method():
 
     _empty_dict.call_counter = 0
 
-    test_dict_var = ContextVarDescriptor("test_dict_var", deferred_default=_empty_dict)
+    test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
     # .get(default=...) arg is present, so deferred default is not called
     value = test_dict_var.get(default=None)
