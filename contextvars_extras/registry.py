@@ -329,7 +329,8 @@ class ContextVarsRegistry(MutableMapping):
             value = getattr(cls, attr_name, Missing)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
-            descriptor = ContextVarDescriptor(default=value, owner_cls=cls, owner_attr=attr_name)
+            descriptor = ContextVarDescriptor(default=value)
+            descriptor.__set_name__(cls, attr_name)
             setattr(cls, attr_name, descriptor)
             cls._registry_descriptors[attr_name] = descriptor
 

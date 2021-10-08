@@ -14,8 +14,6 @@ class ContextVarDescriptor(ContextVarExt):
         default: Optional[Any] = Missing,
         deferred_default: Optional[DeferredDefaultFn] = None,
         context_var: Optional[ContextVar] = None,
-        owner_cls: Optional[type] = None,
-        owner_attr: Optional[str] = None,
     ):
         """Initialize ContextVarDescriptor object.
 
@@ -36,16 +34,6 @@ class ContextVarDescriptor(ContextVarExt):
         :param context_var: A reference to an existing ``ContextVar`` object.
                             You need it only if you want to re-use an existing object.
                             If missing, a new ``ContextVar`` object is created automatically.
-
-        :param owner_cls: Reference to a class, where the descritor is placed.
-                          Usually it is captured automatically by the ``__set_name__`` method,
-                          however, you need to pass it manually if you're adding a new descriptor
-                          after the class is already created.
-
-        :param owner_attr: Name of the attribute, where the descriptor is placed.
-                           Usually it is captured automatically by the ``__set_name__`` method,
-                           however, you need to pass it manually if you're adding a new descriptor
-                           after the class is already creted.
         """
         if name or context_var:
             super().__init__(
@@ -58,10 +46,6 @@ class ContextVarDescriptor(ContextVarExt):
             assert not ((default is not Missing) and (deferred_default is not None))
             self._default = default
             self._deferred_default = deferred_default
-
-            if owner_cls and owner_attr:
-                context_var = self._new_context_var_for_owner(owner_cls, owner_attr, default)
-                self._set_context_var(context_var)
 
     def __set_name__(self, owner_cls: type, owner_attr: str):
         if hasattr(self, "context_var"):
