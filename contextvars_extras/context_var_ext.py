@@ -57,11 +57,11 @@ class ContextVarExt:
 
         if context_var:
             assert not name and not default
-            self._set_context_var(context_var)
+            self._init_context_var(context_var)
         else:
             assert name
             context_var = self._new_context_var(name, default)
-            self._set_context_var(context_var)
+            self._init_context_var(context_var)
 
     @classmethod
     def _new_context_var(cls, name: str, default: Any) -> ContextVar:
@@ -74,7 +74,7 @@ class ContextVarExt:
 
         return context_var
 
-    def _set_context_var(self, context_var: ContextVar):
+    def _init_context_var(self, context_var: ContextVar):
         assert not hasattr(self, "context_var")
 
         # In case ``deferred_default`` is used, put a special marker object to the variable

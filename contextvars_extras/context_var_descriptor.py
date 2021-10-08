@@ -68,7 +68,7 @@ class ContextVarDescriptor(ContextVarExt):
             return
 
         context_var = self._new_context_var_for_owner(owner_cls, owner_attr, self._default)
-        self._set_context_var(context_var)
+        self._init_context_var(context_var)
 
     @classmethod
     def _new_context_var_for_owner(cls, owner_cls: type, owner_attr: str, default) -> ContextVar:
