@@ -50,7 +50,7 @@ class ContextVarExt:
                             You need it only if you want to re-use an existing object.
                             If missing, a new ``ContextVar`` object is created automatically.
         """
-        assert not ((name is None) and (context_var is None))
+        assert name or context_var
         assert not ((default is not Missing) and (deferred_default is not None))
         self._default = default
         self._deferred_default = deferred_default
