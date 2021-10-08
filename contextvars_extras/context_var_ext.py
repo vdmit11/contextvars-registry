@@ -36,8 +36,6 @@ class ContextVarExt:
 
         :param name: Name for the underlying ``ContextVar`` object.
                      Needed for introspection and debugging purposes.
-                     Ususlly you don't want to set it manually, because it is automatically
-                     formatted from owner class/attribute names.
 
         :param default: The default value for the  underlying ``ContextVar`` object.
                         Returned by the ``get()`` method if the variable is not bound to a value.
