@@ -1,7 +1,7 @@
 ﻿contextvars\_extras.util
 ========================
 
-.. automodule:: contextvars_extras.util
+.. automodule:: contextvars_extras.internal_utils
 
    
    

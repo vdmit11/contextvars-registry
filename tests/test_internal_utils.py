@@ -1,6 +1,6 @@
 import pytest
 
-from contextvars_extras.util import Sentinel
+from contextvars_extras.internal_utils import Sentinel
 
 
 def test__Sentinel__checks_for_duplicate_names():

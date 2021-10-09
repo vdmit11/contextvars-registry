@@ -46,7 +46,7 @@ class Sentinel:
     Mostly useful for distinguishing "value is not set" and "value is set to None" cases,
     as shown in this example::
 
-        >>> from contextvars_extras.util import Sentinel
+        >>> from contextvars_extras.internal_utils import Sentinel
 
         >>> NotSet = Sentinel(__name__, 'NotSet')
 

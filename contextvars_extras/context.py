@@ -3,7 +3,7 @@
 from contextvars import Context, copy_context
 from functools import partial, wraps
 
-from contextvars_extras.util import ReturnedValue, WrappedFn
+from contextvars_extras.internal_utils import ReturnedValue, WrappedFn
 
 
 def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:

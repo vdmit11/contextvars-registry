@@ -4,7 +4,7 @@ from contextvars import ContextVar
 from typing import Any, Optional
 
 from contextvars_extras.context_var_ext import ContextVarExt, DeferredDefaultFn, Missing
-from contextvars_extras.util import ExceptionDocstringMixin
+from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
 
 class ContextVarDescriptor(ContextVarExt):

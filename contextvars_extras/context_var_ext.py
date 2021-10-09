@@ -3,7 +3,7 @@
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
-from contextvars_extras.util import Missing, Sentinel
+from contextvars_extras.internal_utils import Missing, Sentinel
 
 # A special sentinel object that we put into ContextVar when you delete a value from it
 # (when ContextVarExt.delete() method is called).

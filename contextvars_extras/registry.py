@@ -175,7 +175,7 @@ from contextvars import ContextVar, Token
 from typing import Dict, List, Tuple, get_type_hints
 
 from contextvars_extras.context_var_descriptor import ContextVarDescriptor
-from contextvars_extras.util import ExceptionDocstringMixin, Missing
+from contextvars_extras.internal_utils import ExceptionDocstringMixin, Missing
 
 
 class ContextVarsRegistry(MutableMapping):
