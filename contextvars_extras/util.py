@@ -1,4 +1,3 @@
-import functools
 import inspect
 import os
 from typing import Callable, Set, TypeVar
@@ -176,11 +175,14 @@ class ExceptionDocstringMixin:
         message = cls._clean_docstring().format(**kwargs)
         return cls(message)
 
+    __doc_cleaned: str
+    """Same as __doc__, but with whitespace characters cleaned."""
+
     @classmethod
-    def _clean_docstring(cls):
-        return cleandoc_cached(cls.__doc__) + os.linesep
-
-
-@functools.lru_cache(maxsize=128)
-def cleandoc_cached(doc):
-    return inspect.cleandoc(doc)
+    def _clean_docstring(cls) -> str:
+        try:
+            return cls.__doc_cleaned
+        except AttributeError:
+            assert cls.__doc__
+            cls.__doc_cleaned = inspect.cleandoc(cls.__doc__) + os.linesep
+            return cls.__doc_cleaned
