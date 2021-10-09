@@ -144,8 +144,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
         {'locale': 'nb', 'timezone': 'Antarctica/Troll'}
     """
     # Use functools.partial() if args/kwargs passed.
-    if args or kwargs:
-        fn = partial(fn, *args, **kwargs)
+    fn = _partial(fn, *args, **kwargs)
 
     snapshot_ctx = copy_context()
 
@@ -201,8 +200,7 @@ def bind_to_empty_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     and then they will be called in empty context, as if there was no parent API call.
     """
     # Use functools.partial() if args/kwargs passed.
-    if args or kwargs:
-        fn = partial(fn, *args, **kwargs)
+    fn = _partial(fn, *args, **kwargs)
 
     @wraps(fn)
     def _wrapper__bind_to_empty_context(*args, **kwargs) -> ReturnedValue:
@@ -262,8 +260,7 @@ def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     variables become local to the test.
     """
     # Use functools.partial() if args/kwargs passed.
-    if args or kwargs:
-        fn = partial(fn, *args, **kwargs)
+    fn = _partial(fn, *args, **kwargs)
 
     @wraps(fn)
     def _wrapper__bind_to_sandbox_context(*args, **kwargs) -> ReturnedValue:
@@ -271,3 +268,16 @@ def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
         return sandbox_context.run(fn, *args, **kwargs)
 
     return _wrapper__bind_to_sandbox_context
+
+
+def _partial(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
+    # This function behaves like functools.partial(),
+    # except that it does NOT apply partial() and returns function as-is if no arguments provided.
+    #
+    # This is is done to make debugging slightly more nice: The original function (without partial)
+    # just looks better in stack traces and print() statements.
+    #
+    # Also, there is a performance improvement, but it is minor, and can be neglected.
+    if args or kwargs:
+        fn = partial(fn, *args, **kwargs)
+    return fn
