@@ -35,17 +35,19 @@ class ContextVarDescriptor(ContextVarExt):
                             You need it only if you want to re-use an existing object.
                             If missing, a new ``ContextVar`` object is created automatically.
         """
-        if name or context_var:
-            super().__init__(
-                name=name,
-                default=default,
-                deferred_default=deferred_default,
-                context_var=context_var,
-            )
-        else:
+        if not name and not context_var:
             assert not ((default is not Missing) and (deferred_default is not None))
             self._default = default
             self._deferred_default = deferred_default
+            # Postpone ContextVar() initialization until the __set_name__() method is called.
+            return
+
+        super().__init__(
+            name=name,
+            default=default,
+            deferred_default=deferred_default,
+            context_var=context_var,
+        )
 
     def __set_name__(self, owner_cls: type, owner_attr: str):
         if hasattr(self, "context_var"):
