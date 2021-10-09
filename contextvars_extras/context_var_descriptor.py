@@ -49,17 +49,17 @@ class ContextVarDescriptor(ContextVarExt):
             context_var=context_var,
         )
 
-    def __set_name__(self, owner_cls: type, owner_attr: str):
+    def __set_name__(self, owner_cls: type, owner_attr_name: str):
         if hasattr(self, "context_var"):
             return
 
-        context_var = self._new_context_var_for_owner(owner_cls, owner_attr, self._default)
+        name = self._format_descriptor_name(owner_cls, owner_attr_name)
+        context_var = self._new_context_var(name, self._default)
         self._init_context_var(context_var)
 
-    @classmethod
-    def _new_context_var_for_owner(cls, owner_cls: type, owner_attr: str, default) -> ContextVar:
-        name = f"{owner_cls.__module__}.{owner_cls.__name__}.{owner_attr}"
-        return cls._new_context_var(name, default)
+    @staticmethod
+    def _format_descriptor_name(owner_cls: type, owner_attr_name: str) -> str:
+        return f"{owner_cls.__module__}.{owner_cls.__name__}.{owner_attr_name}"
 
     def __get__(self, instance, _unused_owner_cls):
         if instance is None:
