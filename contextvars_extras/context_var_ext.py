@@ -123,8 +123,10 @@ class ContextVarExt:
 
         # Ok, now define closures that use all the variables prepared above.
 
-        # -> ContextVarExt.get
-        def get(default=_Missing):
+        # NOTE: function name is chosen such that it looks good in stack traces.
+        # When an exception is thrown, just "get" looks cryptic, while "_method_ContextVarExt_get"
+        # at least gives you a hint that the ContextVarExt.get method is the source of exception.
+        def _method_ContextVarExt_get(default=_Missing):
             if default is _Missing:
                 value = context_var_get()
             else:
@@ -150,17 +152,16 @@ class ContextVarExt:
 
             return value
 
-        self.get = get
+        self.get = _method_ContextVarExt_get
 
-        # -> ContextVarExt.is_set
-        def is_set() -> bool:
+        def _method_ContextVarExt_is_set() -> bool:
             return context_var_get(_Missing) not in (
                 _Missing,
                 _ContextVarValueDeleted,
                 _ContextVarNotInitialized,
             )
 
-        self.is_set = is_set
+        self.is_set = _method_ContextVarExt_is_set
 
         # Copy some methods from ContextVar.
         # These are even better than closures above, because they are C functions.
