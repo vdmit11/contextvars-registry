@@ -320,11 +320,10 @@ class ContextVarsRegistry(MutableMapping):
     @classmethod
     def __init_class_attr_as_descriptor(cls, attr_name):
         with cls._registry_var_create_lock:
-            if attr_name in cls._registry_descriptors:
-                return
-
             if attr_name.startswith("_registry_"):
                 return
+
+            assert attr_name not in cls._registry_descriptors
 
             value = getattr(cls, attr_name, Missing)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
