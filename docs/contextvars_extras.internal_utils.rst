@@ -1,5 +1,5 @@
-﻿contextvars\_extras.util
-========================
+﻿contextvars\_extras.internal\_utils
+===================================
 
 .. automodule:: contextvars_extras.internal_utils
 
@@ -8,12 +8,6 @@
    
 
    
-   
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      cleandoc_cached
    
    
 

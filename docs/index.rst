@@ -32,7 +32,7 @@ Modules:
    registry_restore   
    context
    context_async
-   util
+   internal_utils
    integrations.wsgi   
    integrations.flask
    
