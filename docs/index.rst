@@ -28,7 +28,7 @@ Modules:
 
    context_var_ext
    context_var_descriptor
-   registry
+   context_vars_registry
    registry_restore   
    context
    context_async

@@ -1,7 +1,7 @@
-﻿contextvars\_extras.registry
-============================
+﻿contextvars\_extras.context_vars_registry
+=========================================
 
-.. automodule:: contextvars_extras.registry
+.. automodule:: contextvars_extras.context_vars_registry
 
    
    

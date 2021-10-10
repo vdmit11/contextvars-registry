@@ -20,7 +20,7 @@ def create_task_in_empty_context(coro: Coroutine) -> Task:
     Example::
 
         >>> from asyncio import create_task, run
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.context_async import create_task_in_empty_context
 
         >>> class CurrentVars(ContextVarsRegistry):

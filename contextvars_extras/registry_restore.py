@@ -1,5 +1,5 @@
 from contextvars_extras.context_var_ext import ContextVarValueDeleted
-from contextvars_extras.registry import ContextVarsRegistry
+from contextvars_extras.context_vars_registry import ContextVarsRegistry
 
 
 def save_context_vars_registry(registry: ContextVarsRegistry) -> dict:
@@ -22,7 +22,7 @@ def restore_context_vars_registry(registry: ContextVarsRegistry, saved_registry_
 
     Example::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.registry_restore import (
         ...    save_context_vars_registry,
         ...    restore_context_vars_registry,

@@ -50,12 +50,12 @@ is not a subclass (just because ContextVar can't be subclassed, this is a techni
 So class members are ContextVarDescriptor objects:
 
     >>> CurrentVars.timezone
-    <ContextVarDescriptor name='contextvars_extras.registry.CurrentVars.timezone'>
+    <ContextVarDescriptor name='contextvars_extras.context_vars_registry.CurrentVars.timezone'>
 
 and its underlying ContextVar can be reached via the `.context_var` attribute:
 
     >>> CurrentVars.timezone.context_var
-    <ContextVar name='contextvars_extras.registry.CurrentVars.timezone'...>
+    <ContextVar name='contextvars_extras.context_vars_registry.CurrentVars.timezone'...>
 
 But in practice, you normally shouldn't need that.
 ContextVarDescriptor should implement all same attributes and methods as ContextVar,

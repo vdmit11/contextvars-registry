@@ -1,6 +1,6 @@
 from pytest import raises
 
-from contextvars_extras.registry import (
+from contextvars_extras.context_vars_registry import (
     ContextVar,
     ContextVarDescriptor,
     ContextVarsRegistry,
@@ -65,7 +65,9 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
 
     # also, ContextVar() automatically get verbose name, useful for debugging
     assert (
-        "tests.test_registry.MyVars.hinted" == MyVars.hinted.name == MyVars.hinted.context_var.name
+        "tests.test_context_vars_registry.MyVars.hinted"
+        == MyVars.hinted.name
+        == MyVars.hinted.context_var.name
     )
 
 

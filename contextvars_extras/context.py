@@ -19,7 +19,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     This is useful when you want to produce a "frozen" callback,
     protected from mutations of context variables, as illustrated in this example::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.context import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
@@ -88,7 +88,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
 
     This is illustrated by the example below::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.context import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
@@ -168,7 +168,7 @@ def bind_to_empty_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
 
     Example::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.context import bind_to_empty_context
 
         >>> class CurrentVars(ContextVarsRegistry):
@@ -223,7 +223,7 @@ def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
 
     Example::
 
-        >>> from contextvars_extras.registry import ContextVarsRegistry
+        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
         >>> from contextvars_extras.context import bind_to_sandbox_context
 
         >>> class CurrentVars(ContextVarsRegistry):
