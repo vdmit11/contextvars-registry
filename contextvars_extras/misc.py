@@ -2,7 +2,7 @@
 
 from contextvars import ContextVar
 
-from contextvars_extras.context import bind_to_empty_context
+from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.internal_utils import Missing
 
 

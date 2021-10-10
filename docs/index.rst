@@ -30,7 +30,7 @@ Modules:
    context_var_descriptor
    context_vars_registry
    registry_restore   
-   context
+   context_management
    context_async
    misc
    internal_utils

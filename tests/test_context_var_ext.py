@@ -1,6 +1,6 @@
 import pytest
 
-from contextvars_extras.context import bind_to_sandbox_context
+from contextvars_extras.context_management import bind_to_sandbox_context
 from contextvars_extras.context_var_ext import ContextVarExt
 
 

@@ -20,7 +20,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     protected from mutations of context variables, as illustrated in this example::
 
         >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
-        >>> from contextvars_extras.context import bind_to_snapshot_context
+        >>> from contextvars_extras.context_management import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     user_id: int = None
@@ -89,7 +89,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     This is illustrated by the example below::
 
         >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
-        >>> from contextvars_extras.context import bind_to_snapshot_context
+        >>> from contextvars_extras.context_management import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     locale: str
@@ -169,7 +169,7 @@ def bind_to_empty_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     Example::
 
         >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
-        >>> from contextvars_extras.context import bind_to_empty_context
+        >>> from contextvars_extras.context_management import bind_to_empty_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     locale: str
@@ -224,7 +224,7 @@ def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     Example::
 
         >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
-        >>> from contextvars_extras.context import bind_to_sandbox_context
+        >>> from contextvars_extras.context_management import bind_to_sandbox_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     timezone: str = 'UTC'

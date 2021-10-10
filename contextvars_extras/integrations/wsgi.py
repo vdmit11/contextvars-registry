@@ -1,7 +1,7 @@
 from contextvars import ContextVar
 from typing import Callable
 
-from contextvars_extras.context import bind_to_sandbox_context
+from contextvars_extras.context_management import bind_to_sandbox_context
 
 current_environ: ContextVar = ContextVar("contextvars_extras.integrations.wsgi.current_environ")
 """Environment variables for the current HTTP request.
