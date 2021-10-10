@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.8 (2021-10-10)
+### Fix
+* No real changes here, just testing semantic-release workflow ([`22750b4`](https://github.com/vdmit11/contextvars-extras/commit/22750b4fd4eaf827cffe26fca967d80c6d45bea7))
+
 ## v0.0.7 (2021-10-10)
 ### Fix
 * Add a quote character that I deleted by an accident ([`5b6c19d`](https://github.com/vdmit11/contextvars-extras/commit/5b6c19dbe4d2660b666e0187944a2e3f7f17e601))
