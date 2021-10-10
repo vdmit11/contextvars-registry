@@ -49,6 +49,7 @@ Flask = {extras = ["async"], version = "^2.0.1"}
 gevent = "^21.8.0"
 sphinx-rtd-theme = "^0.5.2"
 pytest-cov = "^2.12.1"
+python-semantic-release = "^7.19.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -61,3 +62,9 @@ line-length = 100
 profile = "black"
 multi_line_output = 3
 line_length = 100
+
+[tool.semantic_release]
+version_toml = "pyproject.toml:tool.poetry.version"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "poetry build"
