@@ -25,7 +25,7 @@ with nice ``@property``-like access:
 
 .. code:: python
 
-    from contextvars_extras.context_vars_registry import ContextVarsRegistry
+    from contextvars_extras import ContextVarsRegistry
 
     class CurrentVars(ContextVarsRegistry):
         locale: str = 'en'

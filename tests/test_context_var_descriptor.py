@@ -1,6 +1,6 @@
 from contextvars import ContextVar
 
-from contextvars_extras.context_var_descriptor import ContextVarDescriptor
+from contextvars_extras import ContextVarDescriptor
 
 
 def test__descriptor__can_be_initialized_with_an_existing_context_var_object():

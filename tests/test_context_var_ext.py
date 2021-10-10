@@ -1,7 +1,7 @@
 import pytest
 
+from contextvars_extras import ContextVarExt
 from contextvars_extras.context_management import bind_to_sandbox_context
-from contextvars_extras.context_var_ext import ContextVarExt
 
 
 def test__deferred_default__is_called_by_get_method__once_per_context():

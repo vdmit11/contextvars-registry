@@ -9,7 +9,7 @@ Overview
 :class:`ContextVarDescriptor` is an extension for the standard :class:`~contextvars.ContextVar` object,
 that is designed to be placed in a class attribute, like this::
 
-    >>> from contextvars_extras.context_var_descriptor import ContextVarDescriptor
+    >>> from contextvars_extras import ContextVarDescriptor
 
     >>> class MyVars:
     ...     locale = ContextVarDescriptor(default='en')

@@ -43,7 +43,7 @@ Deferred Defaults
 
 Normally, you set a default value for a context variable like this::
 
-  >>> from contextvars_extras.context_var_ext import ContextVarExt
+  >>> from contextvars_extras import ContextVarExt
 
   >>> locale_var = ContextVarExt(
   ...     name='locale_var',

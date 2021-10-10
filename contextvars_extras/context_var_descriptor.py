@@ -84,7 +84,7 @@ class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError
     This exception is usually raised when you declare a context variable without a default value,
     like this:
 
-        >>> from contextvars_extras.context_vars_registry import ContextVarsRegistry
+        >>> from contextvars_extras import ContextVarsRegistry
         >>> class Current(ContextVarsRegistry):
         ...     timezone: str
         >>> current = Current()
