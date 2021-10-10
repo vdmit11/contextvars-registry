@@ -34,5 +34,5 @@ jobs:
           git config --global user.email "action@github.com"
           semantic-release publish -D commit_author="github-actions <action@github.com>"
         env:
-          GH_TOKEN: ${{secrets.GH_TOKEN}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
           PYPI_TOKEN: ${{secrets.PYPI_TOKEN}}
