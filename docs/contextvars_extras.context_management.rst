@@ -1,7 +1,7 @@
 ﻿contextvars\_extras.context
 ===========================
 
-.. automodule:: contextvars_extras.context
+.. automodule:: contextvars_extras.context_management
 
    
    
