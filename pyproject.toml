@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "contextvars-extras"
-version = "0.0.4"
+version = "0.0.5"
 description = "Contextvars made easy (WARNING: unstable alpha version. Things may break)."
 license = "MIT"
 authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
@@ -65,7 +65,7 @@ line_length = 100
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
-upload_to_pypi = false
+upload_to_pypi = true
 upload_to_release = true
 build_command = "poetry build"
 major_on_zero = false
