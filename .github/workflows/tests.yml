@@ -28,11 +28,13 @@ jobs:
           python-version: 3.7
       - name: Install Python packages
         run: pip install poetry python-semantic-release
+      - name: Debug Changelog
+        run: semantic-release changelog --verbosity=DEBUG
       - name: Release
         run: |
           git config --global user.name "Dmitry Vasilyanov"
           git config --global user.email "vdmit11@gmail.com"
-          semantic-release publish -D commit_author="Dmitry Vasilyanov <vdmit11@gmail.com>"
+          semantic-release publish -D commit_author="Dmitry Vasilyanov <vdmit11@gmail.com>" --verbosity=DEBUG
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
           PYPI_TOKEN: ${{secrets.PYPI_TOKEN}}
