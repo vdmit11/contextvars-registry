@@ -19,8 +19,12 @@
    
       ContextVarsRegistry
    
-   
 
+   .. rubric:: Functions
+
+   .. autosummary::
+      restore_context_vars_registry
+      save_context_vars_registry
    
    
    .. rubric:: Exceptions
