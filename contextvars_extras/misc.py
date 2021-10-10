@@ -3,7 +3,7 @@
 from contextvars import ContextVar
 
 from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.internal_utils import Missing
+from contextvars_extras.sentinel import Missing
 
 
 @bind_to_empty_context
@@ -32,7 +32,7 @@ def get_context_var_default(context_var: ContextVar, missing=Missing):
       <Token ...>
 
       >>> get_context_var_default(timezone_var)
-      contextvars_extras.internal_utils.Missing
+      contextvars_extras.sentinel.Missing
 
     You can also use a custom missing marker (instead of ``Missing``), like this::
 

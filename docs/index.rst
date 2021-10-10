@@ -31,6 +31,7 @@ Modules:
    context_vars_registry
    registry_restore   
    context_management
+   sentinel
    misc
    internal_utils
    integrations.wsgi   
