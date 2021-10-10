@@ -32,7 +32,7 @@ class ContextVarsMiddleware:
          That allows you to set any context variables freely,
          and your changes will remain local to the current HTTP request.
 
-      2. Sets :ref:`current_environ` context variable.
+      2. Sets :data:`current_environ` context variable.
          That allows you to reach the ``environ`` dict from any function in your code,
          without passing it through arguments.
 

@@ -288,7 +288,7 @@ def _partial(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
 def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:
     """Create asyncio Task in empty context (where all context vars are set to default values).
 
-    By default, :ref:`asyncio` copies context whenever you create a new :class:`asyncio.Task`.
+    By default, :mod:`asyncio` copies context whenever you create a new :class:`asyncio.Task`.
     So, each Task inherits context variables from its parent Task.
 
     This may not always be what you want.

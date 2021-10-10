@@ -7,7 +7,7 @@ class Flask(flask.Flask):
     """Flask app with contextvars extensions.
 
     This is a subclass of :class:`flask.Flask`, that adds some integration
-    :ref:`contextvars` module.
+    :mod:`contextvars` module.
 
     Currently, it adds only 1 feature: it puts each HTTP request to its own context.
 
