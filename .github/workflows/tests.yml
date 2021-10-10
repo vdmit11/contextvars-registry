@@ -26,7 +26,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
+      - name: Install Python packages
+        run: pip install poetry python-semantic-release
       - name: Release
         run: |
-          pip install poetry python-semantic-release
-          semantic-release publish
+          git config --global user.name "github-actions"
+          git config --global user.email "action@github.com"
+          semantic-release publish -D commit_author="github-actions <action@github.com>"
+        env:
+          GH_TOKEN: ${{secrets.GH_TOKEN}}
+          PYPI_TOKEN: ${{secrets.PYPI_TOKEN}}
