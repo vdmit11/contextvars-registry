@@ -31,7 +31,6 @@ Modules:
    context_vars_registry
    registry_restore   
    context_management
-   context_async
    misc
    internal_utils
    integrations.wsgi   
