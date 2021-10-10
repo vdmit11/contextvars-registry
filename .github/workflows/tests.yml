@@ -32,7 +32,7 @@ jobs:
         run: |
           git config --global user.name "Dmitry Vasilyanov"
           git config --global user.email "vdmit11@gmail.com"
-          semantic-release publish -D commit_author=Dmitry Vasilyanov <vdmit11@github.com>"
+          semantic-release publish -D commit_author="Dmitry Vasilyanov <vdmit11@github.com>"
         env:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
           PYPI_TOKEN: ${{secrets.PYPI_TOKEN}}
