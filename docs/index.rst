@@ -19,13 +19,12 @@ Pages:
    context_var_ext
    context_var_descriptor
    context_vars_registry
-   context_management
    sentinel
+   context_management
    misc
-   internal_utils
    integrations.wsgi   
    integrations.flask
-   
+   internal_utils
 
 Indices and tables
 ------------------
