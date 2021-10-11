@@ -1,7 +1,7 @@
 contextvars-extras
 ==================
 
-|pypi badge| |tests badge| |docs badge|
+|pypi badge| |build badge| |docs badge|
 
 **Warning!**
 
@@ -62,8 +62,8 @@ Links
   :target: https://pypi.org/project/contextvars-extras/
   :alt: Python package version
 
-.. |tests badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml/badge.svg
-  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/tests.yml
+.. |build badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/build.yml/badge.svg
+  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/build.yml
   :alt: Tests Status
 
 .. |docs badge| image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
