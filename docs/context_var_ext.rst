@@ -12,7 +12,7 @@ It is not a sublass of :class:`~contextvars.ContextVar` (just because you cannot
 but a it is designed to be a fully compatible drop-in replacement of the :class:`~contextvars.ContextVar`.
 
 That is, in most cases, you can just replace :class:`~contextvars.ContextVar`
-with :class:`ContextVarExt` in your code, and it would work as usual, check this out::
+with :class:`ContextVarExt` in your code, and it would work as usual.
 
 So, :class:`ContextVarExt` implements all methods of the standard :class:`~contextvars.ContextVar`:
 
