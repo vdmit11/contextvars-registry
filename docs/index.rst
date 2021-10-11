@@ -15,7 +15,6 @@ Pages:
 .. toctree::
    :maxdepth: 1
 
-   python_contextvars
    context_var_ext
    context_var_descriptor
    context_vars_registry
