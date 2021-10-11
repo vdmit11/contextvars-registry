@@ -275,8 +275,8 @@ That means that they have zero overhead, and if you use them,
 you will get the same performance as the lower-level :class:`contextvars.ContextVar` implementation.
 
 
-ContextVarExt API reference
----------------------------
+context_var_ext API reference
+-----------------------------
 
 .. automodule:: contextvars_extras.context_var_ext
 
@@ -293,3 +293,9 @@ ContextVarExt API reference
       ContextVarExt.reset
       ContextVarExt.reset_to_default
       ContextVarExt.delete
+
+   .. rubric:: Functions
+
+   .. autosummary::
+
+      get_context_var_default

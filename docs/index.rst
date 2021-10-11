@@ -20,7 +20,6 @@ Pages:
    context_vars_registry
    sentinel
    context_management
-   misc
    integrations.wsgi   
    integrations.flask
    internal_utils
