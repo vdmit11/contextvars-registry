@@ -1,5 +1,5 @@
-﻿contextvars\_extras.misc
-========================
+﻿misc
+====
 
 .. automodule:: contextvars_extras.misc
 

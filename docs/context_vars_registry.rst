@@ -1,5 +1,5 @@
-﻿contextvars\_extras.context_vars_registry
-=========================================
+﻿ContetVarsRegistry
+==================
 
 .. automodule:: contextvars_extras.context_vars_registry
 
