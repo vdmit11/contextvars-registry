@@ -1,5 +1,5 @@
-﻿ContextVarDescriptor
-====================
+﻿module: context_var_descriptor
+==============================
 
 Overview
 --------

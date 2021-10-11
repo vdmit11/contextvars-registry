@@ -1,5 +1,5 @@
-﻿integrations.flask
-==================
+﻿module: integrations.flask
+==========================
 
 .. automodule:: contextvars_extras.integrations.flask
 

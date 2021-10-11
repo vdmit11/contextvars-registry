@@ -1,5 +1,5 @@
-﻿sentinel
-========
+﻿module: sentinel
+================
 
 .. automodule:: contextvars_extras.sentinel
 

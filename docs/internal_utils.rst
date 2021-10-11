@@ -1,5 +1,5 @@
-﻿internal\_utils
-===============
+﻿module: internal_utils
+======================
 
 .. automodule:: contextvars_extras.internal_utils
 

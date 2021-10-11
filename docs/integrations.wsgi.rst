@@ -1,5 +1,5 @@
-﻿integrations.wsgi
-=================
+﻿module: integrations.wsgi
+=========================
 
 .. automodule:: contextvars_extras.integrations.wsgi
 

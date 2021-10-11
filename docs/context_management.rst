@@ -1,5 +1,5 @@
-﻿context_management
-==================
+﻿module: context_management
+==========================
 
 .. automodule:: contextvars_extras.context_management
 
