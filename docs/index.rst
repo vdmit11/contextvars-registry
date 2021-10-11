@@ -16,16 +16,6 @@ Pages:
    :maxdepth: 1
 
    python_contextvars
-              
-
-Modules:
-   
-.. currentmodule:: contextvars_extras
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
    context_var_ext
    context_var_descriptor
    context_vars_registry
