@@ -1,5 +1,3 @@
-"""ContextVarExt - extension for the built-in ContextVar object."""
-
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
