@@ -83,7 +83,7 @@ like :meth:`~contextvars_extreas.context_var_ext.ContextVarExt.reset_to_default`
   'UTC'
 
 For details, visit the separate page dedicated to the base class:
-:doc:`contextvars_extras.context_var_ext`
+:doc:`context_var_ext`
 
 
 ContextVarDescriptor API reference
