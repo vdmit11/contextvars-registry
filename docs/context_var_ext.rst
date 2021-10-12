@@ -1,10 +1,42 @@
 ﻿module: context_var_ext
 =======================
 
+.. currentmodule:: contextvars_extras.context_var_ext
+
 Overview
 --------
 
-.. currentmodule:: contextvars_extras.context_var_ext
+This is documentation page for the module: :mod:`contextvars_extras.context_var_ext`
+
+.. contents:: Table of Contents
+
+
+.. rubric:: API overview
+
+.. rubric:: `class ContextVarExt`_
+
+.. autosummary::
+
+   ContextVarExt.__init__
+   ContextVarExt.get
+   ContextVarExt.get_raw
+   ContextVarExt.is_set
+   ContextVarExt.set
+   ContextVarExt.set_if_not_set
+   ContextVarExt.reset
+   ContextVarExt.reset_to_default
+   ContextVarExt.delete
+
+
+.. rubric:: Functions
+
+.. autosummary::
+
+   get_context_var_default
+
+
+class ContextVarExt
+-------------------
 
 :class:`ContextVarExt` is an extended version the standard :class:`contextvars.ContextVar`.
 
@@ -14,32 +46,9 @@ but a it is designed to be a fully compatible drop-in replacement of the :class:
 That is, in most cases, you can just replace :class:`~contextvars.ContextVar`
 with :class:`ContextVarExt` in your code, and it would work as usual.
 
-So, :class:`ContextVarExt` implements all methods of the standard :class:`~contextvars.ContextVar`:
-
-.. autosummary::
-
-   ContextVarExt.get
-   ContextVarExt.set
-   ContextVarExt.reset
-
-
-plus, :class:`ContextVarExt` has some extension methods:
-
-.. autosummary::
-
-   ContextVarExt.is_set
-   ContextVarExt.set_if_not_set
-   ContextVarExt.reset_to_default
-   ContextVarExt.delete
-
-and also, :class:`ContextVarExt` it impplements some special features:
-
-- `deferred defaults`_ - use a function that produces a default value
-- `value deletion`_ - erase variable (you cannot do that with standard Python's context vars)
-
 
 Deferred Defaults
------------------
+^^^^^^^^^^^^^^^^^
 
 Normally, you set a default value for a context variable like this::
 
@@ -105,7 +114,7 @@ call, check this out::
 
 
 Value Deletion
---------------
+^^^^^^^^^^^^^^
 
 Python's :mod:`contextvars` module has a limitation:
 you cannot delete value stored in a :class:`~contextvars.ContextVar`.
@@ -184,7 +193,7 @@ If you want to reset variable to a default value, then you can use the special m
 
 
 Underlying ContextVar object
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When you create a new :class:`ContextVarExt`, it automatically creates
 a new :class:`~contexvars.ContextVar` object, which can be reached via the
@@ -218,7 +227,7 @@ You can provide an existing object as the :class:`ContextVarExt(context_var=...)
 
 
 Performance Tips
-----------------
+^^^^^^^^^^^^^^^^
 
 One feature of Python's :mod:`contextvars` module is that it is written in C,
 so you may expect low performance overhead out of the box.
@@ -275,27 +284,14 @@ That means that they have zero overhead, and if you use them,
 you will get the same performance as the lower-level :class:`contextvars.ContextVar` implementation.
 
 
-context_var_ext API reference
------------------------------
+ContextVarExt API reference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: contextvars_extras.context_var_ext.ContextVarExt
+
+
+other members of the module
+---------------------------
 
 .. automodule:: contextvars_extras.context_var_ext
-
-   .. rubric:: ContextVarExt
-
-   .. autosummary::
-
-      ContextVarExt.__init__
-      ContextVarExt.get
-      ContextVarExt.get_raw
-      ContextVarExt.is_set
-      ContextVarExt.set
-      ContextVarExt.set_if_not_set
-      ContextVarExt.reset
-      ContextVarExt.reset_to_default
-      ContextVarExt.delete
-
-   .. rubric:: Functions
-
-   .. autosummary::
-
-      get_context_var_default
+   :exclude-members: ContextVarExt
