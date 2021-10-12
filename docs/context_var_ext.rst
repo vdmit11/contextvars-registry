@@ -8,7 +8,7 @@ Overview
 
 This is documentation page for the module: :mod:`contextvars_extras.context_var_ext`
 
-.. contents:: Table of Contents
+.. contents::
 
 
 .. rubric:: API overview
