@@ -1,10 +1,38 @@
 ﻿module: context_var_descriptor
 ==============================
 
+.. currentmodule:: contextvars_extras.context_var_descriptor
+
 Overview
 --------
 
-.. currentmodule:: contextvars_extras.context_var_descriptor
+.. contents::
+
+.. rubric:: API Overview
+
+.. rubric:: ContextVarDescriptor
+
+.. autosummary::
+
+   ContextVarDescriptor.__init__
+   ContextVarDescriptor.get
+   ContextVarDescriptor.get_raw
+   ContextVarDescriptor.is_set
+   ContextVarDescriptor.set
+   ContextVarDescriptor.set_if_not_set
+   ContextVarDescriptor.reset
+   ContextVarDescriptor.reset_to_default
+   ContextVarDescriptor.delete
+
+.. rubric:: Exceptions
+
+.. autosummary::
+
+   ContextVarNotSetError
+
+
+class ContextVarDescriptor
+--------------------------
 
 :class:`ContextVarDescriptor` is an extension for the standard :class:`~contextvars.ContextVar` object,
 that is designed to be placed in a class attribute, like this::
@@ -86,27 +114,11 @@ For details, visit the separate page dedicated to the base class:
 :doc:`context_var_ext`
 
 
-ContextVarDescriptor API reference
-----------------------------------
+API reference
+-------------
 
 .. automodule:: contextvars_extras.context_var_descriptor
+  :exclude-members: ContextVarDescriptor
 
-   .. rubric:: ContextVarDescriptor
-
-   .. autosummary::
-
-      ContextVarDescriptor.__init__
-      ContextVarDescriptor.get
-      ContextVarDescriptor.get_raw
-      ContextVarDescriptor.is_set
-      ContextVarDescriptor.set
-      ContextVarDescriptor.set_if_not_set
-      ContextVarDescriptor.reset
-      ContextVarDescriptor.reset_to_default
-      ContextVarDescriptor.delete
-
-   .. rubric:: Exceptions
-
-   .. autosummary::
-
-      ContextVarNotSetError
+  .. autoclass:: ContextVarDescriptor
+     :inherited-members:
