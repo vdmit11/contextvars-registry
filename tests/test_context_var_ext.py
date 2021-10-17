@@ -1,3 +1,5 @@
+from contextvars import ContextVar
+
 import pytest
 
 from contextvars_extras import ContextVarExt
@@ -100,3 +102,26 @@ def test__context_var_ext__has_optimized_method_stubs():
     token = timezone_var.set("GMT")
     with pytest.raises(AssertionError):
         ContextVarExt.reset(timezone_var, token)
+
+
+def test__default_cannot_be_used_together_with_existing_context_var():
+    timezone_var = ContextVar("timezone_var")
+    with pytest.raises(AssertionError):
+        ContextVarExt(context_var=timezone_var, default="UTC")
+
+    # Same as above, but the existing ContextVar() object has a default value.
+    timezone_var = ContextVar("timezone_var", default="UTC")
+    with pytest.raises(AssertionError):
+        ContextVarExt(context_var=timezone_var, default="GMT")
+
+
+def test__deferred_default__cannot_be_used__if_existing_context_var_has_default_value():
+    timezone_var = ContextVar("timezone_var")
+    timezone_var_ext = ContextVarExt(context_var=timezone_var, deferred_default=lambda: "UTC")
+    assert timezone_var_ext.get() == "UTC"
+
+    # Same as above, but the existing ContextVar() object has a default value.
+    # In this case, an exception is thrown, since default+deferred_default cannot be used together.
+    timezone_var = ContextVar("timezone_var", default="UTC")
+    with pytest.raises(AssertionError):
+        ContextVarExt(context_var=timezone_var, deferred_default=lambda: "GMT")

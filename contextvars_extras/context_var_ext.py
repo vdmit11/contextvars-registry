@@ -56,24 +56,22 @@ class ContextVarExt:
             self._init_with_creating_new_context_var(name, default, deferred_default)
 
         if context_var:
-            self._init_from_existing_context_var(context_var, default, deferred_default)
+            assert default is Missing
+            self._init_from_existing_context_var(context_var, deferred_default)
 
     def _init_from_existing_context_var(
         self,
         context_var: ContextVar,
-        default: Optional[Any],
         deferred_default=Optional[DeferredDefaultFn],
     ):
         assert context_var
-        assert not ((default is not Missing) and (deferred_default is not None))
-
-        if default is Missing and not deferred_default:
-            default = get_context_var_default(context_var)
 
         self.context_var = context_var
         self.name = context_var.name
-        self._default = default
+        self._default = get_context_var_default(context_var)
         self._deferred_default = deferred_default
+
+        assert not ((self._default is not Missing) and (self._deferred_default is not None))
 
         self._init_fast_methods()
         self._init_deferred_default()
