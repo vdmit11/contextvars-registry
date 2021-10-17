@@ -51,14 +51,15 @@ class ContextVarExt:
         """
         assert name or context_var
         assert not ((default is not Missing) and (deferred_default is not None))
-        self._default = default
         self._deferred_default = deferred_default
 
         if context_var:
             assert not name and not default
+            self._default = get_context_var_default(context_var)
             self._init_context_var(context_var)
         else:
             assert name
+            self._default = default
             context_var = self._new_context_var(name, default)
             self._init_context_var(context_var)
 
@@ -408,22 +409,6 @@ class ContextVarExt:
             # The exception can be avoided by passing a `default=...` value.
             timezone_var.get(default='UTC')
             'UTC'
-
-        Also note that this method doesn't work when you re-use an existing
-        :class:`contextvars.ContextVar` instance, like this::
-
-            >>> timezone_var = ContextVar('timezone_var', default='UTC')
-            >>> timezone_var_ext = ContextVarExt(context_var=timezone_var)
-
-            # ContextVarExt() wrapper doesn't know a default value of the underlying ContextVar()
-            # object, so .reset_to_default() just erases the value.
-            >>> timezone_var_ext.reset_to_default()
-
-            >>> try:
-            ...     timezone_var_ext.get()
-            ... except LookupError:
-            ...     print('LookupError was raised')
-            LookupError was raised
         """
         self.set(ContextVarNotInitialized)
 
