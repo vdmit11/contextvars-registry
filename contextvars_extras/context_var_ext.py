@@ -50,18 +50,52 @@ class ContextVarExt:
                             If missing, a new ``ContextVar`` object is created automatically.
         """
         assert name or context_var
-        assert not ((default is not Missing) and (deferred_default is not None))
-        self._deferred_default = deferred_default
+        assert not (name and context_var)
+
+        if name:
+            self._init_with_creating_new_context_var(name, default, deferred_default)
 
         if context_var:
-            assert not name and not default
-            self._default = get_context_var_default(context_var)
-            self._init_context_var(context_var)
-        else:
-            assert name
-            self._default = default
-            context_var = self._new_context_var(name, default)
-            self._init_context_var(context_var)
+            self._init_from_existing_context_var(context_var, default, deferred_default)
+
+    def _init_from_existing_context_var(
+        self,
+        context_var: ContextVar,
+        default: Optional[Any],
+        deferred_default=Optional[DeferredDefaultFn],
+    ):
+        assert context_var
+        assert not ((default is not Missing) and (deferred_default is not None))
+
+        if default is Missing and not deferred_default:
+            default = get_context_var_default(context_var)
+
+        self.context_var = context_var
+        self.name = context_var.name
+        self._default = default
+        self._deferred_default = deferred_default
+
+        self._init_fast_methods()
+        self._init_deferred_default()
+
+    def _init_with_creating_new_context_var(
+        self,
+        name: str,
+        default: Optional[Any],
+        deferred_default: Optional[DeferredDefaultFn],
+    ):
+        assert name
+        assert not ((default is not Missing) and (deferred_default is not None))
+
+        context_var = self._new_context_var(name, default)
+
+        self.context_var = context_var
+        self.name = name
+        self._default = default
+        self._deferred_default = deferred_default
+
+        self._init_fast_methods()
+        self._init_deferred_default()
 
     @classmethod
     def _new_context_var(cls, name: str, default: Any) -> ContextVar:
@@ -73,21 +107,6 @@ class ContextVarExt:
             context_var = ContextVar(name, default=default)
 
         return context_var
-
-    def _init_context_var(self, context_var: ContextVar):
-        assert not hasattr(self, "context_var")
-
-        # In case ``deferred_default`` is used, put a special marker object to the variable
-        # (otherwise ContextVar.get() method will not find any value and raise a LookupError)
-        if self._deferred_default:
-            context_var_is_not_initialized = context_var.get(Missing) == Missing
-            if context_var_is_not_initialized:
-                context_var.set(ContextVarNotInitialized)
-
-        self.context_var = context_var
-        self.name = context_var.name
-
-        self._init_fast_methods()
 
     def _init_fast_methods(self):
         # Problem: basic ContextVar.get()/.set()/etc() must have good performance.
@@ -170,6 +189,12 @@ class ContextVarExt:
         self.get_raw = self.context_var.get
         self.set = self.context_var.set
         self.reset = self.context_var.reset
+
+    def _init_deferred_default(self):
+        # In case ``deferred_default`` is used, put a special marker object to the variable
+        # (otherwise ContextVar.get() method will not find any value and raise a LookupError)
+        if self._deferred_default and not self.is_set():
+            self.reset_to_default()
 
     def get(self, default=Missing):
         """Return a value for the context variable for the current context.

@@ -36,10 +36,8 @@ class ContextVarDescriptor(ContextVarExt):
                             If missing, a new ``ContextVar`` object is created automatically.
         """
         if not name and not context_var:
-            assert not ((default is not Missing) and (deferred_default is not None))
-            self._default = default
-            self._deferred_default = deferred_default
-            # Postpone ContextVar() initialization until the __set_name__() method is called.
+            # postpone init until __set_name__() method is called
+            self._postponed_init_args = (default, deferred_default)
             return
 
         super().__init__(
@@ -50,12 +48,10 @@ class ContextVarDescriptor(ContextVarExt):
         )
 
     def __set_name__(self, owner_cls: type, owner_attr_name: str):
-        if hasattr(self, "context_var"):
-            return
-
-        name = self._format_descriptor_name(owner_cls, owner_attr_name)
-        context_var = self._new_context_var(name, self._default)
-        self._init_context_var(context_var)
+        if hasattr(self, "_postponed_init_args"):
+            default, deferred_default = self._postponed_init_args
+            name = self._format_descriptor_name(owner_cls, owner_attr_name)
+            self._init_with_creating_new_context_var(name, default, deferred_default)
 
     @staticmethod
     def _format_descriptor_name(owner_cls: type, owner_attr_name: str) -> str:
