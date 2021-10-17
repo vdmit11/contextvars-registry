@@ -86,9 +86,9 @@ class ContextVarExt:
         self.context_var = context_var
         self.name = context_var.name
 
-        self._initialize_fast_methods()
+        self._init_fast_methods()
 
-    def _initialize_fast_methods(self):
+    def _init_fast_methods(self):
         # Problem: basic ContextVar.get()/.set()/etc() must have good performance.
         #
         # So, I decided to do some evil premature optimization: instead of regular methods,
@@ -216,7 +216,7 @@ class ContextVarExt:
             'en_GB'
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
+        # This code is never actually called, see ``_init_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -244,7 +244,7 @@ class ContextVarExt:
         :meth:`contextvars.ContextVar.get`.
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
+        # This code is never actually called, see ``_init_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -280,7 +280,7 @@ class ContextVarExt:
             False
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
+        # This code is never actually called, see ``_init_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -298,7 +298,7 @@ class ContextVarExt:
           please check out its documentation: :meth:`contextvars.ContextVar.set`.
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
+        # This code is never actually called, see ``_init_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
@@ -367,7 +367,7 @@ class ContextVarExt:
           please check out its documentation: :meth:`contextvars.ContextVar.reset`.
         """
         # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_initialize_fast_methods``.
+        # This code is never actually called, see ``_init_fast_methods``.
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
