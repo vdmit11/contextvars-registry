@@ -135,7 +135,7 @@ class ContextVarExt:
         # So, copy all needed globals and thus make them locals.
         _Missing = Missing
         _ContextVarValueDeleted = ContextVarValueDeleted
-        _ContextVarNotInitialized = ContextVarResetToDefault
+        _ContextVarResetToDefault = ContextVarResetToDefault
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -150,7 +150,7 @@ class ContextVarExt:
                 value = context_var_get(default)
 
             # special marker, left by ContextVarExt.reset_to_default()
-            if value is _ContextVarNotInitialized:
+            if value is _ContextVarResetToDefault:
                 if default is not _Missing:
                     return default
                 if context_var_ext_default is not _Missing:
@@ -175,7 +175,7 @@ class ContextVarExt:
             return context_var_get(_Missing) not in (
                 _Missing,
                 _ContextVarValueDeleted,
-                _ContextVarNotInitialized,
+                _ContextVarResetToDefault,
             )
 
         self.is_set = _method_ContextVarExt_is_set
