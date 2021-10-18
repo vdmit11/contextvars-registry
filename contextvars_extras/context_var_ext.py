@@ -12,7 +12,7 @@ ContextVarValueDeleted = Sentinel(__name__, "ContextVarValueDeleted")
 # used in 2 cases:
 #  1. when ContextVarExt(deferred_default=...) argument is used
 #  2. when ContextVarExt.reset_to_default() method is called
-ContextVarNotInitialized = Sentinel(__name__, "ContextVarNotInitialized")
+ContextVarResetToDefault = Sentinel(__name__, "ContextVarResetToDefault")
 
 # A no-argument function that produces a default value for ContextVarExt
 DeferredDefaultFn = Callable[[], Any]
@@ -135,7 +135,7 @@ class ContextVarExt:
         # So, copy all needed globals and thus make them locals.
         _Missing = Missing
         _ContextVarValueDeleted = ContextVarValueDeleted
-        _ContextVarNotInitialized = ContextVarNotInitialized
+        _ContextVarNotInitialized = ContextVarResetToDefault
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -433,7 +433,7 @@ class ContextVarExt:
             timezone_var.get(default='UTC')
             'UTC'
         """
-        self.set(ContextVarNotInitialized)
+        self.set(ContextVarResetToDefault)
 
     def delete(self):
         """Delete value stored in the context variable.
