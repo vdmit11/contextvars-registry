@@ -4,6 +4,8 @@ from typing import Any, Callable, Optional
 from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import Missing, Sentinel
 
+DeferredDefaultFn = Callable[[], Any]
+
 
 class ContextVarDeletionMark(Sentinel):
     """A special placeholder object written into ContextVar when its value is deleted.
@@ -41,8 +43,6 @@ ContextVarValueDeleted = ContextVarDeletionMark(__name__, "ContextVarValueDelete
 
 ContextVarResetToDefault = ContextVarDeletionMark(__name__, "ContextVarResetToDefault")
 """Special placeholder object that resets variable to a default value (as if it was never set)."""
-
-DeferredDefaultFn = Callable[[], Any]
 
 
 class ContextVarExt:
