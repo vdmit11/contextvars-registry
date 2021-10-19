@@ -51,4 +51,16 @@ class Sentinel:
         return False
 
 
-MISSING = Sentinel(__name__, "MISSING")
+class Missing(Sentinel):
+    """Class for the MISSING singleton.
+
+    Why separate class? Why just not create MISSING as instance of Sentinel()?
+
+    Because separate Missing class is required when you need dispatch by type,
+    like :func:`functools.singledispatch`.
+
+    Also, Missing class plays nice with type hinting (the :mod:`typing` module).
+    """
+
+
+MISSING = Missing(__name__, "MISSING")
