@@ -1,10 +1,8 @@
 from contextvars import ContextVar, Token
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
 from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.sentinel import MISSING, Sentinel
-
-DeferredDefaultFn = Callable[[], Any]
+from contextvars_extras.sentinel import MISSING, Missing, Sentinel
 
 
 class ContextVarDeletionMark(Sentinel):
@@ -45,18 +43,22 @@ CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RES
 """Special placeholder object that resets variable to a default value (as if it was never set)."""
 
 
-class ContextVarExt:
-    context_var: ContextVar
+_VarValueT = TypeVar("_VarValueT")  # value, stored in the ContextVar object
+_FallbackT = TypeVar("_FallbackT")  # an object, returned by .get() when ContextVar has no value
+
+
+class ContextVarExt(Generic[_VarValueT]):
+    context_var: ContextVar[_VarValueT]
     name: str
-    _default: Any
-    _deferred_default: Optional[DeferredDefaultFn]
+    _default: Union[_VarValueT, Missing]
+    _deferred_default: Optional[Callable[[], _VarValueT]]
 
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Optional[Any] = MISSING,
-        deferred_default: Optional[DeferredDefaultFn] = None,
-        context_var: Optional[ContextVar] = None,
+        default: Union[_VarValueT, Missing] = MISSING,
+        deferred_default: Optional[Callable[[], _VarValueT]] = None,
+        context_var: Optional[ContextVar[_VarValueT]] = None,
     ):
         """Initialize ContextVarExt object.
 
@@ -86,11 +88,7 @@ class ContextVarExt:
             assert default is MISSING
             self._init_from_existing_context_var(context_var, deferred_default)
 
-    def _init_from_existing_context_var(
-        self,
-        context_var: ContextVar,
-        deferred_default=Optional[DeferredDefaultFn],
-    ):
+    def _init_from_existing_context_var(self, context_var, deferred_default):
         assert context_var
 
         self.context_var = context_var
@@ -103,12 +101,7 @@ class ContextVarExt:
         self._init_fast_methods()
         self._init_deferred_default()
 
-    def _init_with_creating_new_context_var(
-        self,
-        name: str,
-        default: Optional[Any],
-        deferred_default: Optional[DeferredDefaultFn],
-    ):
+    def _init_with_creating_new_context_var(self, name, default, deferred_default):
         assert name
         assert not ((default is not MISSING) and (deferred_default is not None))
 

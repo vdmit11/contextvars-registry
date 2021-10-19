@@ -19,7 +19,7 @@ class Sentinel:
 
     registered_names: Set[str] = set()
 
-    def __init__(self, module_name, instance_name):
+    def __init__(self, module_name: str, instance_name: str) -> None:
         qualified_name = module_name + "." + instance_name
 
         if qualified_name in self.registered_names:

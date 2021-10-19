@@ -1,19 +1,23 @@
 """ContextVarDescriptor - extension for the built-in ContextVar that behaves like @property."""
 
 from contextvars import ContextVar
-from typing import Any, Optional
+from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_var_ext import MISSING, ContextVarExt, DeferredDefaultFn
+from contextvars_extras.context_var_ext import ContextVarExt, _VarValueT
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
+from contextvars_extras.sentinel import MISSING, Missing
+
+_DescriptorT = TypeVar("_DescriptorT")  # ContextVarDescriptor or its subclass
+_OwnerT = TypeVar("_OwnerT")  # descriptor's owner (an object that contains descriptor as attribute)
 
 
-class ContextVarDescriptor(ContextVarExt):
+class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Optional[Any] = MISSING,
-        deferred_default: Optional[DeferredDefaultFn] = None,
-        context_var: Optional[ContextVar] = None,
+        default: Union[_VarValueT, Missing] = MISSING,
+        deferred_default: Optional[Callable[[], _VarValueT]] = None,
+        context_var: Optional[ContextVar[_VarValueT]] = None,
     ):
         """Initialize ContextVarDescriptor object.
 
@@ -47,30 +51,46 @@ class ContextVarDescriptor(ContextVarExt):
             context_var=context_var,
         )
 
-    def __set_name__(self, owner_cls: type, owner_attr_name: str):
+    def __set_name__(self, owner_cls: type, owner_attr_name: str) -> None:
         if hasattr(self, "_postponed_init_args"):
             default, deferred_default = self._postponed_init_args
             name = self._format_descriptor_name(owner_cls, owner_attr_name)
-            self._init_with_creating_new_context_var(name, default, deferred_default)
+            self._init_with_creating_new_context_var(  # type: ignore
+                name, default, deferred_default
+            )
 
     @staticmethod
     def _format_descriptor_name(owner_cls: type, owner_attr_name: str) -> str:
         return f"{owner_cls.__module__}.{owner_cls.__name__}.{owner_attr_name}"
 
-    def __get__(self, instance, _unused_owner_cls):
-        if instance is None:
+    @overload
+    def __get__(self: _DescriptorT, owner_instance: None, owner_cls: Type[_OwnerT]) -> _DescriptorT:
+        ...
+
+    @overload
+    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> _VarValueT:
+        ...
+
+    @overload
+    def __get__(
+        self: _DescriptorT, owner_instance: Any, owner_cls: Any
+    ) -> Union[_DescriptorT, _VarValueT]:
+        ...
+
+    def __get__(self, owner_instance, owner_cls):
+        if owner_instance is None:
             return self
         try:
             return self.get()
         except LookupError as err:
             raise ContextVarNotSetError.format(context_var_name=self.name) from err
 
-    def __set__(self, instance, value):
-        assert instance is not None
+    def __set__(self, owner_instance, value: _VarValueT) -> None:
+        assert owner_instance is not None
         self.set(value)
 
-    def __delete__(self, instance):
-        self.__get__(instance, None)  # needed to raise AttributeError if already deleted
+    def __delete__(self, owner_instance) -> None:
+        self.__get__(owner_instance, None)  # needed to raise AttributeError if already deleted
         self.delete()
 
 
