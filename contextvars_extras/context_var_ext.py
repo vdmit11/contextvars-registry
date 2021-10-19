@@ -4,17 +4,44 @@ from typing import Any, Callable, Optional
 from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import Missing, Sentinel
 
-# A special sentinel object that we put into ContextVar when you delete a value from it
-# (when ContextVarExt.delete() method is called).
-ContextVarValueDeleted = Sentinel(__name__, "ContextVarValueDeleted")
 
-# Another special marker that we put into ContextVar when it is not yet initialized,
-# used in 2 cases:
-#  1. when ContextVarExt(deferred_default=...) argument is used
-#  2. when ContextVarExt.reset_to_default() method is called
-ContextVarResetToDefault = Sentinel(__name__, "ContextVarResetToDefault")
+class ContextVarDeletionMark(Sentinel):
+    """A special placeholder object written into ContextVar when its value is deleted.
 
-# A no-argument function that produces a default value for ContextVarExt
+    Problem: in Python, it is not possible to delete value of a ContextVar object.
+    Once the variable is set, it cannot be unset.
+    But, we (or at least I, the author) need to support deletion in :class:`ContextVarExt`.
+
+    So, here is a workaround:
+
+    1. Put a special deletion mark to the context variable.
+
+    2. Add extra logic to :meth:``ContextVarExt.get()`` that recognizes the deletion mark
+       and acts as if the value is not set (returns a default value or throws LookupError).
+
+    Also, this :class:`ContextVarDeletionMark` has 2 instances (while you might expect a singleton),
+    since there are 2 slightly different ways to erase the context variable:
+
+    1. :data:`ContextVarValueDeleted`
+         Indicates that context variable is just erased.
+         Used by the :meth:`~ContextVarExt.delete` method.
+
+    2. :data:`ContextVarResetToDefault`
+         Indicates that context variable is reset to default value (as if it was never set).
+         Used by :meth:`~ContextVarExt.reset_to_default` and the `Deferred Defaults`_ feature.
+
+    Normally you shouldn't see these marker objects.
+    They're an implementation detail, that shouldn't leak outside, unless you work with
+    the `Underlying ContextVar object`_ directly, or use the :meth:`ContextVarExt.get_raw` method.
+    """
+
+
+ContextVarValueDeleted = ContextVarDeletionMark(__name__, "ContextVarValueDeleted")
+"""Special placeholder object that marks context variable as deleted."""
+
+ContextVarResetToDefault = ContextVarDeletionMark(__name__, "ContextVarResetToDefault")
+"""Special placeholder object that resets variable to a default value (as if it was never set)."""
+
 DeferredDefaultFn = Callable[[], Any]
 
 
