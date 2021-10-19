@@ -3,7 +3,7 @@
 from contextvars import ContextVar
 from typing import Any, Optional
 
-from contextvars_extras.context_var_ext import ContextVarExt, DeferredDefaultFn, Missing
+from contextvars_extras.context_var_ext import MISSING, ContextVarExt, DeferredDefaultFn
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
 
@@ -11,7 +11,7 @@ class ContextVarDescriptor(ContextVarExt):
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Optional[Any] = Missing,
+        default: Optional[Any] = MISSING,
         deferred_default: Optional[DeferredDefaultFn] = None,
         context_var: Optional[ContextVar] = None,
     ):

@@ -2,7 +2,7 @@ from contextvars import ContextVar, Token
 from typing import Any, Callable, Optional
 
 from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.sentinel import Missing, Sentinel
+from contextvars_extras.sentinel import MISSING, Sentinel
 
 DeferredDefaultFn = Callable[[], Any]
 
@@ -24,11 +24,11 @@ class ContextVarDeletionMark(Sentinel):
     Also, this :class:`ContextVarDeletionMark` has 2 instances (while you might expect a singleton),
     since there are 2 slightly different ways to erase the context variable:
 
-    1. :data:`ContextVarValueDeleted`
+    1. :data:`CONTEXT_VAR_VALUE_DELETED`
          Indicates that context variable is just erased.
          Used by the :meth:`~ContextVarExt.delete` method.
 
-    2. :data:`ContextVarResetToDefault`
+    2. :data:`CONTEXT_VAR_RESET_TO_DEFAULT`
          Indicates that context variable is reset to default value (as if it was never set).
          Used by :meth:`~ContextVarExt.reset_to_default` and the `Deferred Defaults`_ feature.
 
@@ -38,10 +38,10 @@ class ContextVarDeletionMark(Sentinel):
     """
 
 
-ContextVarValueDeleted = ContextVarDeletionMark(__name__, "ContextVarValueDeleted")
+CONTEXT_VAR_VALUE_DELETED = ContextVarDeletionMark(__name__, "CONTEXT_VAR_VALUE_DELETED")
 """Special placeholder object that marks context variable as deleted."""
 
-ContextVarResetToDefault = ContextVarDeletionMark(__name__, "ContextVarResetToDefault")
+CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RESET_TO_DEFAULT")
 """Special placeholder object that resets variable to a default value (as if it was never set)."""
 
 
@@ -54,7 +54,7 @@ class ContextVarExt:
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Optional[Any] = Missing,
+        default: Optional[Any] = MISSING,
         deferred_default: Optional[DeferredDefaultFn] = None,
         context_var: Optional[ContextVar] = None,
     ):
@@ -83,7 +83,7 @@ class ContextVarExt:
             self._init_with_creating_new_context_var(name, default, deferred_default)
 
         if context_var:
-            assert default is Missing
+            assert default is MISSING
             self._init_from_existing_context_var(context_var, deferred_default)
 
     def _init_from_existing_context_var(
@@ -98,7 +98,7 @@ class ContextVarExt:
         self._default = get_context_var_default(context_var)
         self._deferred_default = deferred_default
 
-        assert not ((self._default is not Missing) and (self._deferred_default is not None))
+        assert not ((self._default is not MISSING) and (self._deferred_default is not None))
 
         self._init_fast_methods()
         self._init_deferred_default()
@@ -110,7 +110,7 @@ class ContextVarExt:
         deferred_default: Optional[DeferredDefaultFn],
     ):
         assert name
-        assert not ((default is not Missing) and (deferred_default is not None))
+        assert not ((default is not MISSING) and (deferred_default is not None))
 
         context_var = self._new_context_var(name, default)
 
@@ -126,7 +126,7 @@ class ContextVarExt:
     def _new_context_var(cls, name: str, default: Any) -> ContextVar:
         context_var: ContextVar
 
-        if default is Missing:
+        if default is MISSING:
             context_var = ContextVar(name)
         else:
             context_var = ContextVar(name, default=default)
@@ -160,9 +160,9 @@ class ContextVarExt:
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
-        _Missing = Missing
-        _ContextVarValueDeleted = ContextVarValueDeleted
-        _ContextVarResetToDefault = ContextVarResetToDefault
+        _MISSING = MISSING
+        _CONTEXT_VAR_VALUE_DELETED = CONTEXT_VAR_VALUE_DELETED
+        _CONTEXT_VAR_RESET_TO_DEFAULT = CONTEXT_VAR_RESET_TO_DEFAULT
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -170,17 +170,17 @@ class ContextVarExt:
         # NOTE: function name is chosen such that it looks good in stack traces.
         # When an exception is thrown, just "get" looks cryptic, while "_method_ContextVarExt_get"
         # at least gives you a hint that the ContextVarExt.get method is the source of exception.
-        def _method_ContextVarExt_get(default=_Missing):
-            if default is _Missing:
+        def _method_ContextVarExt_get(default=_MISSING):
+            if default is _MISSING:
                 value = context_var_get()
             else:
                 value = context_var_get(default)
 
             # special marker, left by ContextVarExt.reset_to_default()
-            if value is _ContextVarResetToDefault:
-                if default is not _Missing:
+            if value is _CONTEXT_VAR_RESET_TO_DEFAULT:
+                if default is not _MISSING:
                     return default
-                if context_var_ext_default is not _Missing:
+                if context_var_ext_default is not _MISSING:
                     return context_var_ext_default
                 if context_var_ext_deferred_default is not None:
                     value = context_var_ext_deferred_default()
@@ -189,8 +189,8 @@ class ContextVarExt:
                 raise _LookupError(context_var)
 
             # special marker, left by ContextVarExt.delete()
-            if value is _ContextVarValueDeleted:
-                if default is not _Missing:
+            if value is _CONTEXT_VAR_VALUE_DELETED:
+                if default is not _MISSING:
                     return default
                 raise _LookupError(context_var)
 
@@ -199,10 +199,10 @@ class ContextVarExt:
         self.get = _method_ContextVarExt_get
 
         def _method_ContextVarExt_is_set() -> bool:
-            return context_var_get(_Missing) not in (
-                _Missing,
-                _ContextVarValueDeleted,
-                _ContextVarResetToDefault,
+            return context_var_get(_MISSING) not in (
+                _MISSING,
+                _CONTEXT_VAR_VALUE_DELETED,
+                _CONTEXT_VAR_RESET_TO_DEFAULT,
             )
 
         self.is_set = _method_ContextVarExt_is_set
@@ -221,7 +221,7 @@ class ContextVarExt:
         if self._deferred_default and not self.is_set():
             self.reset_to_default()
 
-    def get(self, default=Missing):
+    def get(self, default=MISSING):
         """Return a value for the context variable for the current context.
 
         If there is no value for the variable in the current context,
@@ -271,7 +271,7 @@ class ContextVarExt:
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
-    def get_raw(self, default=Missing):
+    def get_raw(self, default=MISSING):
         """Return a value for the context variable, without overhead added by :meth:`get` method.
 
         This is a more lightweight version of :meth:`get` method.
@@ -460,7 +460,7 @@ class ContextVarExt:
             timezone_var.get(default='UTC')
             'UTC'
         """
-        self.set(ContextVarResetToDefault)
+        self.set(CONTEXT_VAR_RESET_TO_DEFAULT)
 
     def delete(self):
         """Delete value stored in the context variable.
@@ -490,7 +490,7 @@ class ContextVarExt:
             >>> timezone_var.get(default='GMT')
             'GMT'
         """
-        self.set(ContextVarValueDeleted)
+        self.set(CONTEXT_VAR_VALUE_DELETED)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"
@@ -501,7 +501,7 @@ _NotSet = Sentinel(__name__, "_NotSet")
 
 
 @bind_to_empty_context
-def get_context_var_default(context_var: ContextVar, missing=Missing):
+def get_context_var_default(context_var: ContextVar, missing=MISSING):
     """Get a default value from :class:`contextvars.ContextVar` object.
 
     Example::
@@ -518,7 +518,7 @@ def get_context_var_default(context_var: ContextVar, missing=Missing):
       'UTC'
 
     In case the default value is missing, the :func:`get_context_var_default`
-    returns a special sentinel object called ``Missing``::
+    returns a special sentinel object called ``MISSING``::
 
       >>> timezone_var = ContextVar('timezone_var')  # no default value
 
@@ -526,9 +526,9 @@ def get_context_var_default(context_var: ContextVar, missing=Missing):
       <Token ...>
 
       >>> get_context_var_default(timezone_var)
-      contextvars_extras.sentinel.Missing
+      contextvars_extras.sentinel.MISSING
 
-    You can also use a custom missing marker (instead of ``Missing``), like this::
+    You can also use a custom missing marker (instead of ``MISSING``), like this::
 
       >>> get_context_var_default(timezone_var, '[NO DEFAULT TIMEZONE]')
       '[NO DEFAULT TIMEZONE]'

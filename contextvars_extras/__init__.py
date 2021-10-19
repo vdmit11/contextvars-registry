@@ -14,4 +14,4 @@
 from contextvars_extras.context_var_descriptor import ContextVarDescriptor
 from contextvars_extras.context_var_ext import ContextVarExt
 from contextvars_extras.context_vars_registry import ContextVarsRegistry
-from contextvars_extras.sentinel import Missing
+from contextvars_extras.sentinel import MISSING

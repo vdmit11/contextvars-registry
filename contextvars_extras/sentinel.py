@@ -41,9 +41,9 @@ class Sentinel:
     def __bool__():
         """Evaluate to ``False`` when treated as boolean.
 
-        This thing allows to do ``if not`` checks on the ``Missing`` object, like this:
+        This thing allows to do ``if not`` checks on the ``MISSING`` object, like this:
 
-            >>> value = getattr(object, 'some_attribute', Missing)
+            >>> value = getattr(object, 'some_attribute', MISSING)
             >>> if not value:
             ...     print('no value')
             no value
@@ -51,4 +51,4 @@ class Sentinel:
         return False
 
 
-Missing = Sentinel(__name__, "Missing")
+MISSING = Sentinel(__name__, "MISSING")
