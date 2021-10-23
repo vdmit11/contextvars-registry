@@ -33,8 +33,12 @@ VarValueT = TypeVar("VarValueT")  # value, stored in the ContextVar object
 FallbackT = TypeVar("FallbackT")  # an object, returned by .get() when ContextVar has no value
 
 class ContextVarExt(Generic[VarValueT]):
-    context_var: ContextVar[Union[VarValueT, ContextVarDeletionMark]]
-    name: str
+    @property
+    def name(self) -> str: ...
+    @property
+    def context_var(self) -> ContextVar[Union[VarValueT, ContextVarDeletionMark]]: ...
+    @property
+    def default(self) -> Union[VarValueT, Missing]: ...
     def __init__(
         self,
         name: Optional[str] = ...,
