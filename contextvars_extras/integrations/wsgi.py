@@ -1,9 +1,19 @@
 from contextvars import ContextVar
-from typing import Callable
+from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 from contextvars_extras.context_management import bind_to_sandbox_context
 
-current_environ: ContextVar = ContextVar("contextvars_extras.integrations.wsgi.current_environ")
+EnvironDict = Dict[str, str]
+StatusStr = str
+HeadersList = List[Tuple[str, str]]
+StartResponseFn = Callable[[StatusStr, HeadersList], None]
+Response = Iterable[Union[str, bytes]]
+WsgiApp = Callable[[EnvironDict, StartResponseFn], Response]
+
+
+current_environ: ContextVar[EnvironDict] = ContextVar(
+    "contextvars_extras.integrations.wsgi.current_environ"
+)
 """Environment variables for the current HTTP request.
 
 This context variable contains a dictionary of CGI environment variables,
@@ -57,10 +67,12 @@ class ContextVarsMiddleware:
        'http://localhost/test_api'
     """
 
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, wrapped_app: WsgiApp):
+        self.wrapped_app = wrapped_app
 
     @bind_to_sandbox_context
-    def __call__(self, environ: dict, start_response: Callable):  # noqa: D102
+    def __call__(
+        self, environ: EnvironDict, start_response: StartResponseFn
+    ) -> Response:  # noqa: D102
         current_environ.set(environ)
-        return self.app(environ, start_response)
+        return self.wrapped_app(environ, start_response)

@@ -1,11 +1,9 @@
+from typing import Any, Optional, Union
+
 from pytest import raises
 
-from contextvars_extras.context_vars_registry import (
-    ContextVar,
-    ContextVarDescriptor,
-    ContextVarsRegistry,
-    RegistryInheritanceError,
-)
+from contextvars_extras import ContextVar, ContextVarDescriptor, ContextVarsRegistry
+from contextvars_extras.context_vars_registry import RegistryInheritanceError
 
 # pylint: disable=attribute-defined-outside-init,protected-access,pointless-statement
 # pylint: disable=function-redefined
@@ -15,7 +13,7 @@ def test__ContextVarsRegistry__must_be_subclassed__but_not_subsubclassed():
     # First, let's demonstrate a normal use of ContextVarsRegistry:
     # you create a sub-class of it, and then can use it, like set a variable.
     # That should work as usual and not raise any exceptions.
-    class SubRegistry(ContextVarsRegistry):
+    class SubRegistry(ContextVarsRegistry[str]):
         pass
 
     sub_registry = SubRegistry()
@@ -33,7 +31,7 @@ def test__ContextVarsRegistry__must_be_subclassed__but_not_subsubclassed():
 
 
 def test__class_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
-    class MyVars(ContextVarsRegistry):
+    class MyVars(ContextVarsRegistry[Union[str, int]]):
         # magically becomes ContextVarDescriptor()
         hinted: str = "hinted"
 
@@ -48,17 +46,17 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
 
     # at instance level, descriptors do proxy calls to ContextVar.get()/ContextVar.set() methods
     assert my_vars.hinted == "hinted"
-    my_vars.hinted = 42
-    assert my_vars.hinted == 42
+    my_vars.hinted = "foo"
+    assert my_vars.hinted == "foo"
 
     # At class level, descriptors can be used to call .get()/.set()/.reset() on a ContextVar.
-    assert MyVars.hinted.get() == 42
+    assert MyVars.hinted.get() == "foo"
 
-    token = MyVars.hinted.set(43)
-    assert my_vars.hinted == MyVars.hinted.get() == 43
+    token = MyVars.hinted.set("bar")
+    assert my_vars.hinted == MyVars.hinted.get() == "bar"
 
     MyVars.hinted.reset(token)
-    assert my_vars.hinted == MyVars.hinted.get() == 42
+    assert my_vars.hinted == MyVars.hinted.get() == "foo"
 
     # underlying ContextVar() objects are available via ContextVarDescriptor.context_var
     assert isinstance(MyVars.hinted.context_var, ContextVar)
@@ -72,10 +70,10 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
 
 
 def test__class_member_values__become__context_var_defaults():
-    class MyVars(ContextVarsRegistry):
+    class MyVars(ContextVarsRegistry[Union[str, int]]):
         has_default: str = "has default value"
-        has_none_as_default: int = None
-        no_default: str
+        has_none_as_default: Optional[int] = None
+        no_default: Optional[str]
 
     my_vars = MyVars()
 
@@ -93,20 +91,20 @@ def test__class_member_values__become__context_var_defaults():
 
 
 def test__missing_vars__are_automatically_created__on_setattr():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[Any]):
         pass
 
     current = CurrentVars()
 
     with raises(AttributeError):
-        current.timezone
+        current.timezone  # type: ignore[attr-defined]
     current.timezone = "Europe/Moscow"
-    assert CurrentVars.timezone.get() == "Europe/Moscow"
+    assert CurrentVars.timezone.get() == "Europe/Moscow"  # type: ignore[attr-defined]
 
     # ...but this feature may be disabled by setting `_registry_auto_create_vars = False`
     # Let's test that:
 
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[Any]):  # type: ignore[no-redef]
         _registry_auto_create_vars = False
 
     current = CurrentVars()
@@ -116,7 +114,7 @@ def test__missing_vars__are_automatically_created__on_setattr():
 
 
 def test__registry_prefix__is_reserved__and_cannot_be_used_for_context_variables():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[str]):
         _registry_foo: str = "foo"
 
     current = CurrentVars()
@@ -133,7 +131,7 @@ def test__registry_prefix__is_reserved__and_cannot_be_used_for_context_variables
 
 
 def test__with_context_manager__sets_variables__temporarily():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[str]):
         timezone: str = "UTC"
         locale: str
 
@@ -143,25 +141,25 @@ def test__with_context_manager__sets_variables__temporarily():
         with current(locale="en_GB", user_id=1):
             assert current.timezone == "Europe/London"
             assert current.locale == "en_GB"
-            assert current.user_id == 1
+            assert current.user_id == 1  # type: ignore[attr-defined]
         assert current.timezone == "Europe/London"
         assert current.locale == "en"
-        assert CurrentVars.user_id.get("FALLBACK_VALUE") == "FALLBACK_VALUE"
+        assert CurrentVars.user_id.get("FALLBACK") == "FALLBACK"  # type: ignore[attr-defined]
 
         # ``user_id`` wasn't set above using the ``with()`` block,
         # so it will NOT be restored afterrwards
         current.user_id = 2
 
     # not restored, because not present in the ``with (...)`` parenthesis
-    assert current.user_id == 2
+    assert current.user_id == 2  # type: ignore[attr-defined]
 
     # these two were set using ``with (...)``, so they are restored to their initial states
     assert current.timezone == "UTC"
-    assert CurrentVars.locale.get("FALLBACK_VALUE") == "FALLBACK_VALUE"
+    assert CurrentVars.locale.get("FALLBACK") == "FALLBACK"  # type: ignore[attr-defined]
 
 
 def test__with_context_manager__throws_error__when_setting_reserved_registry_attribute():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[str]):
         _registry_foo: str = "not a ContextVar because of special _registry_ prefix"
 
     current = CurrentVars()
@@ -176,7 +174,7 @@ def test__with_context_manager__throws_error__when_setting_reserved_registry_att
 
 
 def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[str]):
         _registry_auto_create_vars = False
         locale: str = "en"
 
@@ -194,7 +192,7 @@ def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled()
 
 
 def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[Any]):
         locale: str = "en"
 
     current = CurrentVars()
@@ -212,7 +210,7 @@ def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
 
     # current.user_id is also restored to its initial state:(no value, getattr raises LookupError)
     with raises(LookupError):
-        current.user_id
+        current.user_id  # type: ignore[attr-defined]
 
 
 def test__ContextVarsRegistry__calls_super_in_init_methods():
@@ -229,7 +227,7 @@ def test__ContextVarsRegistry__calls_super_in_init_methods():
             MyMixin.init_was_called = True
             super().__init__()
 
-    class CurrentVars(ContextVarsRegistry, MyMixin):
+    class CurrentVars(ContextVarsRegistry[Any], MyMixin):
         pass
 
     CurrentVars()
@@ -239,7 +237,7 @@ def test__ContextVarsRegistry__calls_super_in_init_methods():
 
 
 def test__hasattr_getattr_setattr_consistency():  # noqa R701
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[Any]):
         # Here we test 3 different cases of variables:
         #  1. declared and initialized with a default value
         locale: str = "en"
@@ -293,7 +291,7 @@ def test__hasattr_getattr_setattr_consistency():  # noqa R701
 
 
 def test__deleting_attributes__is_allowed__but_under_the_hood_there_is_special_sentinel_object():
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[str]):
         locale: str = "en"
         timezone: str
 
@@ -312,7 +310,7 @@ def test__deleting_attributes__is_allowed__but_under_the_hood_there_is_special_s
 
 
 def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
-    class CurrentVars(ContextVarsRegistry):
+    class CurrentVars(ContextVarsRegistry[Any]):
         locale: str = "en"
         timezone: str
         user_id: int

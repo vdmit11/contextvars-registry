@@ -7,11 +7,12 @@ from contextvars_extras.context_management import bind_to_sandbox_context
 
 
 def test__deferred_default__is_called_by_get_method__once_per_context():
-    def _empty_dict():
-        _empty_dict.call_counter += 1
-        return {}
+    call_counter = 0
 
-    _empty_dict.call_counter = 0
+    def _empty_dict():
+        nonlocal call_counter
+        call_counter += 1
+        return {}
 
     test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
@@ -28,32 +29,33 @@ def test__deferred_default__is_called_by_get_method__once_per_context():
     assert modify_test_dict(foo=1, bar=2) == {"foo": 1, "bar": 2}
     assert modify_test_dict(a=1, b=2, c=3) == {"a": 1, "b": 2, "c": 3}
 
-    assert _empty_dict.call_counter == 2
+    assert call_counter == 2
 
 
 def test__deferred_default__works_with__is_set__and__reset_to_default__methods():
-    def _empty_dict():
-        _empty_dict.call_counter += 1
-        return {}
+    call_counter = 0
 
-    _empty_dict.call_counter = 0
+    def _empty_dict():
+        nonlocal call_counter
+        call_counter += 1
+        return {}
 
     test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
     assert not test_dict_var.is_set()
-    assert _empty_dict.call_counter == 0
+    assert call_counter == 0
 
     test_dict_var.get()
     assert test_dict_var.is_set()
-    assert _empty_dict.call_counter == 1
+    assert call_counter == 1
 
     test_dict_var.reset_to_default()
     assert not test_dict_var.is_set()
-    assert _empty_dict.call_counter == 1
+    assert call_counter == 1
 
     test_dict_var.get()
     assert test_dict_var.is_set()
-    assert _empty_dict.call_counter == 2
+    assert call_counter == 2
 
 
 def test__deferred_default__cannot_be_used_with_just__default():
@@ -62,22 +64,23 @@ def test__deferred_default__cannot_be_used_with_just__default():
 
 
 def test__deferred_default__is_masked_by__default_arg_of_get_method():
-    def _empty_dict():
-        _empty_dict.call_counter += 1
-        return {}
+    call_counter = 0
 
-    _empty_dict.call_counter = 0
+    def _empty_dict():
+        nonlocal call_counter
+        call_counter += 1
+        return {}
 
     test_dict_var = ContextVarExt("test_dict_var", deferred_default=_empty_dict)
 
     # .get(default=...) arg is present, so deferred default is not called
     value = test_dict_var.get(default=None)
     assert value is None
-    assert _empty_dict.call_counter == 0
+    assert call_counter == 0
 
 
 def test__default_cannot_be_used_together_with_existing_context_var():
-    timezone_var = ContextVar("timezone_var")
+    timezone_var: ContextVar[str] = ContextVar("timezone_var")
     with pytest.raises(AssertionError):
         ContextVarExt(context_var=timezone_var, default="UTC")
 
@@ -88,7 +91,7 @@ def test__default_cannot_be_used_together_with_existing_context_var():
 
 
 def test__deferred_default__cannot_be_used__if_existing_context_var_has_default_value():
-    timezone_var = ContextVar("timezone_var")
+    timezone_var: ContextVar[str] = ContextVar("timezone_var")
     timezone_var_ext = ContextVarExt(context_var=timezone_var, deferred_default=lambda: "UTC")
     assert timezone_var_ext.get() == "UTC"
 

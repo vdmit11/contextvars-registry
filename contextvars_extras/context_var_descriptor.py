@@ -3,7 +3,7 @@
 from contextvars import ContextVar
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_var_ext import ContextVarExt, _VarValueT
+from contextvars_extras.context_var_ext import ContextVarExt, VarValueT
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 from contextvars_extras.sentinel import MISSING, Missing
 
@@ -11,13 +11,13 @@ _DescriptorT = TypeVar("_DescriptorT")  # ContextVarDescriptor or its subclass
 _OwnerT = TypeVar("_OwnerT")  # descriptor's owner (an object that contains descriptor as attribute)
 
 
-class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
+class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Union[_VarValueT, Missing] = MISSING,
-        deferred_default: Optional[Callable[[], _VarValueT]] = None,
-        context_var: Optional[ContextVar[_VarValueT]] = None,
+        default: Union[VarValueT, Missing] = MISSING,
+        deferred_default: Optional[Callable[[], VarValueT]] = None,
+        context_var: Optional[ContextVar[VarValueT]] = None,
     ):
         """Initialize ContextVarDescriptor object.
 
@@ -68,13 +68,13 @@ class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
         ...
 
     @overload
-    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> _VarValueT:
+    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> VarValueT:
         ...
 
     @overload
     def __get__(
         self: _DescriptorT, owner_instance: Any, owner_cls: Any
-    ) -> Union[_DescriptorT, _VarValueT]:
+    ) -> Union[_DescriptorT, VarValueT]:
         ...
 
     def __get__(self, owner_instance, owner_cls):
@@ -85,7 +85,7 @@ class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
         except LookupError as err:
             raise ContextVarNotSetError.format(context_var_name=self.name) from err
 
-    def __set__(self, owner_instance, value: _VarValueT) -> None:
+    def __set__(self, owner_instance, value: VarValueT) -> None:
         assert owner_instance is not None
         self.set(value)
 

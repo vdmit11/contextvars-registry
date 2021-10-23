@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import ItemsView, KeysView, MutableMapping, ValuesView
+from collections.abc import ItemsView, KeysView, ValuesView
 from contextlib import contextmanager
-from contextvars import ContextVar, Token
-from typing import Dict, List, Tuple, get_type_hints
+from contextvars import ContextVar
+from typing import Dict, Generic, List, MutableMapping, Tuple, Union, get_type_hints
 
 from contextvars_extras.context_var_descriptor import ContextVarDescriptor
-from contextvars_extras.context_var_ext import CONTEXT_VAR_VALUE_DELETED
+from contextvars_extras.context_var_ext import (
+    CONTEXT_VAR_VALUE_DELETED,
+    ContextVarDeletionMark,
+    Token,
+    VarValueT,
+)
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 from contextvars_extras.sentinel import MISSING
 
 
-class ContextVarsRegistry(MutableMapping):
+class ContextVarsRegistry(Generic[VarValueT], MutableMapping[str, VarValueT]):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
     _registry_auto_create_vars: bool = True
@@ -39,7 +44,7 @@ class ContextVarsRegistry(MutableMapping):
         AttributeError: ...
     """
 
-    _registry_descriptors: Dict[str, ContextVarDescriptor]
+    _registry_descriptors: Dict[str, ContextVarDescriptor[VarValueT]]
     """A dictionary of all context vars in the registry.
 
     Keys are attribute names, and values are instances of :class:`ContextVarDescriptor`.
@@ -112,7 +117,7 @@ class ContextVarsRegistry(MutableMapping):
                 ... finally:
                 ...     current.timezone = saved_timezone
         """
-        saved_state: List[Tuple[ContextVarDescriptor, Token]] = []
+        saved_state: List[Tuple[ContextVarDescriptor[VarValueT], Token[VarValueT]]] = []
         try:
             # Set context variables, saving their state.
             for attr_name, value in attr_names_and_values.items():
@@ -162,7 +167,7 @@ class ContextVarsRegistry(MutableMapping):
             value = getattr(cls, attr_name, MISSING)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
-            descriptor = ContextVarDescriptor(default=value)
+            descriptor: ContextVarDescriptor[VarValueT] = ContextVarDescriptor(default=value)
             descriptor.__set_name__(cls, attr_name)
             setattr(cls, attr_name, descriptor)
             cls._registry_descriptors[attr_name] = descriptor
@@ -176,7 +181,7 @@ class ContextVarsRegistry(MutableMapping):
         super().__setattr__(attr_name, value)
 
     @classmethod
-    def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor:
+    def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor[VarValueT]:
         try:
             return cls._registry_descriptors[attr_name]
         except KeyError:
@@ -213,7 +218,7 @@ class ContextVarsRegistry(MutableMapping):
     # collections.abc.MutableMapping implementation methods
 
     @classmethod
-    def _asdict(cls) -> dict:
+    def _asdict(cls) -> Dict[str, VarValueT]:
         out = {}
         for key, ctx_var in cls._registry_descriptors.items():
             try:
@@ -223,7 +228,7 @@ class ContextVarsRegistry(MutableMapping):
         return out
 
     @classmethod
-    def keys(cls) -> KeysView:
+    def keys(cls) -> KeysView[str]:
         """Get all variable names in the registry (excluding unset variables).
 
         Example::
@@ -241,7 +246,7 @@ class ContextVarsRegistry(MutableMapping):
         return cls._asdict().keys()
 
     @classmethod
-    def values(cls) -> ValuesView:
+    def values(cls) -> ValuesView[VarValueT]:
         """Get values of all context variables in the registry.
 
         Example::
@@ -259,7 +264,7 @@ class ContextVarsRegistry(MutableMapping):
         return cls._asdict().values()
 
     @classmethod
-    def items(cls) -> ItemsView:
+    def items(cls) -> ItemsView[str, VarValueT]:
         """Get key-value pairs for all context variables in the registry.
 
         Example::
@@ -302,7 +307,9 @@ class ContextVarsRegistry(MutableMapping):
         ctx_var.__delete__(self)
 
 
-def save_context_vars_registry(registry: ContextVarsRegistry) -> dict:
+def save_context_vars_registry(
+    registry: ContextVarsRegistry[VarValueT],
+) -> Dict[str, Union[VarValueT, ContextVarDeletionMark]]:
     """Dump variables from ContextVarsRegistry as dict.
 
     The resulting dict can be used as argument to :func:`restore_context_vars_registry`.
@@ -311,7 +318,10 @@ def save_context_vars_registry(registry: ContextVarsRegistry) -> dict:
     return {key: descriptor.get_raw() for key, descriptor in registry._registry_descriptors.items()}
 
 
-def restore_context_vars_registry(registry: ContextVarsRegistry, saved_registry_state: dict):
+def restore_context_vars_registry(
+    registry: ContextVarsRegistry[VarValueT],
+    saved_registry_state: Dict[str, Union[VarValueT, ContextVarDeletionMark]],
+):
     """Restore ContextVarsRegistry state from dict.
 
     The :func:`restore_context_vars_registry` restores state of :class:`ContextVarsRegistry`,
@@ -383,7 +393,7 @@ def restore_context_vars_registry(registry: ContextVarsRegistry, saved_registry_
 
     # pylint: disable=protected-access
     for key, descriptor in registry._registry_descriptors.items():
-        descriptor.set(get_saved_value(key, CONTEXT_VAR_VALUE_DELETED))
+        descriptor.context_var.set(get_saved_value(key, CONTEXT_VAR_VALUE_DELETED))
 
 
 class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):

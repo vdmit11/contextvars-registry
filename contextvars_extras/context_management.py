@@ -3,12 +3,14 @@
 import asyncio
 from contextvars import Context, copy_context
 from functools import partial, wraps
-from typing import Coroutine
+from typing import Callable, Coroutine, TypeVar
 
-from contextvars_extras.internal_utils import ReturnedValue, WrappedFn
+_ReturnT = TypeVar("_ReturnT")
 
 
-def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
+def bind_to_snapshot_context(
+    fn: Callable[..., _ReturnT], *args, **kwargs
+) -> Callable[..., _ReturnT]:
     """Take a snapshot of all context variables, and produce a function bound to the snapshot.
 
     :returns: A modified function, that (on each call) restores context variables from the snapshot.
@@ -151,7 +153,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     snapshot_ctx = copy_context()
 
     @wraps(fn)
-    def _wrapper__bind_to_snapshot_context(*arg, **kwargs) -> ReturnedValue:
+    def _wrapper__bind_to_snapshot_context(*arg, **kwargs) -> _ReturnT:
         # Each function call receives its own isolated copy of the snapshot.
         # This may not always be what you want, but this id done due to the Principle of Least
         # Astonishment: if you spawn N threads, you don't want them to have the shared context.
@@ -162,7 +164,7 @@ def bind_to_snapshot_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     return _wrapper__bind_to_snapshot_context
 
 
-def bind_to_empty_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
+def bind_to_empty_context(fn: Callable[..., _ReturnT], *args, **kwargs) -> Callable[..., _ReturnT]:
     """Bind function to empty context.
 
     :returns: A modified function, that always runs in an empty context,
@@ -205,14 +207,16 @@ def bind_to_empty_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     fn = _partial(fn, *args, **kwargs)
 
     @wraps(fn)
-    def _wrapper__bind_to_empty_context(*args, **kwargs) -> ReturnedValue:
+    def _wrapper__bind_to_empty_context(*args, **kwargs) -> _ReturnT:
         empty_context = Context()
         return empty_context.run(fn, *args, **kwargs)
 
     return _wrapper__bind_to_empty_context
 
 
-def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
+def bind_to_sandbox_context(
+    fn: Callable[..., _ReturnT], *args, **kwargs
+) -> Callable[..., _ReturnT]:
     """Modify function to copy context on each call.
 
     :returns: a modified function, that copies context on each call.
@@ -265,14 +269,14 @@ def bind_to_sandbox_context(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     fn = _partial(fn, *args, **kwargs)
 
     @wraps(fn)
-    def _wrapper__bind_to_sandbox_context(*args, **kwargs) -> ReturnedValue:
+    def _wrapper__bind_to_sandbox_context(*args, **kwargs) -> _ReturnT:
         sandbox_context = copy_context()
         return sandbox_context.run(fn, *args, **kwargs)
 
     return _wrapper__bind_to_sandbox_context
 
 
-def _partial(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
+def _partial(fn: Callable[..., _ReturnT], *args, **kwargs) -> Callable[..., _ReturnT]:
     # This function behaves like functools.partial(),
     # except that it does NOT apply partial() and returns function as-is if no arguments provided.
     #
@@ -285,7 +289,7 @@ def _partial(fn: WrappedFn, *args, **kwargs) -> WrappedFn:
     return fn
 
 
-def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:
+def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:  # type: ignore[type-arg]
     """Create asyncio Task in empty context (where all context vars are set to default values).
 
     By default, :mod:`asyncio` copies context whenever you create a new :class:`asyncio.Task`.

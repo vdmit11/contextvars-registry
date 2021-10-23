@@ -37,7 +37,7 @@ from typing import Callable, TypeVar
 # The type definition below basically means that type of ReturnedValue remains inact.
 ReturnedValue = TypeVar("ReturnedValue")
 WrappedFn = Callable[..., ReturnedValue]
-Decorator = Callable[[WrappedFn], WrappedFn]
+Decorator = Callable[[Callable[..., ReturnedValue]], Callable[..., ReturnedValue]]
 
 
 class ExceptionDocstringMixin:
@@ -90,9 +90,9 @@ class ExceptionDocstringMixin:
 
     def __init__(self, *args, **kwargs):
         if not args and not kwargs:
-            super().__init__(self._clean_docstring())
+            super().__init__(self._clean_docstring())  # type: ignore[call-arg]
         else:
-            super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)  # type: ignore[call-arg]
 
     @classmethod
     def format(cls, **kwargs):
