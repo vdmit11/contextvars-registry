@@ -5,4 +5,4 @@ echo '----------------'
 set -e
 set -x
 
-pytest $@
+pytest --cov=contextvars_extras --cov-fail-under=100 $@
