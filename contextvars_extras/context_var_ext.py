@@ -48,7 +48,7 @@ FallbackT = TypeVar("FallbackT")  # an object, returned by .get() when ContextVa
 
 
 class ContextVarExt(Generic[VarValueT]):
-    context_var: ContextVar[VarValueT]
+    context_var: ContextVar[Union[VarValueT, ContextVarDeletionMark]]
     name: str
     default: Union[VarValueT, Missing]
     _deferred_default: Optional[Callable[[], VarValueT]]
@@ -116,8 +116,8 @@ class ContextVarExt(Generic[VarValueT]):
         self._init_deferred_default()
 
     @classmethod
-    def _new_context_var(cls, name: str, default) -> ContextVar[VarValueT]:
-        context_var: ContextVar
+    def _new_context_var(cls, name: str, default):
+        context_var: ContextVar[Union[VarValueT, ContextVarDeletionMark]]
 
         if default is MISSING:
             context_var = ContextVar(name)
@@ -189,24 +189,24 @@ class ContextVarExt(Generic[VarValueT]):
 
             return value
 
-        self.get = _method_ContextVarExt_get
+        self.get = _method_ContextVarExt_get  # type: ignore[assignment]
 
         def _method_ContextVarExt_is_set() -> bool:
-            return context_var_get(_MISSING) not in (
+            return context_var_get(_MISSING) not in (  # type: ignore[arg-type]
                 _MISSING,
                 _CONTEXT_VAR_VALUE_DELETED,
                 _CONTEXT_VAR_RESET_TO_DEFAULT,
             )
 
-        self.is_set = _method_ContextVarExt_is_set
+        self.is_set = _method_ContextVarExt_is_set  # type: ignore[assignment]
 
         # Copy some methods from ContextVar.
         # These are even better than closures above, because they are C functions.
         # So by calling, for example ``ContextVarRegistry.set()``, you're *actually* calling
         # tje low-level C function ``ContextVar.set`` directly, without any Python-level wrappers.
-        self.get_raw = self.context_var.get
-        self.set = self.context_var.set
-        self.reset = self.context_var.reset
+        self.get_raw = self.context_var.get  # type: ignore[assignment]
+        self.set = self.context_var.set  # type: ignore[assignment]
+        self.reset = self.context_var.reset  # type: ignore[assignment]
 
     def _init_deferred_default(self):
         # In case ``deferred_default`` is used, put a special marker object to the variable
@@ -328,7 +328,7 @@ class ContextVarExt(Generic[VarValueT]):
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
-    def set(self, value) -> Token:
+    def set(self, value) -> Token:  # type: ignore[type-arg]
         """Call to set a new value for the context variable in the current context.
 
         The required *value* argument is the new value for the context variable.
@@ -383,7 +383,7 @@ class ContextVarExt(Generic[VarValueT]):
 
         return existing_value
 
-    def reset(self, token: Token):
+    def reset(self, token: Token):  # type: ignore[type-arg]
         """Reset the context variable to a previous value.
 
         Reset the context variable to the value it had before the
@@ -494,7 +494,7 @@ _NotSet = Sentinel(__name__, "_NotSet")
 
 
 @bind_to_empty_context
-def get_context_var_default(context_var: ContextVar, missing=MISSING):
+def get_context_var_default(context_var: ContextVar, missing=MISSING):  # type: ignore[type-arg]
     """Get a default value from :class:`contextvars.ContextVar` object.
 
     Example::
