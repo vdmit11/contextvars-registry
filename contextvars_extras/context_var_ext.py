@@ -50,7 +50,7 @@ FallbackT = TypeVar("FallbackT")  # an object, returned by .get() when ContextVa
 class ContextVarExt(Generic[VarValueT]):
     context_var: ContextVar[VarValueT]
     name: str
-    _default: Union[VarValueT, Missing]
+    default: Union[VarValueT, Missing]
     _deferred_default: Optional[Callable[[], VarValueT]]
 
     def __init__(
@@ -93,10 +93,10 @@ class ContextVarExt(Generic[VarValueT]):
 
         self.context_var = context_var
         self.name = context_var.name
-        self._default = get_context_var_default(context_var)
+        self.default = get_context_var_default(context_var)
         self._deferred_default = deferred_default
 
-        assert not ((self._default is not MISSING) and (self._deferred_default is not None))
+        assert not ((self.default is not MISSING) and (self._deferred_default is not None))
 
         self._init_fast_methods()
         self._init_deferred_default()
@@ -109,7 +109,7 @@ class ContextVarExt(Generic[VarValueT]):
 
         self.context_var = context_var
         self.name = name
-        self._default = default
+        self.default = default
         self._deferred_default = deferred_default
 
         self._init_fast_methods()
@@ -148,7 +148,7 @@ class ContextVarExt(Generic[VarValueT]):
         context_var = self.context_var
         context_var_get = context_var.get
         context_var_set = context_var.set
-        context_var_ext_default = self._default
+        context_var_ext_default = self.default
         context_var_ext_deferred_default = self._deferred_default
 
         # Local variables are faster than globals.
