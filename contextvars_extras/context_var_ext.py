@@ -55,10 +55,10 @@ class ContextVarExt(Generic[VarValueT]):
 
     def __init__(
         self,
-        name=None,
+        name,
         default=MISSING,
         deferred_default=None,
-        context_var=None,
+        _context_var=None,
     ):
         """Initialize ContextVarExt object.
 
@@ -74,46 +74,55 @@ class ContextVarExt(Generic[VarValueT]):
                                  That is, if you spawn 10 threads, then ``deferred_default()``
                                  is called 10 times, and you get 10 thread-local values.
 
-        :param context_var: A reference to an existing ``ContextVar`` object.
-                            You need it only if you want to re-use an existing object.
-                            If missing, a new ``ContextVar`` object is created automatically.
+        :param _context_var: A reference to an existing ``ContextVar`` object.
+                             This argument is made for internal purposes, and you shouldn't use it.
+                             Instead, use :meth:`~ContextVarExt.from_existing_var` method.
         """
-        assert name or context_var
-        assert not (name and context_var)
-
-        if name:
-            self._init_with_creating_new_context_var(name, default, deferred_default)
-
-        if context_var:
-            assert default is MISSING
-            self._init_from_existing_context_var(context_var, deferred_default)
-
-    def _init_from_existing_context_var(self, context_var, deferred_default):
-        assert context_var
-
-        self.context_var = context_var
-        self.name = context_var.name
-        self.default = get_context_var_default(context_var)
-        self._deferred_default = deferred_default
-
-        assert not ((self.default is not MISSING) and (self._deferred_default is not None))
-
-        self._init_fast_methods()
-        self._init_deferred_default()
-
-    def _init_with_creating_new_context_var(self, name, default, deferred_default):
         assert name
         assert not ((default is not MISSING) and (deferred_default is not None))
 
-        context_var = self._new_context_var(name, default)
+        if not _context_var:
+            _context_var = self._new_context_var(name, default)
 
-        self.context_var = context_var
+        self.context_var = _context_var
         self.name = name
         self.default = default
         self._deferred_default = deferred_default
 
         self._init_fast_methods()
         self._init_deferred_default()
+
+    @classmethod
+    def from_existing_var(cls, context_var, deferred_default=None):
+        """Create ContextVarExt from an existing ContextVar object.
+
+        Normally, when you instanciate :class:`ContextVarExt`, its default constructor
+        automatically creates an existing :class:`~contextvars.ContextVarExt` object.
+
+        So this :class:`~ContextVarExt.from_existing_var` is an alternative constructor
+        that allows to cancel that automatic creation behavior, and instead use an existing
+        :class:`~contextvars.ContextVar` object.
+
+        Example::
+
+            >>> timezone_var = ContextVar("timezone_var", default="UTC")
+            >>> timezone_var_ext = ContextVarExt.from_existing_var(timezone_var)
+
+            >>> timezone_var_ext.name
+            'timezone_var'
+
+            >>> timezone_var_ext.get()
+            'UTC'
+
+            >>> timezone_var_ext.context_var is timezone_var
+            True
+
+        See also: :meth:`ContextVarExt.__init__` method documentation,
+        where you can find description of the ``deferred_default`` and maybe other paramters.
+        """
+        name = context_var.name
+        default = get_context_var_default(context_var)
+        return cls(name, default, deferred_default, context_var)
 
     @classmethod
     def _new_context_var(cls, name: str, default):

@@ -207,8 +207,9 @@ a new :class:`~contexvars.ContextVar` object, which can be reached via the
 Normally you don't want to use it (even for performance, see `Performance Tips`_ section),
 but in case you really want it, the ``.context_var`` attribute is there for you.
 
-Also, it is possible to avoid auomatic creation of :class:`~contextvars.ContextVar` objects.
-You can provide an existing object as the :class:`ContextVarExt(context_var=...)` argument::
+Also, it is possible to avoid auomatic creation of :class:`~contextvars.ContextVar` objects,
+and instead re-use an existing object via the alternative constructor method:
+`ContextVarExt.from_existing_var`::
 
   >>> from contextvars import ContextVar
 
@@ -216,7 +217,7 @@ You can provide an existing object as the :class:`ContextVarExt(context_var=...)
   >>> locale_var = ContextVar('locale_var', default='en')
 
   # create a ContextVarExt() object, passing the existing ContextVar as argument
-  >>> locale_var_ext = ContextVarExt(context_var=locale_var)
+  >>> locale_var_ext = ContextVarExt.from_existing_var(locale_var)
 
   # so then, .context_var attribute will be set to our existing ContextVar object
   >>> assert locale_var_ext.context_var is locale_var
@@ -242,7 +243,7 @@ I can't provide an extensive benchmark yet, but here is a very rough measurement
   >>> from contextvars import ContextVar
 
   >>> timezone_var = ContextVar('timezone_var', default='UTC')
-  >>> timezone_var_ext = ContextVarExt(context_var=timezone_var)
+  >>> timezone_var_ext = ContextVarExt.from_existing_var(timezone_var)
 
   # ContextVar.get() method call
   %timeit timezone_var.get()

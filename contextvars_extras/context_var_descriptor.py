@@ -17,7 +17,7 @@ class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
         name: Optional[str] = None,
         default: Union[VarValueT, Missing] = MISSING,
         deferred_default: Optional[Callable[[], VarValueT]] = None,
-        context_var: Optional[ContextVar[VarValueT]] = None,
+        _context_var: Optional[ContextVar[VarValueT]] = None,
     ):
         """Initialize ContextVarDescriptor object.
 
@@ -35,29 +35,26 @@ class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
                                  That is, if you spawn 10 threads, then ``deferred_default()``
                                  is called 10 times, and you get 10 thread-local values.
 
-        :param context_var: A reference to an existing ``ContextVar`` object.
-                            You need it only if you want to re-use an existing object.
-                            If missing, a new ``ContextVar`` object is created automatically.
+        :param _context_var: A reference to an existing ``ContextVar`` object.
+                             This argument is made for internal purposes, and you shouldn't use it.
+                             Instead, use :meth:`~ContextVarDescriptor.from_existing_var` method.
         """
-        if not name and not context_var:
+        if not name:
             # postpone init until __set_name__() method is called
-            self._postponed_init_args = (default, deferred_default)
+            self._postponed_init_args = (default, deferred_default, _context_var)
             return
 
         super().__init__(
             name=name,
             default=default,
             deferred_default=deferred_default,
-            context_var=context_var,
+            _context_var=_context_var,
         )
 
     def __set_name__(self, owner_cls: type, owner_attr_name: str) -> None:
         if hasattr(self, "_postponed_init_args"):
-            default, deferred_default = self._postponed_init_args
             name = self._format_descriptor_name(owner_cls, owner_attr_name)
-            self._init_with_creating_new_context_var(  # type: ignore
-                name, default, deferred_default
-            )
+            super().__init__(name, *self._postponed_init_args)
 
     @staticmethod
     def _format_descriptor_name(owner_cls: type, owner_attr_name: str) -> str:

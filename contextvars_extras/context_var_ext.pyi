@@ -18,7 +18,7 @@
 import contextvars
 import sys
 from contextvars import ContextVar
-from typing import Any, Callable, ClassVar, Generic, Optional, TypeVar, Union, overload
+from typing import Any, Callable, ClassVar, Generic, Optional, Type, TypeVar, Union, overload
 
 from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import Missing
@@ -31,6 +31,7 @@ CONTEXT_VAR_RESET_TO_DEFAULT: ContextVarDeletionMark
 
 VarValueT = TypeVar("VarValueT")  # value, stored in the ContextVar object
 FallbackT = TypeVar("FallbackT")  # an object, returned by .get() when ContextVar has no value
+_ContextVarExtOrItsSubclass = TypeVar("_ContextVarExtOrItsSubclass")
 
 class ContextVarExt(Generic[VarValueT]):
     @property
@@ -44,8 +45,14 @@ class ContextVarExt(Generic[VarValueT]):
         name: Optional[str] = ...,
         default: Union[VarValueT, Missing] = ...,
         deferred_default: Optional[Callable[[], VarValueT]] = ...,
-        context_var: Optional[ContextVar[VarValueT]] = ...,
+        _context_var: Optional[ContextVar[VarValueT]] = ...,
     ) -> None: ...
+    @classmethod
+    def from_existing_var(
+        cls: Type[_ContextVarExtOrItsSubclass],
+        context_var: ContextVar[VarValueT],
+        deferred_default: Optional[Callable[[], VarValueT]] = ...,
+    ) -> _ContextVarExtOrItsSubclass: ...
     @overload
     def get(self) -> VarValueT: ...
     @overload
