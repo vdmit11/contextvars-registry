@@ -289,7 +289,7 @@ def _partial(fn: Callable[..., _ReturnT], *args, **kwargs) -> Callable[..., _Ret
     return fn
 
 
-def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:  # type: ignore[type-arg]
+def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:
     """Create asyncio Task in empty context (where all context vars are set to default values).
 
     By default, :mod:`asyncio` copies context whenever you create a new :class:`asyncio.Task`.
