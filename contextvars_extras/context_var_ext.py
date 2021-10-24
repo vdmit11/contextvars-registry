@@ -1,5 +1,5 @@
 from contextvars import ContextVar, Token
-from typing import Any, Callable, Generic, Optional, TypeVar, Union
+from typing import Callable, Generic, Optional, TypeVar, Union
 
 from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import MISSING, Missing, Sentinel
@@ -55,10 +55,10 @@ class ContextVarExt(Generic[VarValueT]):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        default: Union[VarValueT, Missing] = MISSING,
-        deferred_default: Optional[Callable[[], VarValueT]] = None,
-        context_var: Optional[ContextVar[VarValueT]] = None,
+        name=None,
+        default=MISSING,
+        deferred_default=None,
+        context_var=None,
     ):
         """Initialize ContextVarExt object.
 
@@ -191,7 +191,7 @@ class ContextVarExt(Generic[VarValueT]):
 
         self.get = _method_ContextVarExt_get  # type: ignore[assignment]
 
-        def _method_ContextVarExt_is_set() -> bool:
+        def _method_ContextVarExt_is_set():
             return context_var_get(_MISSING) not in (  # type: ignore[arg-type]
                 _MISSING,
                 _CONTEXT_VAR_VALUE_DELETED,
@@ -292,7 +292,7 @@ class ContextVarExt(Generic[VarValueT]):
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
-    def is_set(self) -> bool:
+    def is_set(self):
         """Ceck if the variable has a value.
 
         Examples::
@@ -346,7 +346,7 @@ class ContextVarExt(Generic[VarValueT]):
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
-    def set_if_not_set(self, value) -> Any:
+    def set_if_not_set(self, value):
         """Set value if not yet set.
 
         Examples::
