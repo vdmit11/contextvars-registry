@@ -328,7 +328,7 @@ class ContextVarExt(Generic[VarValueT]):
         # It exists only for auto-generated documentation and static code analysis tools.
         raise AssertionError
 
-    def set(self, value) -> Token:  # type: ignore[type-arg]
+    def set(self, value) -> Token:
         """Call to set a new value for the context variable in the current context.
 
         The required *value* argument is the new value for the context variable.
@@ -383,7 +383,7 @@ class ContextVarExt(Generic[VarValueT]):
 
         return existing_value
 
-    def reset(self, token: Token):  # type: ignore[type-arg]
+    def reset(self, token: Token):
         """Reset the context variable to a previous value.
 
         Reset the context variable to the value it had before the
@@ -494,7 +494,7 @@ _NotSet = Sentinel(__name__, "_NotSet")
 
 
 @bind_to_empty_context
-def get_context_var_default(context_var: ContextVar, missing=MISSING):  # type: ignore[type-arg]
+def get_context_var_default(context_var: ContextVar, missing=MISSING):
     """Get a default value from :class:`contextvars.ContextVar` object.
 
     Example::
