@@ -100,10 +100,10 @@ exclude_lines = [
 [tool.mypy]
 python_version = 3.7
 show_error_codes = true
-# Enable some strict checks. It is almost like `mypy --strict`,
-# except for a couple of flags that take too much effort to fulfill.
+# Enable some strict checks. It is like `mypy --strict`,
+# except for several options that bring too little benefit
+# and take too much effort to implement on this project.
 warn_unused_configs = true
-disallow_any_generics = true
 disallow_subclassing_any = true
 check_untyped_defs = true
 disallow_untyped_decorators = true
