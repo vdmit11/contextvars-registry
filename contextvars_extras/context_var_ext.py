@@ -8,69 +8,108 @@ from contextvars_extras.sentinel import Sentinel
 class ContextVarDeletionMark(Sentinel):
     """A special placeholder object written into ContextVar when its value is deleted.
 
-    Problem: in Python, it is not possible to delete value of a ContextVar object.
-    Once the variable is set, it cannot be unset.
-    But, we (or at least I, the author) need to support deletion in :class:`ContextVarExt`.
-
-    So, here is a workaround:
-
-    1. Put a special deletion mark to the context variable.
-
-    2. When reading the variable, detect the deletion mark, and throw ``LookupError``, as if
-       the value wasn't set (this logic is implemented by the :meth:``ContextVarExt.get()`` method).
-
-    The :class:`ContextVarDeletionMark` class has 2 instances (though you might expect a singleton),
-    since there are 2 slightly different ways to erase the context variable:
+    This class has exactly 2 instances:
 
     1. :data:`CONTEXT_VAR_VALUE_DELETED`
-         Indicates that context variable is just erased.
-         Used by the :meth:`~ContextVarExt.delete` method.
-
     2. :data:`CONTEXT_VAR_RESET_TO_DEFAULT`
-         Indicates that context variable is reset to default value (as if it was never set).
-         Used by :meth:`~ContextVarExt.reset_to_default` and the `Deferred Defaults`_ feature.
 
-    Normally you shouldn't see these marker objects when reading variables.
-    They're an implementation detail, that shouldn't leak outside, unless you work with
-    the `Underlying ContextVar object`_ directly, or use the :meth:`ContextVarExt.get_raw` method.
+    (check out their docs for details)
+
+    Example usage::
+
+    >>> timezone_var = ContextVarExt("timezone_var", default="UTC")
+
+    >>> timezone_var.delete()
+
+    >>> value = timezone_var.get_raw()
+    >>> if isinstance(value, ContextVarDeletionMark):
+    ...     print("timezone_var value was deleted")
+    timezone_var value was deleted
     """
 
 
 CONTEXT_VAR_VALUE_DELETED = ContextVarDeletionMark(__name__, "CONTEXT_VAR_VALUE_DELETED")
-"""Special placeholder object that marks context variable as deleted."""
+"""Special sentinel object that marks context variable as deleted.
+
+Problem: in Python, it is not possible to delete value of a ContextVar object.
+Once the variable is set, it cannot be unset.
+But, we (or at least I, the author) need to implement :meth:`ContextVarExt.delete` method.
+
+So, the solution is:
+
+1. Write the special :data:`CONTEXT_VAR_VALUE_DELETED` mark into the context variable.
+
+2. When reading the variable, detect the deletion mark and throw :class:`LookupError`, as if the
+   context variable isn't set (this logic is implemented by the :meth:`~ContextVarExt.get` method).
+
+This is sort of an implementation detail, and normally you shouldn't even see this
+:data:`CONTEXT_VAR_VALUE_DELETED` object, except 2 cases:
+
+1. You use :meth:`~ContextVarExt.get_raw` method
+2. You bypass :class:`ContextVarExt` methods, and directly call methods
+   of the underlying :attr:`ContextVarExt.context_var` object.
+
+So, if you see :data:`CONTEXT_VAR_VALUE_DELETED` there, then it means that
+the context variable was erased (using the :meth:`~ContextVarExt.delete` method).
+"""
 
 CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RESET_TO_DEFAULT")
-"""Special placeholder object that resets variable to a default value (as if it was never set)."""
+"""Special sentinel object marks context variable as deleted and reset to a default value.
+
+:data:`CONTEXT_VAR_RESET_TO_DEFAULT` is a special placeholder written to context variable by the
+:meth:`ContextVarExt.reset_to_default` method.
+
+The :meth:`ContextVarExt.get` method detects this special object, and acts as if the variable
+was never set, returning a default value.
+
+It is much like the :data:`CONTEXT_VAR_VALUE_DELETED` above, with minor differences:
+
+:data:`CONTEXT_VAR_VALUE_DELETED`
+ - set by :meth:`~ContextVarExt.delete` method
+ - :meth:`~ContextVarExt.get` always throws :class:`LookupError`
+
+:data:`CONTEXT_VAR_RESET_TO_DEFAULT`
+ - set by :meth:`~ContextVarExt.reset_to_default` method
+ - :meth:`~ContextVarExt.get` returns a :attr:`~ContextVarExt.default` value
+
+But, all this is more an implementation detail of the :meth:`ContextVarExt.get` method.
+Normally you shouldn't care about these special objects.
+"""
 
 
 class NoDefault(Sentinel):
     """Special sentinel object that indicates absence of any default value.
 
-    Problem: a context variable may have ``default = None``.
-    But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
+    It is a signleton.
+    That is, this class has only 1 instance: :data:`NO_DEFAULT` (check out its docs).
 
-    So this :class:`NoDefault` class is made to solve the problem.
+    Here is an example of how it works::
 
-    It is a singleton, that is, it has only one global instance: :data:`NO_DEFAULT`, which is
-    used as a placeholder for a default value, to indicate that there is no default value at all.
-
-    It is used in several places:
-
-     - :data:`ContextVarExt.default`
-     - :meth:`ContextVarExt.__init__`
-     - :meth:`ContextVarExt.get`
-     - :meth:`ContextVarExt.get_raw`
-     - :func:`get_context_var_default`
-
-    So all these things will recognize the :data:`NO_DEFAULT` object
-    as "default value is not set" case (which is different from "default = None").
-
-    But, normally, it is used only internally, and you shouldn't care about it.
+      >>> timezone_var = ContextVar("timezone_var")
+      >>> default = get_context_var_default(timezone_var, NO_DEFAULT)
+      >>> if default is NO_DEFAULT:
+      ...     print("timezone_var has no default value")
+      timezone_var has no default value
     """
 
 
 NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
-"""Special placeholder that indicates absence of any default value, see :class:`NoDefault`"""
+"""Special sentinel object that indicates absence of any default value.
+
+Problem: a context variable may have ``default = None``.
+But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
+
+So this :data:`NO_DEFAULT` object is the solution.
+
+It is a special placeholder, that takes place of a default value in:
+
+ - :attr:`ContextVarExt.default` attribute
+ - :meth:`ContextVarExt.get` method argument
+ - :func:`get_context_var_default`
+ - and some other places
+
+and basically it means that "default value is not set" (which is different from ``default = None``).
+"""
 
 
 _VarValueT = TypeVar("_VarValueT")  # a value stored in the ContextVar object
@@ -91,7 +130,7 @@ class ContextVarExt(Generic[_VarValueT]):
     default: Union[_VarValueT, NoDefault]
     """Default value of the context variable.
 
-    If there is no default value, then it is set to ``NO_DEFAULT`` - a special
+    If there is no default value, then it is set to :data:`NO_DEFAULT` - a special
     sentinel object that indicates absence of any default value.
     """
 
@@ -570,7 +609,7 @@ def get_context_var_default(context_var: ContextVar, missing=NO_DEFAULT):
       'UTC'
 
     In case the default value is missing, the :func:`get_context_var_default`
-    returns a special sentinel object called ``NO_DEFAULT``::
+    returns a special sentinel object called :data:`NO_DEFAULT`::
 
       >>> timezone_var = ContextVar('timezone_var')  # no default value
 
@@ -580,7 +619,7 @@ def get_context_var_default(context_var: ContextVar, missing=NO_DEFAULT):
       >>> get_context_var_default(timezone_var)
       contextvars_extras.context_var_ext.NO_DEFAULT
 
-    You can also use a custom missing marker (instead of ``NO_DEFAULT``), like this::
+    You can also use a custom missing marker (instead of :data:`NO_DEFAULT`), like this::
 
       >>> get_context_var_default(timezone_var, '[NO DEFAULT TIMEZONE]')
       '[NO DEFAULT TIMEZONE]'
