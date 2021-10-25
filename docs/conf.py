@@ -62,8 +62,6 @@ extensions = [
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "private-members": True,
-    "undoc-members": False,
     "special-members": "__call__,__init__",
 }
 

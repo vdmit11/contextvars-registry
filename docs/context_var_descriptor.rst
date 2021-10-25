@@ -122,4 +122,8 @@ API reference
   :exclude-members: ContextVarDescriptor
 
   .. autoclass:: ContextVarDescriptor
-     :inherited-members:
+    :special-members: __init__,__set_name__
+    :inherited-members:
+    :undoc-members:
+
+     base class: :class:`contextvars_extras.context_var_ext.ContextVarExt`

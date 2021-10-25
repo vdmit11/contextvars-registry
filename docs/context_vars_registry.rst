@@ -206,6 +206,9 @@ ContextVarsRerigsty API reference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: contextvars_extras.context_vars_registry.ContextVarsRegistry
+   :special-members: __call__
+   :private-members: _registry_auto_create_vars
+   :inherited-members:
 
 
 other members of the module
