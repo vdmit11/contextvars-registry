@@ -21,13 +21,16 @@ from contextvars import ContextVar
 from typing import Any, Callable, ClassVar, Generic, Optional, Type, TypeVar, Union, overload
 
 from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.sentinel import Missing
-from contextvars_extras.sentinel import Sentinel as Sentinel
+from contextvars_extras.sentinel import Sentinel
 
 class ContextVarDeletionMark(Sentinel): ...
 
 CONTEXT_VAR_VALUE_DELETED: ContextVarDeletionMark
 CONTEXT_VAR_RESET_TO_DEFAULT: ContextVarDeletionMark
+
+class NoDefault(Sentinel): ...
+
+NO_DEFAULT: NoDefault
 
 _VarValueT = TypeVar("_VarValueT")  # value, stored in the ContextVar object
 _FallbackT = TypeVar("_FallbackT")  # an object, returned by .get() when ContextVar has no value
@@ -39,11 +42,11 @@ class ContextVarExt(Generic[_VarValueT]):
     @property
     def context_var(self) -> ContextVar[Union[_VarValueT, ContextVarDeletionMark]]: ...
     @property
-    def default(self) -> Union[_VarValueT, Missing]: ...
+    def default(self) -> Union[_VarValueT, NoDefault]: ...
     def __init__(
         self,
         name: Optional[str] = ...,
-        default: Union[_VarValueT, Missing] = ...,
+        default: Union[_VarValueT, NoDefault] = ...,
         deferred_default: Optional[Callable[[], _VarValueT]] = ...,
         _context_var: Optional[ContextVar[_VarValueT]] = ...,
     ) -> None: ...

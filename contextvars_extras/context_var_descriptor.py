@@ -3,9 +3,8 @@
 from contextvars import ContextVar
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_var_ext import ContextVarExt
+from contextvars_extras.context_var_ext import NO_DEFAULT, ContextVarExt, NoDefault
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
-from contextvars_extras.sentinel import MISSING, Missing
 
 _VarValueT = TypeVar("_VarValueT")  # A value stored in the context variable.
 _DescriptorT = TypeVar("_DescriptorT")  # ContextVarDescriptor or its subclass
@@ -16,7 +15,7 @@ class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Union[_VarValueT, Missing] = MISSING,
+        default: Union[_VarValueT, NoDefault] = NO_DEFAULT,
         deferred_default: Optional[Callable[[], _VarValueT]] = None,
         _context_var: Optional[ContextVar[_VarValueT]] = None,
     ):

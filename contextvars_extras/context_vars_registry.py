@@ -5,9 +5,8 @@ from contextvars import ContextVar
 from typing import Any, Dict, List, MutableMapping, Tuple, get_type_hints
 
 from contextvars_extras.context_var_descriptor import ContextVarDescriptor
-from contextvars_extras.context_var_ext import CONTEXT_VAR_VALUE_DELETED, Token
+from contextvars_extras.context_var_ext import CONTEXT_VAR_VALUE_DELETED, NO_DEFAULT, Token
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
-from contextvars_extras.sentinel import MISSING
 
 
 class ContextVarsRegistry(MutableMapping[str, Any]):
@@ -157,7 +156,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
             assert attr_name not in cls._registry_descriptors
 
-            value = getattr(cls, attr_name, MISSING)
+            value = getattr(cls, attr_name, NO_DEFAULT)
             assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
             descriptor: ContextVarDescriptor = ContextVarDescriptor(default=value)
