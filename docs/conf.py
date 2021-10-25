@@ -33,6 +33,20 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# Don't add module names to functions/classes.
+#
+# That allows to simplify this:
+#
+#    class contextvars_extras.context_var_ext.ContextVarExt
+#
+# to just this:
+#
+#    class ContextVarExt
+#
+# which is much more readable.
+add_module_names = False
+python_use_unqualified_type_names = True
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -52,6 +66,31 @@ autodoc_default_options = {
     "undoc-members": False,
     "special-members": "__call__,__init__",
 }
+
+# Remove type hints from function signatures (and instead put them to function description).
+#
+# This is done because this whole project is about Generic containers (ContextVarExt,
+# ContextVarDescriptor, etc), so that means there is a lot of TypeVar and Union in the code,
+# which makes function signatures ugly.
+#
+# So, to make signatures look nice in the docs, I'm removing type hints from them
+# (type hints are still there, but they're placed inside the function description).
+autodoc_typehints = "description"
+
+# Don't evaluate default values for function parameters.
+#
+# Because I have a lot of special singletons on the project,
+# and they look ugly in function signatures, e.g.:
+#
+#   def get(default=contextvars_extras.context_var_ext.NO_DEFAULT)
+#
+# And with this option enabled, they look nice and pretty:
+#
+#   def get(default=NO_DEFAULT)
+#
+# Of course, it may hurt defaults in other cases, but I have a lot
+# of such special singletons on the project, so the net result is good.
+autodoc_preserve_defaults = True
 
 # Don't generate files when using sphinx.ext.autosummary
 # I just don't use this feature (that enabled by default).
