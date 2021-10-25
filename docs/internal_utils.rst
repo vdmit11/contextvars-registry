@@ -18,7 +18,6 @@
    .. autosummary::
    
       ExceptionDocstringMixin
-      Sentinel
    
    
 
