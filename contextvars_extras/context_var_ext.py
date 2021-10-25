@@ -16,10 +16,10 @@ class ContextVarDeletionMark(Sentinel):
 
     1. Put a special deletion mark to the context variable.
 
-    2. Add extra logic to :meth:``ContextVarExt.get()`` that recognizes the deletion mark
-       and acts as if the value is not set (returns a default value or throws LookupError).
+    2. When reading the variable, detect the deletion mark, and throw ``LookupError``, as if
+       the value wasn't set (this logic is implemented by the :meth:``ContextVarExt.get()`` method).
 
-    Also, this :class:`ContextVarDeletionMark` has 2 instances (while you might expect a singleton),
+    The :class:`ContextVarDeletionMark` class has 2 instances (though you might expect a singleton),
     since there are 2 slightly different ways to erase the context variable:
 
     1. :data:`CONTEXT_VAR_VALUE_DELETED`
@@ -30,7 +30,7 @@ class ContextVarDeletionMark(Sentinel):
          Indicates that context variable is reset to default value (as if it was never set).
          Used by :meth:`~ContextVarExt.reset_to_default` and the `Deferred Defaults`_ feature.
 
-    Normally you shouldn't see these marker objects.
+    Normally you shouldn't see these marker objects when reading variables.
     They're an implementation detail, that shouldn't leak outside, unless you work with
     the `Underlying ContextVar object`_ directly, or use the :meth:`ContextVarExt.get_raw` method.
     """
@@ -43,15 +43,35 @@ CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RES
 """Special placeholder object that resets variable to a default value (as if it was never set)."""
 
 
-_VarValueT = TypeVar("_VarValueT")  # value, stored in the ContextVar object
-_FallbackT = TypeVar("_FallbackT")  # an object, returned by .get() when ContextVar has no value
+_VarValueT = TypeVar("_VarValueT")  # a value stored in the ContextVar object
+_FallbackT = TypeVar("_FallbackT")  # a value returned by .get() when ContextVar has no value
 
 
 class ContextVarExt(Generic[_VarValueT]):
     context_var: ContextVar[Union[_VarValueT, ContextVarDeletionMark]]
+    """Reference to the underlying :class:`contextvars.ContextVar` object."""
+
     name: str
+    """Name of the context variable.
+
+    Usually equal to :attr:`contextvars.ContextVar.name`.
+    Needed mostly for debugging and introspection purposes.
+    """
+
     default: Union[_VarValueT, Missing]
+    """Default value of the context variable.
+
+    If there is no default value, then it is set to ``MISSING`` - a special
+    sentinel object that indicates absence of any default value.
+    """
+
     _deferred_default: Optional[Callable[[], _VarValueT]]
+    """A function, that produces a default value.
+
+    Triggered by the :meth:`~ContextVarExt.get` method (if the variable is not set),
+    and once called, the result is written into the context variable
+    (kind of lazy initialization of the context variable).
+    """
 
     def __init__(
         self,
