@@ -3,21 +3,22 @@
 from contextvars import ContextVar
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_var_ext import ContextVarExt, VarValueT
+from contextvars_extras.context_var_ext import ContextVarExt
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 from contextvars_extras.sentinel import MISSING, Missing
 
+_VarValueT = TypeVar("_VarValueT")  # A value stored in the context variable.
 _DescriptorT = TypeVar("_DescriptorT")  # ContextVarDescriptor or its subclass
 _OwnerT = TypeVar("_OwnerT")  # descriptor's owner (an object that contains descriptor as attribute)
 
 
-class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
+class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
     def __init__(
         self,
         name: Optional[str] = None,
-        default: Union[VarValueT, Missing] = MISSING,
-        deferred_default: Optional[Callable[[], VarValueT]] = None,
-        _context_var: Optional[ContextVar[VarValueT]] = None,
+        default: Union[_VarValueT, Missing] = MISSING,
+        deferred_default: Optional[Callable[[], _VarValueT]] = None,
+        _context_var: Optional[ContextVar[_VarValueT]] = None,
     ):
         """Initialize ContextVarDescriptor object.
 
@@ -65,13 +66,13 @@ class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
         ...
 
     @overload
-    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> VarValueT:
+    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> _VarValueT:
         ...
 
     @overload
     def __get__(
         self: _DescriptorT, owner_instance: Any, owner_cls: Any
-    ) -> Union[_DescriptorT, VarValueT]:
+    ) -> Union[_DescriptorT, _VarValueT]:
         ...
 
     def __get__(self, owner_instance, owner_cls):
@@ -82,7 +83,7 @@ class ContextVarDescriptor(Generic[VarValueT], ContextVarExt[VarValueT]):
         except LookupError as err:
             raise ContextVarNotSetError.format(context_var_name=self.name) from err
 
-    def __set__(self, owner_instance, value: VarValueT) -> None:
+    def __set__(self, owner_instance, value: _VarValueT) -> None:
         assert owner_instance is not None
         self.set(value)
 

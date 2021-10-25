@@ -43,15 +43,15 @@ CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RES
 """Special placeholder object that resets variable to a default value (as if it was never set)."""
 
 
-VarValueT = TypeVar("VarValueT")  # value, stored in the ContextVar object
-FallbackT = TypeVar("FallbackT")  # an object, returned by .get() when ContextVar has no value
+_VarValueT = TypeVar("_VarValueT")  # value, stored in the ContextVar object
+_FallbackT = TypeVar("_FallbackT")  # an object, returned by .get() when ContextVar has no value
 
 
-class ContextVarExt(Generic[VarValueT]):
-    context_var: ContextVar[Union[VarValueT, ContextVarDeletionMark]]
+class ContextVarExt(Generic[_VarValueT]):
+    context_var: ContextVar[Union[_VarValueT, ContextVarDeletionMark]]
     name: str
-    default: Union[VarValueT, Missing]
-    _deferred_default: Optional[Callable[[], VarValueT]]
+    default: Union[_VarValueT, Missing]
+    _deferred_default: Optional[Callable[[], _VarValueT]]
 
     def __init__(
         self,
@@ -126,7 +126,7 @@ class ContextVarExt(Generic[VarValueT]):
 
     @classmethod
     def _new_context_var(cls, name: str, default):
-        context_var: ContextVar[Union[VarValueT, ContextVarDeletionMark]]
+        context_var: ContextVar[Union[_VarValueT, ContextVarDeletionMark]]
 
         if default is MISSING:
             context_var = ContextVar(name)
