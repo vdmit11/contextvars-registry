@@ -15,6 +15,7 @@ Overview
 .. autosummary::
 
    ContextVarDescriptor.__init__
+   ContextVarDescriptor.from_existing_var
    ContextVarDescriptor.get
    ContextVarDescriptor.get_raw
    ContextVarDescriptor.is_set

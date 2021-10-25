@@ -18,6 +18,7 @@ This is documentation page for the module: :mod:`contextvars_extras.context_var_
 .. autosummary::
 
    ContextVarExt.__init__
+   ContextVarExt.from_existing_var
    ContextVarExt.get
    ContextVarExt.get_raw
    ContextVarExt.is_set
