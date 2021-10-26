@@ -5,6 +5,41 @@ from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import Sentinel
 
 
+class NoDefault(Sentinel):
+    """Special sentinel object that indicates absence of any default value.
+
+    It is a signleton.
+    That is, this class has only 1 instance: :data:`NO_DEFAULT` (check out its docs).
+
+    Here is an example of how it works::
+
+      >>> timezone_var = ContextVar("timezone_var")
+      >>> default = get_context_var_default(timezone_var, NO_DEFAULT)
+      >>> if default is NO_DEFAULT:
+      ...     print("timezone_var has no default value")
+      timezone_var has no default value
+    """
+
+
+NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
+"""Special sentinel object that indicates absence of any default value.
+
+Problem: a context variable may have ``default = None``.
+But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
+
+So this :data:`NO_DEFAULT` object is the solution.
+
+It is a special placeholder, that takes place of a default value in:
+
+ - :attr:`ContextVarExt.default` attribute
+ - :meth:`ContextVarExt.get` method argument
+ - :func:`get_context_var_default`
+ - and some other places
+
+and basically it means that "default value is not set" (which is different from ``default = None``).
+"""
+
+
 class DeletionMark(Sentinel):
     """Special sentinel object written into ContextVar when it has no value.
 
@@ -64,41 +99,6 @@ RESET_TO_DEFAULT = DeletionMark(__name__, "RESET_TO_DEFAULT")
 """Special object, written to ContextVar when it is reset to default.
 
 see docs in: :class:`DeletionMark`
-"""
-
-
-class NoDefault(Sentinel):
-    """Special sentinel object that indicates absence of any default value.
-
-    It is a signleton.
-    That is, this class has only 1 instance: :data:`NO_DEFAULT` (check out its docs).
-
-    Here is an example of how it works::
-
-      >>> timezone_var = ContextVar("timezone_var")
-      >>> default = get_context_var_default(timezone_var, NO_DEFAULT)
-      >>> if default is NO_DEFAULT:
-      ...     print("timezone_var has no default value")
-      timezone_var has no default value
-    """
-
-
-NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
-"""Special sentinel object that indicates absence of any default value.
-
-Problem: a context variable may have ``default = None``.
-But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
-
-So this :data:`NO_DEFAULT` object is the solution.
-
-It is a special placeholder, that takes place of a default value in:
-
- - :attr:`ContextVarExt.default` attribute
- - :meth:`ContextVarExt.get` method argument
- - :func:`get_context_var_default`
- - and some other places
-
-and basically it means that "default value is not set" (which is different from ``default = None``).
 """
 
 
