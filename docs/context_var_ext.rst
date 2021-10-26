@@ -31,6 +31,13 @@ This is documentation page for the module: :mod:`contextvars_extras.context_var_
    ContextVarExt.reset_to_default
    ContextVarExt.delete
 
+.. rubric:: Special objects
+
+.. autosummary::
+
+   NO_DEFAULT
+   DELETED
+   RESET_TO_DEFAULT
 
 .. rubric:: Functions
 
@@ -39,13 +46,6 @@ This is documentation page for the module: :mod:`contextvars_extras.context_var_
    get_context_var_default
 
 
-.. rubric:: Special objects
-
-.. autosummary::
-
-   DELETED
-   RESET_TO_DEFAULT
-   NO_DEFAULT
 
 
 class ContextVarExt
