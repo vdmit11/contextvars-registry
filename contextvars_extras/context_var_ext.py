@@ -5,75 +5,65 @@ from contextvars_extras.context_management import bind_to_empty_context
 from contextvars_extras.sentinel import Sentinel
 
 
-class ContextVarDeletionMark(Sentinel):
-    """A special placeholder object written into ContextVar when its value is deleted.
+class DeletionMark(Sentinel):
+    """Special sentinel object written into ContextVar when it has no value.
 
-    This class has exactly 2 instances:
+    Problem: in Python, it is not possible to erase a ContextVar object.
+    Once the variable is set, it cannot be unset.
+    But, we (or at least I, the author) need to implement deletion feature.
 
-    1. :data:`CONTEXT_VAR_VALUE_DELETED`
-    2. :data:`CONTEXT_VAR_RESET_TO_DEFAULT`
+    So, the solution is:
 
-    (check out their docs for details)
+    1. Write a special deletion mark into the context variable.
+    2. When reading the variable, detect the deltion mark and act as if there was no value
+       (this logic is implemented by the :meth:`~ContextVarExt.get` method).
 
-    Example usage::
+    So, an instance of :class:`DeletionMark` is that special object written
+    to the context variable when it is erased.
 
-    >>> timezone_var = ContextVarExt("timezone_var", default="UTC")
+    But, a litlle trick is that there are 2 slightly different ways to erase the variable,
+    so :class:`DeletionMark` has exactly 2 instances:
 
-    >>> timezone_var.delete()
+    :data:`contextvars_extras.context_var_ext.DELETED`
+     - written by :meth:`~ContextVarExt.delete` method
+     - :meth:`~ContextVarExt.get` throws :class:`LookupError`
 
-    >>> value = timezone_var.get_raw()
-    >>> if isinstance(value, ContextVarDeletionMark):
-    ...     print("timezone_var value was deleted")
-    timezone_var value was deleted
+    :data:`contextvars_extras.context_var_ext.RESET_TO_DEFAULT`
+     - written by :meth:`~ContextVarExt.reset_to_default` method
+     - :meth:`~ContextVarExt.get` returns a :attr:`ContextVarExt.default` value
+
+    But, all this is more an implementation detail of the :meth:`ContextVarExt` class,
+    and in most cases, you shouldn't care about these special objects.
+
+    The case when you do care, is the :meth:`ContextVarExt.get_raw`,
+    that may return a special deletion mark. Here is how you handle it::
+
+        >>> from contextvars_extras.context_var_ext import DELETED, RESET_TO_DEFAULT
+
+        >>> timezone_var = ContextVarExt("timezone_var", default="UTC")
+
+        >>> timezone_var.delete()
+
+        >>> value = timezone_var.get_raw()
+        >>> if isinstance(value, DeletionMark):
+        ...     print("timezone_var value was deleted")
+        timezone_var value was deleted
+
+    But again, normally you shouldn't care.
+    Just use the :meth:`ContextVarExt.get` method, that will handle it for you.
     """
 
 
-CONTEXT_VAR_VALUE_DELETED = ContextVarDeletionMark(__name__, "CONTEXT_VAR_VALUE_DELETED")
-"""Special sentinel object that marks context variable as deleted.
+DELETED = DeletionMark(__name__, "DELETED")
+"""Special object, written to ContextVar when its value is deleted.
 
-Problem: in Python, it is not possible to delete value of a ContextVar object.
-Once the variable is set, it cannot be unset.
-But, we (or at least I, the author) need to implement :meth:`ContextVarExt.delete` method.
-
-So, the solution is:
-
-1. Write the special :data:`CONTEXT_VAR_VALUE_DELETED` mark into the context variable.
-
-2. When reading the variable, detect the deletion mark and throw :class:`LookupError`, as if the
-   context variable isn't set (this logic is implemented by the :meth:`~ContextVarExt.get` method).
-
-This is sort of an implementation detail, and normally you shouldn't even see this
-:data:`CONTEXT_VAR_VALUE_DELETED` object, except 2 cases:
-
-1. You use :meth:`~ContextVarExt.get_raw` method
-2. You bypass :class:`ContextVarExt` methods, and directly call methods
-   of the underlying :attr:`ContextVarExt.context_var` object.
-
-So, if you see :data:`CONTEXT_VAR_VALUE_DELETED` there, then it means that
-the context variable was erased (using the :meth:`~ContextVarExt.delete` method).
+see docs in: :class:`DeletionMark`.
 """
 
-CONTEXT_VAR_RESET_TO_DEFAULT = ContextVarDeletionMark(__name__, "CONTEXT_VAR_RESET_TO_DEFAULT")
-"""Special sentinel object marks context variable as deleted and reset to a default value.
+RESET_TO_DEFAULT = DeletionMark(__name__, "RESET_TO_DEFAULT")
+"""Special object, written to ContextVar when it is reset to default.
 
-:data:`CONTEXT_VAR_RESET_TO_DEFAULT` is a special placeholder written to context variable by the
-:meth:`ContextVarExt.reset_to_default` method.
-
-The :meth:`ContextVarExt.get` method detects this special object, and acts as if the variable
-was never set, returning a default value.
-
-It is much like the :data:`CONTEXT_VAR_VALUE_DELETED` above, with minor differences:
-
-:data:`CONTEXT_VAR_VALUE_DELETED`
- - set by :meth:`~ContextVarExt.delete` method
- - :meth:`~ContextVarExt.get` always throws :class:`LookupError`
-
-:data:`CONTEXT_VAR_RESET_TO_DEFAULT`
- - set by :meth:`~ContextVarExt.reset_to_default` method
- - :meth:`~ContextVarExt.get` returns a :attr:`~ContextVarExt.default` value
-
-But, all this is more an implementation detail of the :meth:`ContextVarExt.get` method.
-Normally you shouldn't care about these special objects.
+see docs in: :class:`DeletionMark`
 """
 
 
@@ -117,7 +107,7 @@ _FallbackT = TypeVar("_FallbackT")  # a value returned by .get() when ContextVar
 
 
 class ContextVarExt(Generic[_VarValueT]):
-    context_var: ContextVar[Union[_VarValueT, ContextVarDeletionMark]]
+    context_var: ContextVar[Union[_VarValueT, DeletionMark]]
     """Reference to the underlying :class:`contextvars.ContextVar` object."""
 
     name: str
@@ -215,7 +205,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
     @classmethod
     def _new_context_var(cls, name: str, default):
-        context_var: ContextVar[Union[_VarValueT, ContextVarDeletionMark]]
+        context_var: ContextVar[Union[_VarValueT, DeletionMark]]
 
         if default is NO_DEFAULT:
             context_var = ContextVar(name)
@@ -252,8 +242,8 @@ class ContextVarExt(Generic[_VarValueT]):
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
         _NO_DEFAULT = NO_DEFAULT
-        _CONTEXT_VAR_VALUE_DELETED = CONTEXT_VAR_VALUE_DELETED
-        _CONTEXT_VAR_RESET_TO_DEFAULT = CONTEXT_VAR_RESET_TO_DEFAULT
+        _DELETED = DELETED
+        _RESET_TO_DEFAULT = RESET_TO_DEFAULT
         _LookupError = LookupError
 
         # Ok, now define closures that use all the variables prepared above.
@@ -268,7 +258,7 @@ class ContextVarExt(Generic[_VarValueT]):
                 value = context_var_get(default)
 
             # special marker, left by ContextVarExt.reset_to_default()
-            if value is _CONTEXT_VAR_RESET_TO_DEFAULT:
+            if value is _RESET_TO_DEFAULT:
                 if default is not _NO_DEFAULT:
                     return default
                 if context_var_ext_default is not _NO_DEFAULT:
@@ -280,7 +270,7 @@ class ContextVarExt(Generic[_VarValueT]):
                 raise _LookupError(context_var)
 
             # special marker, left by ContextVarExt.delete()
-            if value is _CONTEXT_VAR_VALUE_DELETED:
+            if value is _DELETED:
                 if default is not _NO_DEFAULT:
                     return default
                 raise _LookupError(context_var)
@@ -292,8 +282,8 @@ class ContextVarExt(Generic[_VarValueT]):
         def _method_ContextVarExt_is_set():
             return context_var_get(_NO_DEFAULT) not in (  # type: ignore[arg-type]
                 _NO_DEFAULT,
-                _CONTEXT_VAR_VALUE_DELETED,
-                _CONTEXT_VAR_RESET_TO_DEFAULT,
+                _DELETED,
+                _RESET_TO_DEFAULT,
             )
 
         self.is_set = _method_ContextVarExt_is_set  # type: ignore[assignment]
@@ -551,7 +541,7 @@ class ContextVarExt(Generic[_VarValueT]):
             timezone_var.get(default='UTC')
             'UTC'
         """
-        self.set(CONTEXT_VAR_RESET_TO_DEFAULT)
+        self.set(RESET_TO_DEFAULT)
 
     def delete(self):
         """Delete value stored in the context variable.
@@ -581,7 +571,7 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var.get(default='GMT')
             'GMT'
         """
-        self.set(CONTEXT_VAR_VALUE_DELETED)
+        self.set(DELETED)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"

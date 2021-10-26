@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from typing import Any, Dict, List, MutableMapping, Tuple, get_type_hints
 
 from contextvars_extras.context_var_descriptor import ContextVarDescriptor
-from contextvars_extras.context_var_ext import CONTEXT_VAR_VALUE_DELETED, NO_DEFAULT, Token
+from contextvars_extras.context_var_ext import DELETED, NO_DEFAULT, Token
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
 
@@ -363,7 +363,7 @@ def restore_context_vars_registry(
     There is still a couple of differences:
 
       1. :func:`save_registry_state` and :func:`restore_registry_state` can handle special cases,
-         like ``CONTEXT_VAR_VALUE_DELETED`` tokens, or lazy initializers.
+         like ``DELETED`` tokens, or lazy initializers.
 
       2. :class:`collections.abc.MutableMapping` methods are slow, while
          :func:`save_registry_state` and :func:`restore_registry_state` are faster,
@@ -385,7 +385,7 @@ def restore_context_vars_registry(
 
     # pylint: disable=protected-access
     for key, descriptor in registry._registry_descriptors.items():
-        descriptor.context_var.set(get_saved_value(key, CONTEXT_VAR_VALUE_DELETED))
+        descriptor.context_var.set(get_saved_value(key, DELETED))
 
 
 class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):

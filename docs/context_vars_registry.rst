@@ -163,7 +163,7 @@ In Python, it is not possible to delete a ``ContextVar`` object.
 So, we have to do some trickery to implement deletion...
 
 When you call ``del`` or ``delattr()``, we don't actually delete anything,
-but instead we write to the variable a special token object called ``CONTEXT_VAR_VALUE_DELETED``.
+but instead we write to the variable a special token object called ``DELETED``.
 
 Later on, when the variable is read, there is a ``if`` check under the hood,
 that detects the special token and throws an exception.
@@ -192,10 +192,10 @@ Attribute mechanics works as expected, as if the attribute is really deleted, ch
     'DEFAULT_VALUE'
 
 ...but if you try to use :meth:`~.ContextVarDescriptor.get_raw` method,
-you will get that special ``CONTEXT_VAR_VALUE_DELETED`` object stored in the ``ContextVar``::
+you will get that special ``DELETED`` object stored in the ``ContextVar``::
 
     >>> CurrentVars.user_id.get_raw()
-    contextvars_extras.context_var_ext.CONTEXT_VAR_VALUE_DELETED
+    contextvars_extras.context_var_ext.DELETED
 
 So, long story short: once allocated, a ``ContextVar`` object lives forever in the registry.
 When you delete it, we only mark it as deleted, but never actually delete it.

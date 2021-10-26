@@ -43,8 +43,8 @@ This is documentation page for the module: :mod:`contextvars_extras.context_var_
 
 .. autosummary::
 
-   CONTEXT_VAR_VALUE_DELETED
-   CONTEXT_VAR_RESET_TO_DEFAULT
+   DELETED
+   RESET_TO_DEFAULT
    NO_DEFAULT
 
 
@@ -192,7 +192,7 @@ If you want to reset variable to a default value, then you can use the special m
     (because in Python, you can't really erase a ContextVar object).
 
     When you call :meth:`~ContextVarExt.delete`, a special marker object
-    ``CONTEXT_VAR_VALUE_DELETED`` is written into the context variable.
+    ``DELETED`` is written into the context variable.
 
     Later on, :meth:`~ContextVarExt.get` method detects the marker,
     and behaves as if there was no value.
@@ -202,7 +202,7 @@ If you want to reset variable to a default value, then you can use the special m
     or call some performance-optimized methods, like :meth:`~ContextVarExt.get_raw`::
 
         >>> timezone_var.get_raw()
-        contextvars_extras.context_var_ext.CONTEXT_VAR_VALUE_DELETED
+        contextvars_extras.context_var_ext.DELETED
 
 
 Underlying ContextVar object
