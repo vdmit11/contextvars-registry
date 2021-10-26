@@ -258,7 +258,13 @@ class ContextVarExt(Generic[_VarValueT]):
             else:
                 value = context_var_get(default)
 
-            # special marker, left by ContextVarExt.reset_to_default()
+            # special sentinel object, left by ContextVarExt.delete()
+            if value is _DELETED:
+                if default is not _NO_DEFAULT:
+                    return default
+                raise _LookupError(context_var)
+
+            # special sentinel object, left by ContextVarExt.reset_to_default()
             if value is _RESET_TO_DEFAULT:
                 if default is not _NO_DEFAULT:
                     return default
@@ -268,12 +274,6 @@ class ContextVarExt(Generic[_VarValueT]):
                     value = context_var_ext_deferred_default()
                     context_var_set(value)
                     return value
-                raise _LookupError(context_var)
-
-            # special marker, left by ContextVarExt.delete()
-            if value is _DELETED:
-                if default is not _NO_DEFAULT:
-                    return default
                 raise _LookupError(context_var)
 
             return value
