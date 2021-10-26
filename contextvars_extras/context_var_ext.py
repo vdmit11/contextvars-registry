@@ -125,7 +125,7 @@ class ContextVarExt(Generic[_VarValueT]):
     sentinel object that indicates absence of any default value.
     """
 
-    _deferred_default: Optional[Callable[[], _VarValueT]]
+    deferred_default: Optional[Callable[[], _VarValueT]]
     """A function, that produces a default value.
 
     Triggered by the :meth:`~ContextVarExt.get` method (if the variable is not set),
@@ -167,7 +167,7 @@ class ContextVarExt(Generic[_VarValueT]):
         self.context_var = _context_var
         self.name = name
         self.default = default
-        self._deferred_default = deferred_default
+        self.deferred_default = deferred_default
 
         self._init_fast_methods()
         self._init_deferred_default()
@@ -238,7 +238,7 @@ class ContextVarExt(Generic[_VarValueT]):
         context_var_get = context_var.get
         context_var_set = context_var.set
         context_var_ext_default = self.default
-        context_var_ext_deferred_default = self._deferred_default
+        context_var_ext_deferred_default = self.deferred_default
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
@@ -300,7 +300,7 @@ class ContextVarExt(Generic[_VarValueT]):
     def _init_deferred_default(self):
         # In case ``deferred_default`` is used, put a special marker object to the variable
         # (otherwise ContextVar.get() method will not find any value and raise a LookupError)
-        if self._deferred_default and not self.is_set():
+        if self.deferred_default and not self.is_set():
             self.reset_to_default()
 
     def get(self, default=NO_DEFAULT):
