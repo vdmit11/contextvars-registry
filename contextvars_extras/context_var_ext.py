@@ -6,37 +6,38 @@ from contextvars_extras.sentinel import Sentinel
 
 
 class NoDefault(Sentinel):
-    """Special sentinel object that indicates absence of any default value.
+    """Special sentinel object that means: "default value is not set".
 
-    It is a signleton.
-    That is, this class has only 1 instance: :data:`NO_DEFAULT` (check out its docs).
+    Problem: a context variable may have ``default = None``.
+    But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
 
-    Here is an example of how it works::
+    So this :class:`NoDefault` class is the solution. It has only 1 global instance:
 
-      >>> timezone_var = ContextVar("timezone_var")
-      >>> default = get_context_var_default(timezone_var, NO_DEFAULT)
-      >>> if default is NO_DEFAULT:
+     - :data:`contextvars_extras.context_var_ext.NO_DEFAULT`
+
+    this special :data:`NO_DEFAULT` object may appear in a number of places:
+
+     - :attr:`ContextVarExt.default`
+     - :meth:`ContextVarExt.get`
+     - :func:`get_context_var_default`
+     - and some other places
+
+    and in all these places it means that "default value is not set"
+    (which is different from ``default = None``).
+
+    Example usage::
+
+      >>> timezone_var = ContextVarExt("timezone_var")
+      >>> if timezone_var.default is NO_DEFAULT:
       ...     print("timezone_var has no default value")
       timezone_var has no default value
     """
 
 
 NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
-"""Special sentinel object that indicates absence of any default value.
+"""Special sentinel object that means "default value is not set"
 
-Problem: a context variable may have ``default = None``.
-But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
-
-So this :data:`NO_DEFAULT` object is the solution.
-
-It is a special placeholder, that takes place of a default value in:
-
- - :attr:`ContextVarExt.default` attribute
- - :meth:`ContextVarExt.get` method argument
- - :func:`get_context_var_default`
- - and some other places
-
-and basically it means that "default value is not set" (which is different from ``default = None``).
+see docs for: :class:`NoDefault`
 """
 
 
