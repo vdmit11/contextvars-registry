@@ -39,7 +39,7 @@ with nice ``@property``-like access:
     # calls ContextVar.set() under the hood
     current.timezone = 'GMT'
 
-    # ContextVar() objects can be reached as lass members
+    # ContextVar() objects can be reached as class members
     CurrentVars.timezone.get()  # => 'GMT'
 
 That makes your code more readable (no more noisy ``.get()`` calls),
