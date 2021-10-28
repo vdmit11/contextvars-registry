@@ -287,13 +287,13 @@ These methods aren't wrappers. They're **direct references** to built-in methods
    >>> locale_var = ContextVarExt('locale_var')
 
    >>> locale_var.get_raw
-   <built-in method get of ContextVar ...>
+   <built-in method get of ...ContextVar object ...>
 
    >>> locale_var.set
-   <built-in method set of ContextVar ...>
+   <built-in method set of ...ContextVar object ...>
 
    >>> locale_var.reset
-   <built-in method reset of ContextVar ...>
+   <built-in method reset of ...ContextVar object ...>
 
 That means that they have zero overhead, and if you use them,
 you will get the same performance as the lower-level :class:`contextvars.ContextVar` implementation.

@@ -365,7 +365,7 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var = ContextVarExt('timezone_var')
 
             >>> timezone_var.get_raw
-            <built-in method get of ContextVar object ...>
+            <built-in method get of ...ContextVar object ...>
 
             >>> timezone_var.get_raw == timezone_var.context_var.get
             True
