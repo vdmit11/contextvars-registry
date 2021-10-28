@@ -28,10 +28,10 @@ python = "^3.7.1"
 
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.4"
-tox = "^3.24.1"
-ipython = "^7.26.0"
-Sphinx = "^4.1.2"
+pytest = "^6.2.5"
+tox = "^3.24.4"
+ipython = "^7.28.0"
+Sphinx = "^4.2.0"
 sphinx-autobuild = "^2021.3.14"
 rpdb = "^0.1.6"
 sphinx-toggleprompt = "^0.0.5"
@@ -41,14 +41,14 @@ pylava-pylint = "^0.0.3"
 radon = "^5.1.0"
 mypy = "^0.910"
 pytest-mypy = "^0.8.1"
-black = "^21.7b0"
+black = "^21.9b0"
 isort = "^5.9.3"
 pytest-black = "^0.3.12"
 pytest-isort = "^2.0.0"
-Flask = {extras = ["async"], version = "^2.0.1"}
+Flask = {extras = ["async"], version = "^2.0.2"}
 gevent = "^21.8.0"
-sphinx-rtd-theme = "^0.5.2"
-pytest-cov = "^2.12.1"
+sphinx-rtd-theme = "^1.0.0"
+pytest-cov = "^3.0.0"
 python-semantic-release = "^7.19.2"
 
 [build-system]
