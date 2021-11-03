@@ -18,7 +18,6 @@ Pages:
    context_var_ext
    context_var_descriptor
    context_vars_registry
-   sentinel
    context_management
    integrations.wsgi   
    integrations.flask

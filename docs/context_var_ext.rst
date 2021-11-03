@@ -203,7 +203,7 @@ If you want to reset variable to a default value, then you can use the special m
     or call some performance-optimized methods, like :meth:`~ContextVarExt.get_raw`::
 
         >>> timezone_var.get_raw()
-        contextvars_extras.context_var_ext.DELETED
+        <DELETED>
 
 
 Underlying ContextVar object

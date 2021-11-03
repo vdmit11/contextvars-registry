@@ -20,15 +20,16 @@ import sys
 from contextvars import ContextVar
 from typing import Any, Callable, ClassVar, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.sentinel import Sentinel
+from sentinel_value import SentinelValue
 
-class DeletionMark(Sentinel): ...
+from contextvars_extras.context_management import bind_to_empty_context
+
+class DeletionMark(SentinelValue): ...
 
 DELETED: DeletionMark
 RESET_TO_DEFAULT: DeletionMark
 
-class NoDefault(Sentinel): ...
+class NoDefault(SentinelValue): ...
 
 NO_DEFAULT: NoDefault
 

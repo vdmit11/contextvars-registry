@@ -195,7 +195,7 @@ Attribute mechanics works as expected, as if the attribute is really deleted, ch
 you will get that special ``DELETED`` object stored in the ``ContextVar``::
 
     >>> CurrentVars.user_id.get_raw()
-    contextvars_extras.context_var_ext.DELETED
+    <DELETED>
 
 So, long story short: once allocated, a ``ContextVar`` object lives forever in the registry.
 When you delete it, we only mark it as deleted, but never actually delete it.

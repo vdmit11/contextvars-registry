@@ -1,11 +1,12 @@
 from contextvars import ContextVar, Token
 from typing import Callable, Generic, Optional, TypeVar, Union
 
+from sentinel_value import SentinelValue
+
 from contextvars_extras.context_management import bind_to_empty_context
-from contextvars_extras.sentinel import Sentinel
 
 
-class NoDefault(Sentinel):
+class NoDefault(SentinelValue):
     """Special sentinel object that means: "default value is not set".
 
     Problem: a context variable may have ``default = None``.
@@ -34,14 +35,14 @@ class NoDefault(Sentinel):
     """
 
 
-NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
+NO_DEFAULT = NoDefault("NO_DEFAULT", __name__)
 """Special sentinel object that means "default value is not set"
 
 see docs for: :class:`NoDefault`
 """
 
 
-class DeletionMark(Sentinel):
+class DeletionMark(SentinelValue):
     """Special sentinel object written into ContextVar when it has no value.
 
     Problem: in Python, it is not possible to erase a ContextVar object.
@@ -90,13 +91,13 @@ class DeletionMark(Sentinel):
     """
 
 
-DELETED = DeletionMark(__name__, "DELETED")
+DELETED = DeletionMark("DELETED", __name__)
 """Special object, written to ContextVar when its value is deleted.
 
 see docs in: :class:`DeletionMark`.
 """
 
-RESET_TO_DEFAULT = DeletionMark(__name__, "RESET_TO_DEFAULT")
+RESET_TO_DEFAULT = DeletionMark("RESET_TO_DEFAULT", __name__)
 """Special object, written to ContextVar when it is reset to default.
 
 see docs in: :class:`DeletionMark`
@@ -579,7 +580,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
 
 # A special sentinel object, used only by the ContextVarExt.set_if_not_set() method.
-_NotSet = Sentinel(__name__, "_NotSet")
+_NotSet = SentinelValue("_NotSet", __name__)
 
 
 @bind_to_empty_context
@@ -608,7 +609,7 @@ def get_context_var_default(context_var: ContextVar, missing=NO_DEFAULT):
       <Token ...>
 
       >>> get_context_var_default(timezone_var)
-      contextvars_extras.context_var_ext.NO_DEFAULT
+      <NO_DEFAULT>
 
     You can also use a custom missing marker (instead of :data:`NO_DEFAULT`), like this::
 
