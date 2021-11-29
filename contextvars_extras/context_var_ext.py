@@ -35,7 +35,7 @@ class NoDefault(SentinelValue):
     """
 
 
-NO_DEFAULT = NoDefault("NO_DEFAULT", __name__)
+NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
 """Special sentinel object that means "default value is not set"
 
 see docs for: :class:`NoDefault`
@@ -91,13 +91,13 @@ class DeletionMark(SentinelValue):
     """
 
 
-DELETED = DeletionMark("DELETED", __name__)
+DELETED = DeletionMark(__name__, "DELETED")
 """Special object, written to ContextVar when its value is deleted.
 
 see docs in: :class:`DeletionMark`.
 """
 
-RESET_TO_DEFAULT = DeletionMark("RESET_TO_DEFAULT", __name__)
+RESET_TO_DEFAULT = DeletionMark(__name__, "RESET_TO_DEFAULT")
 """Special object, written to ContextVar when it is reset to default.
 
 see docs in: :class:`DeletionMark`
@@ -580,7 +580,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
 
 # A special sentinel object, used only by the ContextVarExt.set_if_not_set() method.
-_NotSet = SentinelValue("_NotSet", __name__)
+_NotSet = SentinelValue(__name__, "_NotSet")
 
 
 @bind_to_empty_context
