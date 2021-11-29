@@ -465,9 +465,9 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> locale_var.set_if_not_set('en_AU')
             'en_AU'
         """
-        existing_value = self.get(_NotSet)
+        existing_value = self.get(_NOT_SET)
 
-        if existing_value is _NotSet:
+        if existing_value is _NOT_SET:
             self.set(value)
             return value
 
@@ -580,7 +580,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
 
 # A special sentinel object, used only by the ContextVarExt.set_if_not_set() method.
-_NotSet = SentinelValue(__name__, "_NotSet")
+_NOT_SET = SentinelValue(__name__, "_NOT_SET")
 
 
 @bind_to_empty_context
