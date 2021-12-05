@@ -58,8 +58,8 @@ Pages
    context_var_ext
    context_var_descriptor
    context_management
-   integrations.wsgi   
-   integrations.flask
+   integrations.wsgi
+
 
 Indices and tables
 ------------------
