@@ -105,7 +105,10 @@ copybutton_only_copy_prompt_lines = False
 toggleprompt_offset_right = 40
 
 # Allow links to standard Python docs and other documentation sites.
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "greenlet": ("https://www.gevent.org/", None),
+}
 
 
 # -- Options for HTML output -------------------------------------------------
