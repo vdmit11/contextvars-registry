@@ -60,7 +60,6 @@ Pages
    context_management
    integrations.wsgi   
    integrations.flask
-   internal_utils
 
 Indices and tables
 ------------------
