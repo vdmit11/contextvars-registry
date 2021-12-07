@@ -52,7 +52,7 @@ Pages
 -----
 
 .. toctree::
-   :titlesonly:
+   :maxdepth: 1
 
    context_vars_registry
    context_var_ext
