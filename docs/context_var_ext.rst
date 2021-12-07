@@ -274,7 +274,7 @@ but in case you really want it, the ``.context_var`` attribute is there for you.
 
 Also, it is possible to avoid auomatic creation of :class:`~contextvars.ContextVar` objects,
 and instead re-use an existing object via the alternative constructor method:
-`ContextVarExt.from_existing_var`::
+:meth:`ContextVarExt.from_existing_var`::
 
   >>> from contextvars import ContextVar
 
