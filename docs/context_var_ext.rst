@@ -301,4 +301,16 @@ API reference
 -------------
 
 .. automodule:: contextvars_extras.context_var_ext
-   :members: ContextVarExt
+   :exclude-members: ContextVarExt
+
+   ..
+      This autoclass below (in combination with :exclude-members above) is needed to make
+      class ContextVarExt appear at the top of the documentation.
+
+      That is, ContextVarExt is the most important thing in the module, so it should go first.
+
+      It could be better to also place it at the top in the .py file, but this isn't possible,
+      because ContextVarExt depends on NO_DEFAULT, so NO_DEFAULT has to go first in Python code.
+      So, I had to do this :exclude-members: trick to change the order.
+
+   .. autoclass:: ContextVarExt
