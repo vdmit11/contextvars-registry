@@ -1,17 +1,17 @@
 ﻿module: context_var_ext
 =======================
 
-.. currentmodule:: contextvars_extras.context_var_ext
-
-Overview
---------
-
 This is documentation page for the module: :mod:`contextvars_extras.context_var_ext`
 
-.. contents::
+The module contains `class ContextVarExt`_, and its helpers.
 
+.. contents:: Contents
+   :local:
 
-.. rubric:: API overview
+.. currentmodule:: contextvars_extras.context_var_ext
+
+API summary
+-----------
 
 .. rubric:: `class ContextVarExt`_
 
@@ -47,8 +47,6 @@ This is documentation page for the module: :mod:`contextvars_extras.context_var_
    get_context_var_default
 
 
-
-
 class ContextVarExt
 -------------------
 
@@ -62,7 +60,7 @@ with :class:`ContextVarExt` in your code, and it would work as usual.
 
 
 Deferred Defaults
-^^^^^^^^^^^^^^^^^
+-----------------
 
 Normally, you set a default value for a context variable like this::
 
@@ -73,7 +71,7 @@ Normally, you set a default value for a context variable like this::
   ...     default='en'
   ... )
 
-But, there is an alternative way: instead of a default value, you pass a function
+But, there is an alternative way: instead of a default value, you have a function
 that produces a default value, and pass it as the ``deferred_default`` argument::
 
   >>> locale_var = ContextVarExt(
@@ -81,8 +79,8 @@ that produces a default value, and pass it as the ``deferred_default`` argument:
   ...     deferred_default=lambda: 'en'
   ... )
 
-Then, the ``deferred_default()`` is postponed until the :meth:`ContextVarExt.get` method
-call, check this out::
+Then, the :data:`~ContextVarExt.deferred_default` is triggered by the first
+call of the :meth:`ContextVarExt.get` method, as shown in the example below::
 
   >>> def get_default_locale():
   ...     print('get_default_locale() was called')
@@ -128,7 +126,7 @@ call, check this out::
 
 
 Value Deletion
-^^^^^^^^^^^^^^
+--------------
 
 Python's :mod:`contextvars` module has a limitation:
 you cannot delete value stored in a :class:`~contextvars.ContextVar`.
@@ -207,7 +205,7 @@ If you want to reset variable to a default value, then you can use the special m
 
 
 Underlying ContextVar object
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 
 When you create a new :class:`ContextVarExt`, it automatically creates
 a new :class:`~contexvars.ContextVar` object, which can be reached via the
@@ -242,7 +240,7 @@ and instead re-use an existing object via the alternative constructor method:
 
 
 Performance Tips
-^^^^^^^^^^^^^^^^
+----------------
 
 One feature of Python's :mod:`contextvars` module is that it is written in C,
 so you may expect low performance overhead out of the box.
@@ -299,14 +297,8 @@ That means that they have zero overhead, and if you use them,
 you will get the same performance as the lower-level :class:`contextvars.ContextVar` implementation.
 
 
-ContextVarExt API reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: contextvars_extras.context_var_ext.ContextVarExt
-
-
-other members of the module
----------------------------
+API reference
+-------------
 
 .. automodule:: contextvars_extras.context_var_ext
-   :exclude-members: ContextVarExt
+   :members: ContextVarExt
