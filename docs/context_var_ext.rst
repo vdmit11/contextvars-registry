@@ -50,13 +50,66 @@ API summary
 class ContextVarExt
 -------------------
 
-:class:`ContextVarExt` is an extended version the standard :class:`contextvars.ContextVar`.
+:class:`ContextVarExt` is an extended version of the standard :class:`contextvars.ContextVar`.
 
-It is not a sublass of :class:`~contextvars.ContextVar` (just because you cannot subclass it),
-but a it is designed to be a fully compatible drop-in replacement of the :class:`~contextvars.ContextVar`.
+It is implemented as a wrapper (just because :class:`~contextvars.ContextVar` cannot be subclassed),
+and it is designed to be backwards compatible with the standard :class:`~contextvars.ContextVar`,
+at least in terms of `duck typing`_ (that is, :class:`ContextVarExt` implements all methods
+and attributes of the :class:`~contextvars.ContextVar`).
 
-That is, in most cases, you can just replace :class:`~contextvars.ContextVar`
+.. _`duck typing`: https://docs.python.org/3/glossary.html#term-duck-typing
+
+In most cases, you can just replace :class:`~contextvars.ContextVar`
 with :class:`ContextVarExt` in your code, and it would work as usual.
+
+That is, you just replace this::
+
+  >>> from contextvars import ContextVar
+
+  >>> locale_var = ContextVar('locale_var', default='en')
+
+with this::
+
+  >>> from contextvars_extras import ContextVarExt
+
+  >>> locale_var = ContextVarExt('locale_var', default='en')
+
+and then just continue using standard :class:`~contextvars.ContextVar` methods::
+
+  >>> locale_var.get()
+  'en'
+
+  >>> token = locale_var.set('en_US')
+  >>> locale_var.get()
+  'en_US'
+
+  >>> locale_var.reset(token)
+  >>> locale_var.get()
+  'en'
+
+as well extended methods of :class:`ContextVarExt`
+(not available in the standard :class:`~contextvars.ContextVar`)::
+
+  >>> locale_var.delete()
+  >>> locale_var.get()
+  Traceback (most recent call last):
+  ...
+  LookupError: <ContextVar name='locale_var' ...>
+
+  >>> locale_var.reset_to_default()
+  >>> locale_var.get()
+  'en'
+
+  >>> locale_var.is_set()
+  False
+
+  >>> locale_var.set_if_not_set('en_US')
+  'en_US'
+
+  >>> locale_var.get()
+  'en_US'
+
+see `API Summary`_ for the list of available methods.
 
 
 Deferred Defaults
