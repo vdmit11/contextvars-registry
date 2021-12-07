@@ -112,6 +112,39 @@ as well extended methods of :class:`ContextVarExt`
 see `API Summary`_ for the list of available methods.
 
 
+Underlying ContextVar object
+----------------------------
+
+When you instantiate :class:`ContextVarExt`, it automatically creates
+a new :class:`~contexvars.ContextVar` object, which can be reached via the
+:attr:`ContextVarExt.context_var` attribute::
+
+    >>> locale_var = ContextVarExt('locale_var', default='en')
+
+    >>> locale_var.context_var
+    <ContextVar name='locale_var' default='en' ...>
+
+Normally you don't want to use it (even for performance, see `Performance Tips`_ section),
+but in case you really need it, the ``.context_var`` attribute is there for you.
+
+Also, it is possible to avoid auomatic creation of :class:`~contextvars.ContextVar` objects,
+and instead re-use an existing object via the alternative constructor method:
+:meth:`ContextVarExt.from_existing_var`::
+
+  # create a lower-level ContextVar object
+  >>> locale_var = ContextVar('locale_var', default='en')
+
+  # create a ContextVarExt() object, passing the existing ContextVar as argument
+  >>> locale_var_ext = ContextVarExt.from_existing_var(locale_var)
+
+  # so then, .context_var attribute will be set to our existing ContextVar object
+  >>> assert locale_var_ext.context_var is locale_var
+
+  # and, .name is copied from ContextVar.name
+  >>> locale_var_ext.name
+  'locale_var'
+
+
 Deferred Defaults
 -----------------
 
@@ -255,41 +288,6 @@ If you want to reset variable to a default value, then you can use the special m
 
         >>> timezone_var.get_raw()
         <DELETED>
-
-
-Underlying ContextVar object
-----------------------------
-
-When you create a new :class:`ContextVarExt`, it automatically creates
-a new :class:`~contexvars.ContextVar` object, which can be reached via the
-:attr:`ContextVarExt.context_var` attribute::
-
-    >>> locale_var = ContextVarExt('locale_var', default='en')
-
-    >>> locale_var.context_var
-    <ContextVar name='locale_var' default='en' ...>
-
-Normally you don't want to use it (even for performance, see `Performance Tips`_ section),
-but in case you really want it, the ``.context_var`` attribute is there for you.
-
-Also, it is possible to avoid auomatic creation of :class:`~contextvars.ContextVar` objects,
-and instead re-use an existing object via the alternative constructor method:
-:meth:`ContextVarExt.from_existing_var`::
-
-  >>> from contextvars import ContextVar
-
-  # create a lower-level ContextVar object
-  >>> locale_var = ContextVar('locale_var', default='en')
-
-  # create a ContextVarExt() object, passing the existing ContextVar as argument
-  >>> locale_var_ext = ContextVarExt.from_existing_var(locale_var)
-
-  # so then, .context_var attribute will be set to our existing ContextVar object
-  >>> assert locale_var_ext.context_var is locale_var
-
-  # and, .name is copied from ContextVar.name
-  >>> locale_var_ext.name
-  'locale_var'
 
 
 Performance Tips
