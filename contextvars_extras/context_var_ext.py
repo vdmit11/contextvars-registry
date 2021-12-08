@@ -45,9 +45,9 @@ see docs for: :class:`NoDefault`
 class DeletionMark(SentinelValue):
     """Special sentinel object written into ContextVar when it has no value.
 
-    Problem: in Python, it is not possible to erase a ContextVar object.
+    Problem: in Python, it is not possible to erase a :class:`~contextvars.ContextVar` object.
     Once the variable is set, it cannot be unset.
-    But, we (or at least I, the author) need to implement deletion feature.
+    But, we (or at least I, the author) need to implement the deletion feature.
 
     So, the solution is:
 
@@ -67,12 +67,12 @@ class DeletionMark(SentinelValue):
 
     :data:`contextvars_extras.context_var_ext.RESET_TO_DEFAULT`
      - written by :meth:`~ContextVarExt.reset_to_default` method
-     - :meth:`~ContextVarExt.get` returns a :attr:`ContextVarExt.default` value
+     - :meth:`~ContextVarExt.get` returns a :attr:`~ContextVarExt.default` value
 
-    But, all this is more an implementation detail of the :meth:`ContextVarExt` class,
+    But, all this is an implementation detail of the :meth:`ContextVarExt` class,
     and in most cases, you shouldn't care about these special objects.
 
-    The case when you do care, is the :meth:`ContextVarExt.get_raw`,
+    A case when you do care is the :meth:`~ContextVarExt.get_raw` method,
     that may return a special deletion mark. Here is how you handle it::
 
         >>> from contextvars_extras.context_var_ext import DELETED, RESET_TO_DEFAULT
@@ -86,7 +86,7 @@ class DeletionMark(SentinelValue):
         ...     print("timezone_var value was deleted")
         timezone_var value was deleted
 
-    But again, normally you shouldn't care.
+    But again, in most cases, you shouldn't care about it.
     Just use the :meth:`ContextVarExt.get` method, that will handle it for you.
     """
 
@@ -115,23 +115,64 @@ class ContextVarExt(Generic[_VarValueT]):
     name: str
     """Name of the context variable.
 
-    Usually equal to :attr:`contextvars.ContextVar.name`.
+    Equal to :attr:`contextvars.ContextVar.name`.
+
     Needed mostly for debugging and introspection purposes.
+
+    Technically it may be any arbitrary string, of any length, and any format.
+    However, it would be nice if in your code you make it equal to Python variable name, like this::
+
+        >>> my_variable = ContextVarExt(name="my_variable")
+
+    or, even better, a fully qualified name::
+
+        >>> my_variable = ContextVarExt(name=(__name__ + '.' + 'my_variable'))
+
+    That will help you later with debugging.
+
+    .. Note::
+
+       This attribute is read-only.
+
+       It can only be set when the object is created (via :meth:`__init__` parameters).
+
+       Although technically this attribute is writable (for performance purposes),
+       setting it has no effect, and may cause bugs. So don't try to set it.
     """
 
     default: Union[_VarValueT, NoDefault]
     """Default value of the context variable.
 
-    If there is no default value, then it is set to :data:`NO_DEFAULT` - a special
+    Returned by :meth:`get` if the variable is not bound to any value.
+
+    If there is no default value, then this attribute is set to :data:`NO_DEFAULT` - a special
     sentinel object that indicates absence of any default value.
+
+    .. Note::
+
+       This attribute is read-only.
+
+       It can only be set when the object is created (via :meth:`__init__` parameters).
+
+       Although technically this attribute is writable (for performance purposes),
+       setting it has no effect, and may cause bugs. So don't try to set it.
     """
 
     deferred_default: Optional[Callable[[], _VarValueT]]
     """A function, that produces a default value.
 
-    Triggered by the :meth:`~ContextVarExt.get` method (if the variable is not set),
+    Triggered by the :meth:`get` method (if the variable is not set),
     and once called, the result is written into the context variable
     (kind of lazy initialization of the context variable).
+
+    .. Note::
+
+       This attribute is read-only.
+
+       It can only be set when the object is created (via :meth:`__init__` parameters).
+
+       Although technically this attribute is writable (for performance purposes),
+       setting it has no effect, and may cause bugs. So don't try to set it.
     """
 
     def __init__(
@@ -143,21 +184,20 @@ class ContextVarExt(Generic[_VarValueT]):
     ):
         """Initialize ContextVarExt object.
 
-        :param name: Name for the underlying ``ContextVar`` object.
-                     Needed for introspection and debugging purposes.
+        :param name: Variable name. Needed for introspection and debugging purposes.
 
-        :param default: The default value for the  underlying ``ContextVar`` object.
-                        Returned by the ``get()`` method if the variable is not bound to a value.
-                        If default is missing, then ``get()`` may raise ``LookupError``.
+        :param default: A default value, returned by the :meth:`get` method
+                        if the variable is not bound to a value.
+                        If default is missing, then :meth:`get` raises :class:`LookupError`.
 
         :param deferred_default: A function that produces a default value.
-                                 Called by ``get()`` method, once per context.
-                                 That is, if you spawn 10 threads, then ``deferred_default()``
+                                 Called by :meth:`get` method, once per context.
+                                 That is, if you spawn 10 threads, then :attr:`deferred_default`
                                  is called 10 times, and you get 10 thread-local values.
 
-        :param _context_var: A reference to an existing ``ContextVar`` object.
-                             This argument is made for internal purposes, and you shouldn't use it.
-                             Instead, use :meth:`~ContextVarExt.from_existing_var` method.
+        :param _context_var: A reference to an existing :class:`contextvars.ContextVar` object.
+                             This parameter is for internal purposes, and you shouldn't use it.
+                             Instead, use :meth:`ContextVarExt.from_existing_var` constructor.
         """
         assert name
         assert not ((default is not NO_DEFAULT) and (deferred_default is not None))
@@ -178,9 +218,10 @@ class ContextVarExt(Generic[_VarValueT]):
         """Create ContextVarExt from an existing ContextVar object.
 
         Normally, when you instanciate :class:`ContextVarExt`, its default constructor
-        automatically creates an existing :class:`~contextvars.ContextVarExt` object.
+        automatically creates a new :class:`~contextvars.ContextVar` object.
+        This may not always be what you want.
 
-        So this :class:`~ContextVarExt.from_existing_var` is an alternative constructor
+        So this :meth:`ContextVarExt.from_existing_var` is an alternative constructor
         that allows to cancel that automatic creation behavior, and instead use an existing
         :class:`~contextvars.ContextVar` object.
 
@@ -198,7 +239,7 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var_ext.context_var is timezone_var
             True
 
-        See also: :meth:`ContextVarExt.__init__` method documentation,
+        See also: :meth:`__init__` method documentation,
         where you can find description of the ``deferred_default`` and maybe other paramters.
         """
         name = context_var.name
@@ -311,7 +352,8 @@ class ContextVarExt(Generic[_VarValueT]):
         the method will:
 
           * return the value of the ``default`` argument of the method, if provided; or
-          * return the default value for the context variable, if it was created with one; or
+          * return the :attr:`default` value for the variable, if it was created with one; or
+          * return a value produced by the :attr:`deferred_default` function; or
           * raise a :exc:`LookupError`.
 
         Example usage::
@@ -328,7 +370,7 @@ class ContextVarExt(Generic[_VarValueT]):
             'Europe/London'
 
 
-        Note that if that if there is no ``default`` value, it may raise ``LookupError``::
+        Note that if that if there is no ``default`` value, the method raises :data:`LookupError`::
 
             >>> locale_var = ContextVarExt('locale_var')
 
@@ -371,11 +413,13 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var.get_raw == timezone_var.context_var.get
             True
 
-        So here is absolutely no overhead on top of the standard ``ContextVar.get()`` method,
-        and you can safely use ``.get_raw()`` when you need performance.
+        So here is absolutely no overhead on top of the standard :meth:`contextvars.ContextVar.get`,
+        and you can safely use this :meth:`get_raw` method when you need performance.
 
-        See also, documentation for this method in the standard library:
-        :meth:`contextvars.ContextVar.get`.
+        .. Note::
+
+           This method is a direct shortcut to the built-in method, see also its documentation:
+           :meth:`contextvars.ContextVar.get`
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_init_fast_methods``.
@@ -387,28 +431,37 @@ class ContextVarExt(Generic[_VarValueT]):
 
         Examples::
 
+            # Initially, variable is not set.
             >>> timezone_var = ContextVarExt('timezone_var')
             >>> timezone_var.is_set()
             False
 
+            # Even with a default value, it is still not set.
+            # default is not an initial value. It is rather a fallback value for .get()
             >>> timezone_var = ContextVarExt('timezone_var', default='UTC')
             >>> timezone_var.is_set()
             False
 
+            # Once .set() is called, the .is_set() method returns True.
             >>> timezone_var.set('GMT')
             <Token ...>
             >>> timezone_var.is_set()
             True
 
+            # .reset_to_default() also "un-sets" the variable
+            # (even though the special NO_DEFAULT object is written to the variable)
             >>> timezone_var.reset_to_default()
             >>> timezone_var.is_set()
             False
 
+            # Setting variable to None still means it is set.
             >>> timezone_var.set(None)
             <Token ...>
             >>> timezone_var.is_set()
             True
 
+            # .delete() also "un-sets" the variable
+            # (even though the special DELETED object is written to the variable)
             >>> timezone_var.delete()
             >>> timezone_var.is_set()
             False
@@ -421,15 +474,15 @@ class ContextVarExt(Generic[_VarValueT]):
     def set(self, value) -> Token:
         """Call to set a new value for the context variable in the current context.
 
-        The required *value* argument is the new value for the context variable.
+        The required ``value`` argument is the new value for the context variable.
 
-        Returns a :class:`~contextvars.contextvars.Token` object that can be used to restore
-        the variable to its previous value via the :meth:`~ContextVarExt.reset` method.
+        :returns: a :class:`~contextvars.Token` object that can be passed
+                  to :meth:`reset` method to restore the variable to its previous value.
 
         .. Note::
 
-          This method is a shortcut to method of the standard ``ContextVar`` class,
-          please check out its documentation: :meth:`contextvars.ContextVar.set`.
+           This method is a direct shortcut to the built-in method, see also its documentation:
+           :meth:`contextvars.ContextVar.set`
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_init_fast_methods``.
@@ -438,6 +491,14 @@ class ContextVarExt(Generic[_VarValueT]):
 
     def set_if_not_set(self, value):
         """Set value if not yet set.
+
+        The behavior is akin to Python's :meth:`dict.setdefault` method:
+
+        - If the variable is not yet set, then set it, and return the new value
+        - If the variable is already set, then don't overwrite it, and return the existing value
+
+        That is, it always returns what is stored in the context variable
+        (which is not the same as the input ``value`` argument).
 
         Examples::
 
@@ -476,29 +537,29 @@ class ContextVarExt(Generic[_VarValueT]):
     def reset(self, token: Token):
         """Reset the context variable to a previous value.
 
-        Reset the context variable to the value it had before the
-        :meth:`ContextVarExt.set` that created the *token* was used.
+        :param token: A :class:`~contextvars.Token` object returned by :meth:`set` method.
 
-        For example::
+        After the call, the variable is restored to whatever state it had before the :meth:`set`
+        method was called. That works even if the variable was previously not set::
 
-            >>> var = ContextVar('var')
+            >>> locale_var = ContextVar('locale_var')
 
-            >>> token = var.set('new value')
-            >>> var.get()
+            >>> token = locale_var.set('new value')
+            >>> locale_var.get()
             'new value'
 
-            # After the reset call the var has no value again,
-            # so var.get() would raise a LookupError.
-            >>> var.reset(token)
-            >>> var.get()
+            # After the .reset() call, the var has no value again,
+            # so locale_var.get() would raise a LookupError.
+            >>> locale_var.reset(token)
+            >>> locale_var.get()
             Traceback (most recent call last):
             ...
             LookupError: ...
 
         .. Note::
 
-          This method is a shortcut to method of the standard ``ContextVar`` class,
-          please check out its documentation: :meth:`contextvars.ContextVar.reset`.
+           This method is a direct shortcut to the built-in method, see also its documentation:
+           :meth:`contextvars.ContextVar.reset`
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_init_fast_methods``.
@@ -506,7 +567,7 @@ class ContextVarExt(Generic[_VarValueT]):
         raise AssertionError
 
     def reset_to_default(self):
-        """Reset context variable to the default value.
+        """Reset context variable to its default value.
 
         Example::
 
@@ -520,10 +581,8 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var.get()
             'UTC'
 
-            >>> timezone_var.get(default='GMT')
-            'GMT'
-
-        When there is no default value, the value is erased, so ``get()`` raises ``LookupError``::
+        When there is no :attr:`default`, then :meth:`reset_to_default` has
+        the same effect as :meth:`delete`::
 
             >>> timezone_var = ContextVarExt('timezone_var')
 
@@ -532,7 +591,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
             >>> timezone_var.reset_to_default()
 
-            # ContextVar has no default value, so .get() call raises LookupError.
+            # timezone_var has no default value, so .get() call raises LookupError.
             >>> try:
             ...     timezone_var.get()
             ... except LookupError:
@@ -555,7 +614,7 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var.set('Europe/London')
             <Token ...>
 
-            # ...so .get() call doesn't raise an exception and returns the value that was set
+            # ...so .get() call doesn't raise an exception and returns the value
             >>> timezone_var.get()
             'Europe/London'
 
@@ -572,6 +631,12 @@ class ContextVarExt(Generic[_VarValueT]):
             # The exception can be avoided by passing a `default=...` value.
             >>> timezone_var.get(default='GMT')
             'GMT'
+
+        .. Note::
+
+           :meth:`delete` does NOT reset the variable to its :attr:`default` value.
+
+           There is a special method for that purpose: :meth:`reset_to_default`
         """
         self.set(DELETED)
 

@@ -157,15 +157,16 @@ Normally, you set a default value for a context variable like this::
   ...     default='en'
   ... )
 
-But, there is an alternative way: instead of a default value, you have a function
-that produces a default value, and pass it as the ``deferred_default`` argument::
+There is an alternative way: instead of a default value,
+you pass :attr:`~ContextVarExt.deferred_default` - a function that produces the default value,
+like this::
 
   >>> locale_var = ContextVarExt(
   ...     name='locale_var',
   ...     deferred_default=lambda: 'en'
   ... )
 
-Then, the :data:`~ContextVarExt.deferred_default` is triggered by the first
+Then, the :attr:`~ContextVarExt.deferred_default` is triggered by the first
 call of the :meth:`ContextVarExt.get` method, as shown in the example below::
 
   >>> def get_default_locale():
@@ -186,7 +187,7 @@ call of the :meth:`ContextVarExt.get` method, as shown in the example below::
   >>> locale_var.get()
   'en'
 
-``deferred_default`` is useful in several cases:
+:attr:`~ContextVarExt.deferred_default` is useful in several cases:
 
 - The default value is not available yet.
 
@@ -204,8 +205,9 @@ call of the :meth:`ContextVarExt.get` method, as shown in the example below::
   or maybe a "current DB session" (a `sqlalchemy.orm.Session`_ object), or something else
   that you don't want to share betwen threads/greenlets/coroutines.
 
-  In this case, you set ``deferred_default`` to a function that creates ``Session`` objects,
-  then if you spawn multiple threads, and then each thread will get its own ``Session`` instance.
+  In this case, you set :attr:`~ContextVarExt.deferred_default` to a function
+  that creates ``Session`` objects, and spawn multiple threads, and then each thread
+  will get its own ``Session`` instance.
 
 .. _requests.Session: https://docs.python-requests.org/en/master/user/advanced/#session-objects
 .. _sqlalchemy.orm.Session: https://docs.sqlalchemy.org/en/14/orm/session.html
@@ -245,8 +247,8 @@ like this::
     'GMT'
 
 Also note that a :meth:`~ContextVarExt.delete()` call doesn't reset value to default.
-Instead, it completely erases the variable. Even if ``default=...`` was set, it will
-erase the default value, check this out::
+Instead, it completely erases the variable. Even if ``default=...`` was set, it look
+as if the default value was erased, check this out::
 
     >>> timezone_var = ContextVarExt('timezone_var', default='UTC')
 
@@ -268,18 +270,17 @@ erase the default value, check this out::
     >>> timezone_var.get(default='UTC')
     'UTC'
 
-If you want to reset variable to a default value, then you can use the special method:
-:meth:`ContextVarExt.reset_to_default`.
+If you want to reset variable to the default value, then you can use :meth:`~ContextVarExt.reset_to_default`.
 
 .. Note::
 
-    Deletion is implemented in a bit hacky way
-    (because in Python, you can't really erase a ContextVar object).
+    Python doesn't really allow to erase :class:`~contextvars.ContextVar`,
+    so deletion is implemented in a hacky way:
 
-    When you call :meth:`~ContextVarExt.delete`, a special marker object
-    ``DELETED`` is written into the context variable.
+    When you call :meth:`~ContextVarExt.delete`, a special :data:`DELETED` object
+    is written into the context variable.
 
-    Later on, :meth:`~ContextVarExt.get` method detects the marker,
+    Later on, :meth:`~ContextVarExt.get` method detects this special object,
     and behaves as if there was no value.
 
     All this trickery happens under the hood, and normally you shouldn't notice it.
@@ -299,7 +300,7 @@ so you may expect low performance overhead out of the box.
 The :class:`ContextVarExt` is written in Python, so does it mean it is slow?
 Do you need to switch to low-level :class:`~contextvars.ContextVar` when you need performance?
 
-Well, yes, there is some overhead, but I (author of the code) try to keep it minimal.
+Well, there is some overhead, but I (author of the code) try to keep it minimal.
 I can't provide an extensive benchmark yet, but here is a very rough measurement from my local machine::
 
   >>> from timeit import timeit
