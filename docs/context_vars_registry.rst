@@ -1,19 +1,20 @@
 ﻿module: context_vars_registry
 =============================
 
+This is documentation page for the module: :mod:`contextvars_extras.context_vars_registry`
+
+The module is about `class ContextVarsRegistry`_ - a container that provides nice
+``@property``-like access to context variables.
+
+.. contents:: Contents
+   :local:
+
 .. currentmodule:: contextvars_extras.context_vars_registry
 
-ContextVarsRegistry - a nice ``@property``-like way to access context variables.
+API summary
+-----------
 
-Overview
---------
-
-.. contents::
-
-
-.. rubric:: API Overview
-
-.. rubric:: class ContextVarsRegistry
+.. rubric:: `class ContextVarsRegistry`_
 
 .. autosummary::
 
@@ -98,8 +99,8 @@ ContextVarDescriptor should implement all same attributes and methods as Context
 and thus it can be used instead of ContextVar() object in all cases except isinstance() checks.
 
 
-dict-like access
-^^^^^^^^^^^^^^^^
+dict-like Access
+----------------
 
 :class:`ContextVarsRegistry` implements MutableMapping_ protocol.
 
@@ -154,8 +155,8 @@ Other ``dict`` methods are supported as well::
     dict_items([('timezone', 'UTC'), ('user_id', 42)])
 
 
-deleting attributes
-^^^^^^^^^^^^^^^^^^^
+Deleting Attributes
+-------------------
 
 In Python, it is not possible to delete a ``ContextVar`` object.
 (well, technically, it could be deleted, but that leads to a memory leak, so we forbid deletion).
@@ -202,17 +203,9 @@ When you delete it, we only mark it as deleted, but never actually delete it.
 All this thing happens under the hood, and normally you shouln't notice that.
 
 
-ContextVarsRerigsty API reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: contextvars_extras.context_vars_registry.ContextVarsRegistry
-   :special-members: __call__
-   :private-members: _registry_auto_create_vars
-   :inherited-members:
-
-
-other members of the module
----------------------------
+API reference
+-------------
 
 .. automodule:: contextvars_extras.context_vars_registry
-  :exclude-members: ContextVarsRegistry
+   :special-members: __call__
+   :private-members: _registry_auto_create_vars
