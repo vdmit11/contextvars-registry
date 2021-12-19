@@ -41,7 +41,9 @@ API summary
 class ContextVarsRegistry
 -------------------------
 
-The idea is simple: you create a sub-class, and declare your variables using type annotations:
+:class:`ContextVarsRegistry` is a container that makes context variables behave like ``@property``.
+
+The idea is simple: you create a sub-class, and declare your variables using type annotations::
 
     >>> from contextvars_extras import ContextVarsRegistry
 
@@ -53,8 +55,8 @@ The idea is simple: you create a sub-class, and declare your variables using typ
 
     >>> current = CurrentVars()
 
-When you create a sub-class, all type-hinted members become ContextVar() objects,
-and you can work with them by just getting/setting instance attributes:
+When you create a sub-class, all type-hinted members become :class:`~contextvars.ContextVar`
+objects, and you can work with them by just getting/setting attributes::
 
     >>> current.locale
     'en_GB'
@@ -66,9 +68,11 @@ and you can work with them by just getting/setting instance attributes:
     >>> current.timezone
     'UTC'
 
-Getting/setting attributes is automatically mapped to ContextVar.get()/ContextVar.set() calls.
+Getting/setting an attribute is automatically mapped to
+:meth:`~contextvars.ContextVar.get`/:meth:`~contextvars.ContextVar.set` methods
+of the underlying :class:`~contextvars.ContextVar` object.
 
-The underlying ContextVar() objects can be managed via class attributes:
+The underlying :class:`contextvars.ContextVar` can be reached via class attributes::
 
     >>> CurrentVars.timezone.get()
     'UTC'
@@ -80,40 +84,43 @@ The underlying ContextVar() objects can be managed via class attributes:
     >>> current.timezone
     'UTC'
 
-Well, actually, the above is a little lie: the class members are actially instances of
-ContextVarDescriptor (not ContextVar). It has all the same get()/set()/reset() methods, but it
-is not a subclass (just because ContextVar can't be subclassed, this is a technical limitation).
-
-So class members are ContextVarDescriptor objects:
+Well, actually, the above is a little lie: the class members are not quite context variables,
+they're really instances of :class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor`.
 
     >>> CurrentVars.timezone
     <ContextVarDescriptor name='__main__.CurrentVars.timezone'>
 
-and its underlying ContextVar can be reached via the `.context_var` attribute:
+:class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor` has all the standard
+:meth:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor.get`/
+:meth:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor.set`/
+:meth:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor.reset`
+methods, but it is not a subclass of :class:`~contextvars.ContextVar` (because it
+cannot be subclassed, it is just a technical limitation).
+
+if you really need to reach the low-level :class:`~contextvars.ContextVar` object,
+then you just use the ``.context_var`` attribute::
 
     >>> CurrentVars.timezone.context_var
     <ContextVar name='__main__.CurrentVars.timezone'...>
 
-But in practice, you normally shouldn't need that.
-ContextVarDescriptor should implement all same attributes and methods as ContextVar,
-and thus it can be used instead of ContextVar() object in all cases except isinstance() checks.
+But in most cases, you don't need it, because
+:class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor` implements all the same
+methods an attributes as the standard :class:`~contextvars.ContextVar`, so it would work
+as a drop-in replacement in all cases except :func:`isinstance` checks.
 
 
 dict-like Access
 ----------------
 
-:class:`ContextVarsRegistry` implements MutableMapping_ protocol.
+:class:`ContextVarsRegistry` implements :class:`collections.abc.MutableMapping` protocol.
 
-.. _MutableMapping:
-   https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping
-
-That means that you can get/set context variables, as if it was just a ``dict``, like this::
+That means that you can get/set context variables, as if it was just a :class:`dict`, like this::
 
     >>> current['locale'] = 'en_US'
     >>> current['locale']
     'en_US'
 
-Standard dict operators are supported::
+Standard :class:`dict` operators are supported::
 
     # `in` operator
     >>> 'locale' in current
@@ -134,7 +141,7 @@ Standard dict operators are supported::
     >>> dict(current)
     {'locale': 'en_US', 'timezone': 'UTC', 'user_id': None}
 
-Other ``dict`` methods are supported as well::
+Methods are supported as well::
 
     >>> current.update({
     ...    'locale': 'en',
@@ -158,18 +165,19 @@ Other ``dict`` methods are supported as well::
 Deleting Attributes
 -------------------
 
-In Python, it is not possible to delete a ``ContextVar`` object.
-(well, technically, it could be deleted, but that leads to a memory leak, so we forbid deletion).
+In Python, it is not possible to delete a :class:`~contextvars.ContextVar` object.
+(an attempt to do so causes a memory leak, so you shall never really delete context variables).
 
 So, we have to do some trickery to implement deletion...
 
-When you call ``del`` or ``delattr()``, we don't actually delete anything,
-but instead we write to the variable a special token object called ``DELETED``.
+When you call ``del`` or :func:`delattr`, we don't actually delete anything,
+but instead we write to the variable a special sentinel object called
+:data:`~contextvars_extras.context_var_ext.DELETED`.
 
 Later on, when the variable is read, there is a ``if`` check under the hood,
-that detects the special token and throws an exception.
+that detects the special sentinel object, and throws an exception.
 
-On the high level, you should never notice this hack.
+On the high level, you should never notice this trick.
 Attribute mechanics works as expected, as if the attribute is really deleted, check this out::
 
 
@@ -192,15 +200,17 @@ Attribute mechanics works as expected, as if the attribute is really deleted, ch
     >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
     'DEFAULT_VALUE'
 
-...but if you try to use :meth:`~.ContextVarDescriptor.get_raw` method,
-you will get that special ``DELETED`` object stored in the ``ContextVar``::
+The only case when you see this special :data:`~contextvars_extras.context_var_ext.DELETED` object
+is when you use some low-level stuff, like :func:`save_context_vars_registry`, or
+the :meth:`~.ContextVarDescriptor.get_raw` method::
 
     >>> CurrentVars.user_id.get_raw()
     <DELETED>
 
-So, long story short: once allocated, a ``ContextVar`` object lives forever in the registry.
+So, long story short: once a :class:`contextvars.ContextVar` object is allocated,
+it lives forever in the registry.
 When you delete it, we only mark it as deleted, but never actually delete it.
-All this thing happens under the hood, and normally you shouln't notice that.
+All this thing happens under the hood, and normally you shouln't notice it.
 
 
 API reference
