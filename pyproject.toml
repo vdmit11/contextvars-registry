@@ -31,7 +31,7 @@ sentinel-value = "^1.0.0"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
 tox = "^3.24.4"
-ipython = "^7.28.0"
+ipython = "^7.31.1"
 Sphinx = "^4.2.0"
 sphinx-autobuild = "^2021.3.14"
 rpdb = "^0.1.6"
