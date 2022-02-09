@@ -81,7 +81,7 @@ addopts = """
     --mypy
     --black
     --isort
-    --cov-report=term:skip-covered
+    --cov-report=term-missing:skip-covered
     --ignore='./playground.py'
     --ignore-glob='**/.*.py'
     --ignore-glob='.*.py'
