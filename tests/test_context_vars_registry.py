@@ -1,4 +1,5 @@
-from typing import Optional
+import functools
+from typing import ClassVar, Optional
 
 from pytest import raises
 
@@ -30,22 +31,21 @@ def test__ContextVarsRegistry__must_be_subclassed__but_not_subsubclassed():
         ContextVarsRegistry()
 
 
-def test__class_members__with_type_hints__are_automatically_converted_to_context_var_descriptors():
+def test__type_hinted_attrs__automatically_converted_to__context_var_descriptor():
     class MyVars(ContextVarsRegistry):
-        # magically becomes ContextVarDescriptor()
-        hinted: str = "hinted"
+        hinted: str
 
-        # no type hint, so not affected
-        not_hinted = "not hinted"
-
-    my_vars = MyVars()
-
-    # at class level, type-hinted attributes are converted to ContextVarDescriptor objects
+    # When subclassed, the .hinted attribute magically becomes a ContextVarDescriptor object
     assert isinstance(MyVars.hinted, ContextVarDescriptor)
-    assert isinstance(MyVars.not_hinted, str)
 
     # at instance level, descriptors do proxy calls to ContextVar.get()/ContextVar.set() methods
-    assert my_vars.hinted == "hinted"
+    my_vars = MyVars()
+
+    # The context variable isn't set yet, so initially it throws  AttributeError
+    with raises(AttributeError):
+        my_vars.hinted
+
+    # Set the attribute, and now the context variable becomes set.
     my_vars.hinted = "foo"
     assert my_vars.hinted == "foo"
 
@@ -67,6 +67,71 @@ def test__class_members__with_type_hints__are_automatically_converted_to_context
         == MyVars.hinted.name
         == MyVars.hinted.context_var.name
     )
+
+
+def test__attributes_hinted_with_ClassVar__are_NOT_converted_to_context_vars():
+    class MyVars(ContextVarsRegistry):
+        hinted_with_str: str = "hinted_with_str"
+        hinted_with_ClassVar_str: ClassVar[str] = "hinted_with_ClassVar_str"
+
+    assert isinstance(MyVars.hinted_with_str, ContextVarDescriptor)
+    assert isinstance(MyVars.hinted_with_ClassVar_str, str)
+
+
+def test__some_attributes_wihout_type_hints__are_converted_to_context_vars():  # noqa: R701
+    class MyVars(ContextVarsRegistry):
+        var1 = "var1 value"
+        _var2 = "var2 value"
+        __var3 = "var3 value"
+        var4 = ContextVarDescriptor(default="var4 value")
+
+        __special_attr__ = "special attr value"
+
+        @property
+        def some_property(self):
+            return self.__var3
+
+        def some_method(self):
+            return self.__var3
+
+        @classmethod
+        def some_class_method(cls):
+            return cls.__var3
+
+        some_lambda = lambda x: x  # noqa
+        some_partial = functools.partial(some_lambda)
+        some_partialmethod = functools.partialmethod(some_method)
+
+    # all regular variables are converted to context var (even ones with underscore prefix)
+    assert isinstance(MyVars.var1, ContextVarDescriptor)
+    assert isinstance(MyVars._var2, ContextVarDescriptor)
+    assert isinstance(MyVars._MyVars__var3, ContextVarDescriptor)  # type: ignore
+
+    # var4 is already a ContextVarDescriptor, so check that it is NOT wrapped in another context var
+    assert isinstance(MyVars.var4.get(), str)
+
+    # special attributes are NOT converted to context vars
+    assert not isinstance(MyVars.__special_attr__, ContextVarDescriptor)
+    assert not isinstance(MyVars._abc_impl, ContextVarDescriptor)  # type: ignore
+
+    # properties and methods are NOT converted
+    assert not isinstance(MyVars.some_property, ContextVarDescriptor)
+    assert not isinstance(MyVars.some_method, ContextVarDescriptor)
+    assert not isinstance(MyVars.some_class_method, ContextVarDescriptor)
+
+    # NOTE: lambdas and partial() objects are converted!
+    assert isinstance(MyVars.some_lambda, ContextVarDescriptor)
+    assert isinstance(MyVars.some_partial, ContextVarDescriptor)  # type: ignore
+
+    # ...but partialmethod() is not converted (because you usually use it as a method, not a value)
+    assert not isinstance(MyVars.some_partialmethod, ContextVarDescriptor)
+
+
+def test__registry_settings__are_NOT_converted_to_context_vars():
+    class MyVars(ContextVarsRegistry):
+        _registry_auto_create_vars = False
+
+    assert isinstance(MyVars._registry_auto_create_vars, bool)
 
 
 def test__class_member_values__become__context_var_defaults():
@@ -113,21 +178,30 @@ def test__missing_vars__are_automatically_created__on_setattr():
         current.timezone = "Europe/Moscow"
 
 
-def test__registry_prefix__is_reserved__and_cannot_be_used_for_context_variables():
+def test__setattr__does_NOT_overwrite_existing_class_members():
     class CurrentVars(ContextVarsRegistry):
-        _registry_foo: str = "foo"
+        class_var: ClassVar[str]
+
+        def method(self):
+            return self.class_var
 
     current = CurrentVars()
 
-    # _registry_* attributes cannot be set on instance level
+    # attributes annotated with ClassVar cannot be converted to context variables
     with raises(AttributeError):
-        current._registry_foo = "bar"
+        current.class_var = "some value"  # type: ignore
 
-    # and they don't become ContextVar() objects,
-    # even though they were declared with type hints on the class level
-    assert isinstance(
-        CurrentVars._registry_foo, str
-    )  # normally you expect ContextVarDescriptor here
+    # methods cannot be overwritten with context variables
+    with raises(AttributeError):
+        current.method = lambda self: 42  # type: ignore
+
+    # special attributes cannot be context variables as well
+    with raises(AttributeError):
+        current.__doc__ = "foo"
+
+    # another special attribute
+    with raises(AttributeError):
+        current._abc_impl = None
 
 
 def test__with_context_manager__sets_variables__temporarily():
@@ -158,18 +232,37 @@ def test__with_context_manager__sets_variables__temporarily():
     assert CurrentVars.locale.get("FALLBACK") == "FALLBACK"  # type: ignore[attr-defined]
 
 
-def test__with_context_manager__throws_error__when_setting_reserved_registry_attribute():
+def test__with_context_manager__throws_error__when_setting_class_members():
     class CurrentVars(ContextVarsRegistry):
-        _registry_foo: str = "not a ContextVar because of special _registry_ prefix"
+        some_class_var: ClassVar[str] = "not a ContextVar because of special ClassVar annotation"
+
+        @property
+        def some_property(self):
+            return self.some_class_var
+
+        def some_method(self):
+            return self.some_class_var
 
     current = CurrentVars()
 
     with raises(AttributeError):
-        with current(_registry_foo="foo"):
+        with current(some_class_var="foo"):
             pass
 
     with raises(AttributeError):
-        with current(_registry_bar="bar"):
+        with current(some_property=42):
+            pass
+
+    with raises(AttributeError):
+        with current(some_method=lambda self: 42):
+            pass
+
+    with raises(AttributeError):
+        with current(__doc__="new docs"):
+            pass
+
+    with raises(AttributeError):
+        with current(_abc_impl=None):
             pass
 
 
