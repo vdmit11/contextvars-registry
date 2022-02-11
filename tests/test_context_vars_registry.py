@@ -129,9 +129,9 @@ def test__some_attributes_wihout_type_hints__are_converted_to_context_vars():  #
 
 def test__registry_settings__are_NOT_converted_to_context_vars():
     class MyVars(ContextVarsRegistry):
-        _registry_auto_create_vars = False
+        _registry_allocate_on_setattr = False
 
-    assert isinstance(MyVars._registry_auto_create_vars, bool)
+    assert isinstance(MyVars._registry_allocate_on_setattr, bool)
 
 
 def test__class_member_values__become__context_var_defaults():
@@ -166,11 +166,11 @@ def test__missing_vars__are_automatically_created__on_setattr():
     current.timezone = "Europe/Moscow"
     assert CurrentVars.timezone.get() == "Europe/Moscow"  # type: ignore[attr-defined]
 
-    # ...but this feature may be disabled by setting `_registry_auto_create_vars = False`
+    # ...but this feature may be disabled by setting `_registry_allocate_on_setattr = False`
     # Let's test that:
 
     class CurrentVars(ContextVarsRegistry):  # type: ignore[no-redef]
-        _registry_auto_create_vars = False
+        _registry_allocate_on_setattr = False
 
     current = CurrentVars()
 
@@ -268,7 +268,7 @@ def test__with_context_manager__throws_error__when_setting_class_members():
 
 def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled():
     class CurrentVars(ContextVarsRegistry):
-        _registry_auto_create_vars = False
+        _registry_allocate_on_setattr = False
         locale: str = "en"
 
     current = CurrentVars()
@@ -278,7 +278,7 @@ def test__with_context_manager__throws_error__when_init_on_setattr_is_disabled()
 
     # an attempt to set current.timezone will raise AttributeError
     # Because the variable wasn't declared in the class definition
-    # (and dynamic creation of variables is disabled by ``_registry_auto_create_vars = False``)
+    # (and dynamic creation of variables is disabled by ``_registry_allocate_on_setattr = False``)
     with raises(AttributeError):
         with current(locale="en_US", timezone="America/New_York"):
             pass

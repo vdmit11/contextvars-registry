@@ -18,7 +18,7 @@ API summary
 
 .. autosummary::
 
-   ContextVarsRegistry._registry_auto_create_vars
+   ContextVarsRegistry._registry_allocate_on_setattr
    ContextVarsRegistry.__call__
 
 
@@ -338,4 +338,4 @@ API reference
 
 .. automodule:: contextvars_extras.context_vars_registry
    :special-members: __call__
-   :private-members: _registry_auto_create_vars
+   :private-members: _registry_allocate_on_setattr

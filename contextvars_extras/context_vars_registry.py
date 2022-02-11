@@ -15,10 +15,10 @@ from contextvars_extras.internal_utils import ExceptionDocstringMixin
 class ContextVarsRegistry(MutableMapping[str, Any]):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
-    _registry_auto_create_vars: ClassVar[bool] = True
-    """Automatically create ContextVar() objects when setting attributes?
+    _registry_allocate_on_setattr: ClassVar[bool] = True
+    """Automatically create new context variables when setting attributes?
 
-    If set to True (default), missing ContextVar() objects are automatically created when
+    If set to True (default), missing ContextVar() objects are dynamically allocated when
     setting attributes. That is, you can define an empty class, and then set arbitrary attributes:
 
         >>> class CurrentVars(ContextVarsRegistry):
@@ -31,7 +31,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
     However, if you find this behavior weak, you may disable it, like this:
 
         >>> class CurrentVars(ContextVarsRegistry):
-        ...     _registry_auto_create_vars = False
+        ...     _registry_allocate_on_setattr = False
         ...     locale: str = 'en'
 
         >>> current = CurrentVars()
@@ -39,7 +39,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
         AttributeError: ...
     """
 
-    _registry_descriptors: ClassVar[Dict[str, ContextVarDescriptor]]
+    _registry_var_descriptors: ClassVar[Dict[str, ContextVarDescriptor]]
     """A dictionary of all context vars in the registry.
 
     Keys are attribute names, and values are instances of :class:`ContextVarDescriptor`.
@@ -51,7 +51,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
     It is just kept for the convenience, and maybe small performance improvements.
     """
 
-    _registry_var_create_lock: ClassVar[threading.RLock]
+    _registry_var_allocate_lock: ClassVar[threading.RLock]
     """A lock that protects against race conditions during cration of new ContextVar() objects.
 
     ContextVar() objects are lazily created on 1st attempt to set an attribute.
@@ -118,7 +118,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
             for attr_name, value in attr_names_and_values.items():
                 # This is almost like __setattr__(), except that it also saves a Token() object,
                 # that allows to restore the previous value later (via ContextVar.reset() method).
-                descriptor = self.__before_set__ensure_initialized(attr_name, value)
+                descriptor = self.__before_set__ensure_allocated(attr_name, value)
                 reset_token = descriptor.set(value)  # calls ContextVar.set() method
                 saved_state.append((descriptor, reset_token))
 
@@ -131,9 +131,9 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
-        cls._registry_descriptors = {}
-        cls._registry_var_create_lock = threading.RLock()
-        cls.__init_class_members_as_descriptors()
+        cls._registry_var_descriptors = {}
+        cls._registry_var_allocate_lock = threading.RLock()
+        cls.__convert_attrs_to_var_descriptors()
         super().__init_subclass__()
 
     @classmethod
@@ -146,7 +146,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
     # pylint: disable=unused-private-member
 
     @classmethod
-    def __init_class_members_as_descriptors(cls):
+    def __convert_attrs_to_var_descriptors(cls):
         for attr_name, type_hint, attr_value in _get_attr_type_hints_and_values(cls):
             # Skip already initialized descriptors.
             #
@@ -156,13 +156,13 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
             #
             # So here we adopt such already existing descriptors.
             if isinstance(attr_value, ContextVarDescriptor):
-                cls._registry_descriptors[attr_name] = attr_value
+                cls._registry_var_descriptors[attr_name] = attr_value
                 continue
 
             # For other attributes, we may convert them to ContextVarDescriptor
             # (the decision depends on the type hint or the attribute value).
             if cls.__should_convert_to_descriptor(attr_name, type_hint, attr_value):
-                cls.__init_attr_as_descriptor(attr_name)
+                cls.__allocate_var_descriptor(attr_name)
 
     @staticmethod
     def __should_convert_to_descriptor(attr_name: str, type_hint: Any, attr_value: Any) -> bool:
@@ -200,9 +200,9 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
         return True
 
     @classmethod
-    def __init_attr_as_descriptor(cls, attr_name):
-        with cls._registry_var_create_lock:
-            assert attr_name not in cls._registry_descriptors
+    def __allocate_var_descriptor(cls, attr_name):
+        with cls._registry_var_allocate_lock:
+            assert attr_name not in cls._registry_var_descriptors
 
             value = getattr(cls, attr_name, NO_DEFAULT)
             assert not isinstance(value, (ContextVar, ContextVarExt, ContextVarDescriptor))
@@ -210,31 +210,31 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
             descriptor: ContextVarDescriptor = ContextVarDescriptor(default=value)
             descriptor.__set_name__(cls, attr_name)
             setattr(cls, attr_name, descriptor)
-            cls._registry_descriptors[attr_name] = descriptor
+            cls._registry_var_descriptors[attr_name] = descriptor
 
     def __init__(self):
         self.__ensure_subclassed_properly()
         super().__init__()
 
     def __setattr__(self, attr_name, value):
-        self.__before_set__ensure_initialized(attr_name, value)
+        self.__before_set__ensure_allocated(attr_name, value)
         super().__setattr__(attr_name, value)
 
     @classmethod
-    def __before_set__ensure_initialized(cls, attr_name, value) -> ContextVarDescriptor:
+    def __before_set__ensure_allocated(cls, attr_name, value) -> ContextVarDescriptor:
         try:
-            return cls._registry_descriptors[attr_name]
+            return cls._registry_var_descriptors[attr_name]
         except KeyError:
-            cls.__before_set__initialize_attr_as_context_var_descriptor(attr_name, value)
-            return cls._registry_descriptors[attr_name]
+            cls.__before_set__allocate_var_descriptor(attr_name, value)
+            return cls._registry_var_descriptors[attr_name]
 
     @classmethod
-    def __before_set__initialize_attr_as_context_var_descriptor(cls, attr_name, value):
+    def __before_set__allocate_var_descriptor(cls, attr_name, value):
         assert (
-            attr_name not in cls._registry_descriptors
+            attr_name not in cls._registry_var_descriptors
         ), "This method should not be called when attribute is already initialized as ContextVar"
 
-        if not cls._registry_auto_create_vars:
+        if not cls._registry_allocate_on_setattr:
             raise SetUndeclaredAttributeError.format(
                 class_name=cls.__name__,
                 attr_name=attr_name,
@@ -253,14 +253,14 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
                 attr_name=attr_name,
             )
 
-        cls.__init_attr_as_descriptor(attr_name)
+        cls.__allocate_var_descriptor(attr_name)
 
     # collections.abc.MutableMapping implementation methods
 
     @classmethod
     def _asdict(cls) -> Dict[str, Any]:
         out = {}
-        for key, ctx_var in cls._registry_descriptors.items():
+        for key, ctx_var in cls._registry_var_descriptors.items():
             try:
                 out[key] = ctx_var.get()
             except LookupError:
@@ -331,7 +331,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
     @classmethod
     def __getitem__(cls, key):
-        ctx_var = cls._registry_descriptors[key]
+        ctx_var = cls._registry_var_descriptors[key]
         try:
             return ctx_var.get()
         except LookupError as err:
@@ -339,11 +339,11 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
     @classmethod
     def __setitem__(cls, key, value):
-        ctx_var = cls.__before_set__ensure_initialized(key, value)
+        ctx_var = cls.__before_set__ensure_allocated(key, value)
         ctx_var.set(value)
 
     def __delitem__(self, key):
-        ctx_var = self.__before_set__ensure_initialized(key, None)
+        ctx_var = self.__before_set__ensure_allocated(key, None)
         ctx_var.__delete__(self)
 
 
@@ -399,7 +399,9 @@ def save_context_vars_registry(
     The resulting dict can be used as argument to :func:`restore_context_vars_registry`.
     """
     # pylint: disable=protected-access
-    return {key: descriptor.get_raw() for key, descriptor in registry._registry_descriptors.items()}
+    return {
+        key: descriptor.get_raw() for key, descriptor in registry._registry_var_descriptors.items()
+    }
 
 
 def restore_context_vars_registry(
@@ -476,7 +478,7 @@ def restore_context_vars_registry(
     get_saved_value = saved_registry_state.get
 
     # pylint: disable=protected-access
-    for key, descriptor in registry._registry_descriptors.items():
+    for key, descriptor in registry._registry_var_descriptors.items():
         descriptor.context_var.set(get_saved_value(key, DELETED))
 
 
@@ -533,7 +535,7 @@ class SetUndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     that disables dyanmic variable initialization::
 
         class {class_name}(ContextVarsRegistry):
-            _registry_auto_create_vars = False
+            _registry_allocate_on_setattr = False
 
     Because of ``_registry_auto_create_vars=False``, you can use only pre-defined variables.
     An attempt to set any other attribute will raise this exception.
@@ -548,7 +550,7 @@ class SetUndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
     2. Enable dynamic creation of new context variables, like this::
 
         class {class_name}(ContextVarsRegistry):
-            _registry_auto_create_vars = True
+            _registry_allocate_on_setattr = True
 
     3. Check the name of the attribute: '{attr_name}'.
        Maybe there is a typo in the name?
