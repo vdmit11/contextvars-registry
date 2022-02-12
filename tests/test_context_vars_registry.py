@@ -480,10 +480,18 @@ def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
     with raises(KeyError):
         current["non_existent_context_var"]
 
+    # an attempt to delete a non-existent variable throws an error
+    with raises(KeyError):
+        del current["another_non_existent_context_var"]
+
     # an attempt to read non-initialized (but still existing) context variable throws an error
     assert CurrentVars.user_id
     with raises(KeyError):
         current["user_id"]
+
+    # an attempt to delete a non-initialized (but still existing) variable throws an error
+    with raises(KeyError):
+        del current["user_id"]
 
     # the with() context manager is friendly towards those dict methods....
     with current(locale="nb", timezone="Antarctica/Troll", user_id=42, name="John Doe"):
