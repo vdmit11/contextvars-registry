@@ -455,6 +455,8 @@ def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
     # `del` operator
     del current["locale"]
     with raises(KeyError):
+        del current["locale"]
+    with raises(KeyError):
         current["locale"]
     current["locale"] = "en_GB"
 

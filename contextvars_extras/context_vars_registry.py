@@ -344,7 +344,11 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
     def __delitem__(self, key):
         ctx_var = self.__before_set__ensure_allocated(key, None)
-        ctx_var.__delete__(self)
+
+        if not ctx_var.is_set():
+            raise KeyError(key)
+
+        ctx_var.delete()
 
 
 _NO_ATTR_VALUE = sentinel("_NO_VALUE")
