@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.12 (2022-02-12)
+### Fix
+* Missing type stub for ContextVarExt.deferred_default attribute ([`b088ea9`](https://github.com/vdmit11/contextvars-extras/commit/b088ea94fd9eaafdf802c8011e6224459d9b1958))
+
 ## v0.0.11 (2022-02-12)
 ### Fix
 * Wrong exception type thrown by ContextVarsRegistry.__delitem__ ([`876d342`](https://github.com/vdmit11/contextvars-extras/commit/876d3421519b2a8fca71eb1c0f9c596a3e816b49))
