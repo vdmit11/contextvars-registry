@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.11 (2022-02-12)
+### Fix
+* Wrong exception type thrown by ContextVarsRegistry.__delitem__ ([`876d342`](https://github.com/vdmit11/contextvars-extras/commit/876d3421519b2a8fca71eb1c0f9c596a3e816b49))
+
+### Documentation
+* Change order of classes to put ContextVarExt to the top ([`a115a64`](https://github.com/vdmit11/contextvars-extras/commit/a115a64e67ccd554b7fdf2a204f3a740b83b5981))
+
 ## v0.0.10 (2021-10-18)
 ### Fix
 * Inconsistent defaults with existing ContextVar object ([`510e4e7`](https://github.com/vdmit11/contextvars-extras/commit/510e4e7674e1ce4cbcb0ff6408ce99348fa07318))
