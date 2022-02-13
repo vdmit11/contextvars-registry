@@ -564,7 +564,7 @@ class SetUndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
 class SetClassVarAttributeError(ExceptionDocstringMixin, AttributeError):
     """Can't set ClassVar: '{class_name}.{attr_name}'.
 
-    This exception is raised when an attribute is declared as :ref:`typing.ClassVar`,
+    This exception is raised when an attribute is declared as :data:`typing.ClassVar`,
     like this::
 
         class {class_name}(ContextVarsRegistry):
