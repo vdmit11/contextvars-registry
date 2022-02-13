@@ -6,9 +6,14 @@ from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overl
 from contextvars_extras.context_var_ext import NO_DEFAULT, ContextVarExt, NoDefault
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
-_VarValueT = TypeVar("_VarValueT")  # A value stored in the context variable.
-_DescriptorT = TypeVar("_DescriptorT")  # ContextVarDescriptor or its subclass
-_OwnerT = TypeVar("_OwnerT")  # descriptor's owner (an object that contains descriptor as attribute)
+# A value stored in the context variable.
+_VarValueT = TypeVar("_VarValueT")
+
+# ContextVarDescriptor or its subclass
+_DescriptorT = TypeVar("_DescriptorT", bound="ContextVarDescriptor")
+
+# descriptor's owner (an object that contains descriptor as attribute)
+_OwnerT = TypeVar("_OwnerT")
 
 
 class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
