@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.0 (2022-02-14)
+### Feature
+* Allow setting properties using `with registry(var=value)` ([`0a02cf6`](https://github.com/vdmit11/contextvars-extras/commit/0a02cf6d0f263f743def3c8c66bf9e20302930c2))
+
 ## v0.0.12 (2022-02-12)
 ### Fix
 * Missing type stub for ContextVarExt.deferred_default attribute ([`b088ea9`](https://github.com/vdmit11/contextvars-extras/commit/b088ea94fd9eaafdf802c8011e6224459d9b1958))
