@@ -1,3 +1,4 @@
+import abc
 import threading
 from collections.abc import ItemsView, KeysView, ValuesView
 from contextlib import ExitStack
@@ -12,7 +13,30 @@ from contextvars_extras.context_var_ext import DELETED, NO_DEFAULT, ContextVarEx
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
 
-class ContextVarsRegistry(MutableMapping[str, Any]):
+class EmptySlotsMeta(abc.ABCMeta):
+    """Automatically add empty __slots__ to all registry classes.
+
+    This metaclass adds empty :ref:`slots` to :class:`ContextVarsRegistry` and all its subclasses,
+    which means that you can't set any attributes on a registry instance.
+
+    Why?
+    Because a registry doesn't have any real attributes.
+    It only acts as a proxy, forwarding operations to context variables
+    (which are hosted in the registry class, not in the instance).
+
+    Setting regular (non-context-variable) attributes on an instance would almost
+    always lead to nasty race conditions (bugs that occur in production, but not in tests).
+
+    To avoid that, we set ``__slots__ = tuple()`` for all registry classes,
+    thus ensuring that all the state is stored in context variables.
+    """
+
+    def __new__(cls, name, bases, attrs):  # noqa: D102
+        attrs.setdefault("__slots__", tuple())
+        return super().__new__(cls, name, bases, attrs)
+
+
+class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
     _registry_allocate_on_setattr: ClassVar[bool] = True
@@ -118,12 +142,46 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
         cls._registry_var_descriptors = {}
         cls._registry_var_allocate_lock = threading.RLock()
         cls.__convert_attrs_to_var_descriptors()
+        cls.__init_var_allocation_on_setattr()
         super().__init_subclass__()
 
     @classmethod
     def __ensure_subclassed_properly(cls):
         if ContextVarsRegistry not in cls.__bases__:
             raise RegistryInheritanceError
+
+    @classmethod
+    def __init_var_allocation_on_setattr(cls):
+        if not cls._registry_allocate_on_setattr:
+            return
+
+        # When _registry_allocate_on_setattr=True, we extend class with extra __setattr__() method,
+        # that dynamically allocates ContextVarDescriptor() object if attribute is missing.
+        #
+        # Yeah, but why not just define a usual __setattr__() method?
+        # Why do we need to generate the method dynamically?
+        #
+        # For 2 reasons:
+        #
+        # 1. Better static code analysis: when mypy sees `def __setattr__` in a class,
+        #    it skips checks for undefined attributes. So adding the method dynamically
+        #    allows to fool mypy and thus have better type checking.
+        #
+        # 2. Better performance: native object.__setattr__ is faster than a Python method.
+        #    The overhead is small, but may become noticeable if you set variables often.
+        #    So we can avoid this overhead by NOT overriding the built-in __setattr__() method.
+        __setattr__ = cls.__setattr__
+
+        assert (
+            __setattr__ is object.__setattr__
+        ), "Customizing __setattr__() is not allowed (because then super() won't work correctly)"
+
+        def _ContextVarsRegistry__setattr__(self, attr_name, value):
+            if not hasattr(cls, attr_name):
+                cls.__before_set__ensure_allocated(attr_name, value)
+            __setattr__(self, attr_name, value)
+
+        cls.__setattr__ = _ContextVarsRegistry__setattr__  # type: ignore[assignment]
 
     # There is a bug in Pylint that gives false-positive warnings for classmethods below.
     # So, I have to mask that warning completely and wait until the bug in Pylint is fied.
@@ -200,12 +258,6 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
         self.__ensure_subclassed_properly()
         super().__init__()
 
-    def __setattr__(self, attr_name, value):
-        attr = getattr(self.__class__, attr_name, _NO_ATTR_VALUE)
-        if not hasattr(attr, "__set__"):
-            self.__before_set__ensure_allocated(attr_name, value)
-        super().__setattr__(attr_name, value)
-
     @classmethod
     def __before_set__ensure_allocated(cls, attr_name, value) -> ContextVarDescriptor:
         try:
@@ -216,22 +268,9 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
 
     @classmethod
     def __before_set__allocate_var_descriptor(cls, attr_name, value):
-        assert (
-            attr_name not in cls._registry_var_descriptors
-        ), "This method should not be called when attribute is already initialized as ContextVar"
-
-        if not cls._registry_allocate_on_setattr:
-            raise SetUndeclaredAttributeError.format(
-                class_name=cls.__name__,
-                attr_name=attr_name,
-                attr_type=type(value).__name__,
-            )
-
-        if hasattr(cls, attr_name):
-            raise SetClassMemberAttributeError.format(
-                class_name=cls.__name__,
-                attr_name=attr_name,
-            )
+        assert cls._registry_allocate_on_setattr
+        assert not hasattr(cls, attr_name)
+        assert attr_name not in cls._registry_var_descriptors
 
         if _is_annotated_with_class_var(cls, attr_name):
             raise SetClassVarAttributeError.format(
@@ -542,38 +581,6 @@ class RegistryInheritanceError(ExceptionDocstringMixin, TypeError):
     """
 
 
-class SetUndeclaredAttributeError(ExceptionDocstringMixin, AttributeError):
-    """Can't set undeclared attribute: '{class_name}.{attr_name}'.
-
-    This exception is raised when you try to set an attribute that was not declared
-    in the class {class_name} (subclass of :class:`ContextVarsRegistry`).
-
-    And, the class {class_name} is configured in a specific way
-    that disables dyanmic variable initialization::
-
-        class {class_name}(ContextVarsRegistry):
-            _registry_allocate_on_setattr = False
-
-    Because of ``_registry_auto_create_vars=False``, you can use only pre-defined variables.
-    An attempt to set any other attribute will raise this exception.
-
-    So, you have 3 options to solve the problem:
-
-    1. Add attribute to the class, like this::
-
-        class {class_name}(ContextVarsRegistry):
-            {attr_name}: {attr_type}
-
-    2. Enable dynamic creation of new context variables, like this::
-
-        class {class_name}(ContextVarsRegistry):
-            _registry_allocate_on_setattr = True
-
-    3. Check the name of the attribute: '{attr_name}'.
-       Maybe there is a typo in the name?
-    """
-
-
 class SetClassVarAttributeError(ExceptionDocstringMixin, AttributeError):
     """Can't set ClassVar: '{class_name}.{attr_name}'.
 
@@ -592,16 +599,4 @@ class SetClassVarAttributeError(ExceptionDocstringMixin, AttributeError):
     2. Set the attribute off the class (not instance), like this::
 
           {class_name}.{attr_name} = ...
-    """
-
-
-class SetClassMemberAttributeError(ExceptionDocstringMixin, AttributeError):
-    """Can't overwrite class member: '{class_name}.{attr_name}'.
-
-    This exception is raised when you try to overwrite a class member (usually a method)
-    with an instance attribute, as if it was a context variable, which is not allowed.
-
-    To fix it, you can set attribute of a class (not instance), like this::
-
-        {class_name}.{attr_name} = ...
     """

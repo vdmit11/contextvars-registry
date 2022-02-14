@@ -18,7 +18,7 @@ def test__ContextVarsRegistry__must_be_subclassed__but_not_subsubclassed():
         pass
 
     sub_registry = SubRegistry()
-    sub_registry.some_var = "value"
+    sub_registry.some_var = "value"  # type: ignore[attr-defined]
 
     # But, sub-sub-classing is not allowed
     with raises(RegistryInheritanceError):
@@ -163,7 +163,7 @@ def test__missing_vars__are_automatically_created__on_setattr():
 
     with raises(AttributeError):
         current.timezone  # type: ignore[attr-defined]
-    current.timezone = "Europe/Moscow"
+    current.timezone = "Europe/Moscow"  # type: ignore[attr-defined]
     assert CurrentVars.timezone.get() == "Europe/Moscow"  # type: ignore[attr-defined]
 
     # ...but this feature may be disabled by setting `_registry_allocate_on_setattr = False`
@@ -175,7 +175,7 @@ def test__missing_vars__are_automatically_created__on_setattr():
     current = CurrentVars()
 
     with raises(AttributeError):
-        current.timezone = "Europe/Moscow"
+        current.timezone = "Europe/Moscow"  # type: ignore[attr-defined]
 
 
 def test__setattr__does_NOT_overwrite_existing_class_members():
@@ -201,7 +201,7 @@ def test__setattr__does_NOT_overwrite_existing_class_members():
 
     # another special attribute
     with raises(AttributeError):
-        current._abc_impl = None
+        current._abc_impl = None  # type: ignore[attr-defined]
 
 
 def test__with_context_manager__sets_variables__temporarily():
@@ -222,7 +222,7 @@ def test__with_context_manager__sets_variables__temporarily():
 
         # ``user_id`` wasn't set above using the ``with()`` block,
         # so it will NOT be restored afterrwards
-        current.user_id = 2
+        current.user_id = 2  # type: ignore[attr-defined]
 
     # not restored, because not present in the ``with (...)`` parenthesis
     assert current.user_id == 2  # type: ignore[attr-defined]
@@ -410,7 +410,7 @@ def test__hasattr_getattr_setattr_consistency():  # noqa R701
     # Try to set some attributes. hasattr()/getattr() should see these changes.
     current.locale = "en_GB"
     current.timezone = "Europe/London"
-    current.user_id = 42
+    current.user_id = 42  # type: ignore[attr-defined]
     assert hasattr(current, "locale") is True
     assert hasattr(current, "timezone") is True
     assert hasattr(current, "user_id") is True
