@@ -306,6 +306,42 @@ def test__with_context_manager__restores_attrs__even_if_exception_is_raised():
         current.user_id  # type: ignore[attr-defined]
 
 
+def test__with_context_manager__can_also_set_properties():
+    class CurrentVars(ContextVarsRegistry):
+        _locale: str
+        _timezone: str = "utc"
+
+        @property
+        def locale(self):
+            return self._locale
+
+        @locale.setter
+        def locale(self, new_locale):
+            self._locale = new_locale
+
+        @locale.deleter
+        def locale(self):
+            del self._locale
+
+        @property
+        def timezone(self):
+            return self._timezone.upper()
+
+        @timezone.setter
+        def timezone(self, new_timezone):
+            assert new_timezone
+            self._timezone = new_timezone
+
+    current = CurrentVars()
+
+    with current(locale="en_GB", timezone="gmt"):
+        assert current.locale == "en_GB"
+        assert current.timezone == "GMT"
+
+    assert not hasattr(current, "locale")
+    assert current.timezone == "UTC"
+
+
 def test__ContextVarsRegistry__calls_super_in_init_methods():
     class MyMixin:
         init_was_called: bool = False

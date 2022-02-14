@@ -1,9 +1,9 @@
 import threading
 from collections.abc import ItemsView, KeysView, ValuesView
-from contextlib import contextmanager
+from contextlib import ExitStack
 from contextvars import ContextVar
 from types import FunctionType, MethodType
-from typing import Any, ClassVar, Dict, Iterable, List, MutableMapping, Tuple, get_type_hints
+from typing import Any, ClassVar, Dict, Iterable, MutableMapping, Tuple, get_type_hints
 
 from sentinel_value import sentinel
 
@@ -62,7 +62,6 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
     So this lock is needed to ensure that ContextVar() object is created only once.
     """
 
-    @contextmanager
     def __call__(self, **attr_names_and_values):
         """Set attributes temporarily, using context manager (the ``with`` statement in Python).
 
@@ -112,22 +111,7 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
                 ... finally:
                 ...     current.timezone = saved_timezone
         """
-        saved_state: List[Tuple[ContextVarDescriptor, Token]] = []
-        try:
-            # Set context variables, saving their state.
-            for attr_name, value in attr_names_and_values.items():
-                # This is almost like __setattr__(), except that it also saves a Token() object,
-                # that allows to restore the previous value later (via ContextVar.reset() method).
-                descriptor = self.__before_set__ensure_allocated(attr_name, value)
-                reset_token = descriptor.set(value)  # calls ContextVar.set() method
-                saved_state.append((descriptor, reset_token))
-
-            # execute code inside the ``with: ...`` block
-            yield
-        finally:
-            # Restore context variables.
-            for (descriptor, reset_token) in saved_state:
-                descriptor.reset(reset_token)  # calls ContextVar.reset() method
+        return _OverrideRegistryAttrsTemporarily(self, **attr_names_and_values)
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
@@ -217,7 +201,9 @@ class ContextVarsRegistry(MutableMapping[str, Any]):
         super().__init__()
 
     def __setattr__(self, attr_name, value):
-        self.__before_set__ensure_allocated(attr_name, value)
+        attr = getattr(self.__class__, attr_name, _NO_ATTR_VALUE)
+        if not hasattr(attr, "__set__"):
+            self.__before_set__ensure_allocated(attr_name, value)
         super().__setattr__(attr_name, value)
 
     @classmethod
@@ -393,6 +379,33 @@ def _is_special_attr(name: str) -> bool:
 
 def _is_lambda(obj: object) -> bool:
     return isinstance(obj, FunctionType) and (obj.__name__ == "<lambda>")
+
+
+class _OverrideRegistryAttrsTemporarily(ExitStack):
+    registry: ContextVarsRegistry
+    attr_names_and_values: Dict[str, Any]
+
+    def __init__(self, registry: ContextVarsRegistry, **attr_names_and_values: Dict[str, Any]):
+        self.registry = registry
+        self.attr_names_and_values = attr_names_and_values
+        super().__init__()
+
+    def __enter__(self):
+        registry = self.registry
+        registry_class = registry.__class__
+
+        for attr_name, new_value in self.attr_names_and_values.items():
+            descriptor = getattr(registry_class, attr_name, None)
+            if isinstance(descriptor, ContextVarDescriptor):
+                reset_token: Token = descriptor.set(new_value)
+                self.callback(descriptor.reset, reset_token)
+            else:
+                old_value = getattr(registry, attr_name, _NO_ATTR_VALUE)
+                setattr(registry, attr_name, new_value)
+                if old_value is _NO_ATTR_VALUE:
+                    self.callback(delattr, registry, attr_name)
+                else:
+                    self.callback(setattr, registry, attr_name, old_value)
 
 
 def save_context_vars_registry(
