@@ -62,8 +62,8 @@ class ContextVarsMiddleware:
 
        >>> test_client = werkzeug.test.Client(wrapped_wsgi_app)
 
-       >>> response_body_iter, status, headers = test_client.post("http://localhost/test_api")
-       >>> ''.join(response_body_iter)
+       >>> response = test_client.post("http://localhost/test_api")
+       >>> response.text
        'http://localhost/test_api'
     """
 
