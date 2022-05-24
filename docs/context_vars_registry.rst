@@ -34,9 +34,7 @@ API summary
 .. autosummary::
 
    RegistryInheritanceError
-   SetUndeclaredAttributeError
    SetClassVarAttributeError
-   SetClassMemberAttributeError
 
 
 class ContextVarsRegistry
