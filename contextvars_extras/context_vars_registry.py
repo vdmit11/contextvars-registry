@@ -135,7 +135,7 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
                 ... finally:
                 ...     current.timezone = saved_timezone
         """
-        return _OverrideRegistryAttrsTemporarily(self, **attr_names_and_values)
+        return _OverrideRegistryAttrsTemporarily(self, attr_names_and_values)
 
     def __init_subclass__(cls):
         cls.__ensure_subclassed_properly()
@@ -435,7 +435,7 @@ class _OverrideRegistryAttrsTemporarily(ExitStack):
     registry: ContextVarsRegistry
     attr_names_and_values: Dict[str, Any]
 
-    def __init__(self, registry: ContextVarsRegistry, **attr_names_and_values: Dict[str, Any]):
+    def __init__(self, registry: ContextVarsRegistry, attr_names_and_values: Dict[str, Any]):
         self.registry = registry
         self.attr_names_and_values = attr_names_and_values
         super().__init__()
