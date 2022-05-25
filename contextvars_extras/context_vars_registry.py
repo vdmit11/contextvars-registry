@@ -421,6 +421,17 @@ def _is_lambda(obj: object) -> bool:
 
 
 class _OverrideRegistryAttrsTemporarily(ExitStack):
+    """Helper for :class:`ContextVarsRegistry` that implements ``with registry(var=value)`` feature.
+
+    On ``__enter__``, it sets registry attributes to the new values.
+    On ``__exit__``, it restores the old values (using features of the base :class:`ExitStack`).
+
+    The base ``ExitStack`` class is used mostly because of its nice exception handling feature
+    (on exit, it tries to reset as much attributes as possible, despite of exceptions being thrown).
+
+    See documentation for :meth:`ContextVarsRegistry.__call__` for details about this feature.
+    """
+
     registry: ContextVarsRegistry
     attr_names_and_values: Dict[str, Any]
 
@@ -434,10 +445,17 @@ class _OverrideRegistryAttrsTemporarily(ExitStack):
         registry_class = registry.__class__
 
         for attr_name, new_value in self.attr_names_and_values.items():
+            # In case of ContextVarDescriptor, use its special set()/reset() methods.
+            # Otherwise, call standard setattr()/delattr() that work with any kind of attributes.
+            #
+            # Why not just always use the standard attribute calls?
+            # Because ContextVar.reset() implements a special behavior: it can restore a special
+            # "unset" state of the ContextVar object, which is not achievable by setting attributes.
+            # So I had to implement the special case for context variables here.
             descriptor = getattr(registry_class, attr_name, None)
             if isinstance(descriptor, ContextVarDescriptor):
                 reset_token: Token = descriptor.set(new_value)
-                self.callback(descriptor.reset, reset_token)
+                self.callback(descriptor.reset, reset_token)  # will be called on __exit__
             else:
                 old_value = getattr(registry, attr_name, _NO_ATTR_VALUE)
                 setattr(registry, attr_name, new_value)
