@@ -108,111 +108,6 @@ methods an attributes as the standard :class:`~contextvars.ContextVar`, so it wo
 as a drop-in replacement in all cases except :func:`isinstance` checks.
 
 
-dict-like Access
-----------------
-
-:class:`ContextVarsRegistry` implements :class:`collections.abc.MutableMapping` protocol.
-
-That means that you can get/set context variables, as if it was just a :class:`dict`, like this::
-
-    >>> current['locale'] = 'en_US'
-    >>> current['locale']
-    'en_US'
-
-Standard :class:`dict` operators are supported::
-
-    # `in` operator
-    >>> 'locale' in current
-    True
-
-    # count variables in the dict
-    >>> len(current)
-    3
-
-    # iterate over keys in the dict
-    >>> for key in current:
-    ...     print(key)
-    locale
-    timezone
-    user_id
-
-    # convert to dict() easily
-    >>> dict(current)
-    {'locale': 'en_US', 'timezone': 'UTC', 'user_id': None}
-
-Methods are supported as well::
-
-    >>> current.update({
-    ...    'locale': 'en',
-    ...    'timezone': 'UTC',
-    ...    'user_id': 42
-    ... })
-
-    >>> current.keys()
-    dict_keys(['locale', 'timezone', 'user_id'])
-
-    >>> current.values()
-    dict_values(['en', 'UTC', 42])
-
-    >>> current.pop('locale')
-    'en'
-
-    >>> current.items()
-    dict_items([('timezone', 'UTC'), ('user_id', 42)])
-
-
-Deleting Attributes
--------------------
-
-In Python, it is not possible to delete a :class:`~contextvars.ContextVar` object.
-(an attempt to do so causes a memory leak, so you shall never really delete context variables).
-
-So, we have to do some trickery to implement deletion...
-
-When you call ``del`` or :func:`delattr`, we don't actually delete anything,
-but instead we write to the variable a special sentinel object called
-:data:`~contextvars_extras.context_var_ext.DELETED`.
-
-Later on, when the variable is read, there is a ``if`` check under the hood,
-that detects the special sentinel object, and throws an exception.
-
-On the high level, you should never notice this trick.
-Attribute mechanics works as expected, as if the attribute is really deleted, check this out::
-
-
-    >>> hasattr(current, 'user_id')
-    True
-
-    >>> delattr(current, 'user_id')
-
-    >>> hasattr(current, 'user_id')
-    False
-
-    >>> try:
-    ...     current.user_id
-    ... except AttributeError:
-    ...     print("AttributeError raised")
-    ... else:
-    ...     print("not raised")
-    AttributeError raised
-
-    >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
-    'DEFAULT_VALUE'
-
-The only case when you see this special :data:`~contextvars_extras.context_var_ext.DELETED` object
-is when you use some low-level stuff, like :func:`save_context_vars_registry`, or
-the :meth:`~.ContextVarDescriptor.get_raw` method::
-
-    >>> CurrentVars.user_id.get_raw()
-    <DELETED>
-
-So, long story short: once a :class:`contextvars.ContextVar` object is allocated,
-it lives forever in the registry.
-When you delete it, we only mark it as deleted, but never actually delete it.
-All this thing happens under the hood, and normally you shouln't notice it.
-
-
-
 
 Which attributes become context variables?
 ------------------------------------------
@@ -330,6 +225,124 @@ returns a :func:`~functools.partial` object, and then your method suddenly
 becomes a :class:`ContextVarDescriptor`, which wasn't your intent.
 
 To avoid such surprises, just always add type hints. They make things safe and explicit.
+
+
+
+Deleting Attributes
+-------------------
+
+In Python, it is not possible to delete a :class:`~contextvars.ContextVar` object.
+(an attempt to do so causes a memory leak, so you shall never really delete context variables).
+
+So, we have to do some trickery to implement deletion...
+
+When you call ``del`` or :func:`delattr`, we don't actually delete anything,
+but instead we write to the variable a special sentinel object called
+:data:`~contextvars_extras.context_var_ext.DELETED`.
+
+Later on, when the variable is read, there is a ``if`` check under the hood,
+that detects the special sentinel object, and throws an exception.
+
+On the high level, you should never notice this trick.
+Attribute mechanics works as expected, as if the attribute is really deleted, check this out::
+
+    >>> class CurrentVars(ContextVarsRegistry):
+    ...    user_id: int = None
+
+    >>> current =  CurrentVars()
+
+    >>> hasattr(current, 'user_id')
+    True
+
+    >>> delattr(current, 'user_id')
+
+    >>> hasattr(current, 'user_id')
+    False
+
+    >>> try:
+    ...     current.user_id
+    ... except AttributeError:
+    ...     print("AttributeError raised")
+    ... else:
+    ...     print("not raised")
+    AttributeError raised
+
+    >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
+    'DEFAULT_VALUE'
+
+The only case when you see this special :data:`~contextvars_extras.context_var_ext.DELETED` object
+is when you use some low-level stuff, like :func:`save_context_vars_registry`, or
+the :meth:`~.ContextVarDescriptor.get_raw` method::
+
+    >>> CurrentVars.user_id.get_raw()
+    <DELETED>
+
+So, long story short: once a :class:`contextvars.ContextVar` object is allocated,
+it lives forever in the registry.
+When you delete it, we only mark it as deleted, but never actually delete it.
+All this thing happens under the hood, and normally you shouln't notice it.
+
+
+
+dict-like Access
+----------------
+
+:class:`ContextVarsRegistry` implements :class:`collections.abc.MutableMapping` protocol.
+
+That means that you can get/set context variables, as if it was just a :class:`dict`, like this::
+
+    >>> class CurrentVars(ContextVarsRegistry):
+    ...    locale: str = 'en'
+    ...    timezone: str = 'UTC'
+    ...    user_id: int = None
+
+    >>> current = CurrentVars()
+
+    >>> current['locale'] = 'en_US'
+    >>> current['locale']
+    'en_US'
+
+Standard :class:`dict` operators are supported::
+
+    # `in` operator
+    >>> 'locale' in current
+    True
+
+    # count variables in the dict
+    >>> len(current)
+    3
+
+    # iterate over keys in the dict
+    >>> for key in current:
+    ...     print(key)
+    locale
+    timezone
+    user_id
+
+    # convert to dict() easily
+    >>> dict(current)
+    {'locale': 'en_US', 'timezone': 'UTC', 'user_id': None}
+
+Methods are supported as well::
+
+    >>> current.update({
+    ...    'locale': 'en',
+    ...    'timezone': 'UTC',
+    ...    'user_id': 42
+    ... })
+
+    >>> current.keys()
+    dict_keys(['locale', 'timezone', 'user_id'])
+
+    >>> current.values()
+    dict_values(['en', 'UTC', 42])
+
+    >>> current.pop('locale')
+    'en'
+
+    >>> current.items()
+    dict_items([('timezone', 'UTC'), ('user_id', 42)])
+
 
 API reference
 -------------
