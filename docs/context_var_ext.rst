@@ -145,6 +145,8 @@ and instead re-use an existing object via the alternative constructor method:
   'locale_var'
 
 
+.. _deferred-defaults:
+
 Deferred Defaults
 -----------------
 
