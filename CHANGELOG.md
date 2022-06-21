@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.1 (2022-06-21)
+### Fix
+* ContextVarsRegistry.keys() triggers deferred_default ([`fc17c59`](https://github.com/vdmit11/contextvars-extras/commit/fc17c59c3518efa4190cef5a1ce7f02088df210a))
+
 ## v0.2.0 (2022-06-21)
 ### Feature
 * New method: `ContextVarExt.is_gettable` ([`77ff938`](https://github.com/vdmit11/contextvars-extras/commit/77ff9382bb72026905d86f0872e95316ee85a255))
