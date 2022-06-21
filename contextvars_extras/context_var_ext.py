@@ -175,6 +175,9 @@ class ContextVarExt(Generic[_VarValueT]):
        setting it has no effect, and may cause bugs. So don't try to set it.
     """
 
+    default_is_set: bool
+    """A flag that indicates if either :attr:`default` or :attr:`deferred_default` is set."""
+
     def __init__(
         self,
         name,
@@ -209,6 +212,8 @@ class ContextVarExt(Generic[_VarValueT]):
         self.name = name
         self.default = default
         self.deferred_default = deferred_default
+
+        self.default_is_set = (default is not NO_DEFAULT) or (deferred_default is not None)
 
         self._init_fast_methods()
         self._init_deferred_default()

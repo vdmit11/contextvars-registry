@@ -53,6 +53,8 @@ class ContextVarExt(Generic[_VarValueT]):
         deferred_default: Optional[Callable[[], _VarValueT]] = ...,
         _context_var: Optional[ContextVar[_VarValueT]] = ...,
     ) -> None: ...
+    @property
+    def default_is_set(self) -> bool: ...
     @classmethod
     def from_existing_var(
         cls: Type[_ContextVarExtOrItsSubclass],

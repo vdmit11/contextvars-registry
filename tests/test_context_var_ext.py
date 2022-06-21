@@ -89,3 +89,14 @@ def test__deferred_default__cannot_be_used__if_existing_context_var_has_default_
     timezone_var = ContextVar("timezone_var", default="UTC")
     with pytest.raises(AssertionError):
         ContextVarExt.from_existing_var(timezone_var, deferred_default=lambda: "GMT")
+
+
+def test__default_is_set_flag():
+    timezone_var: ContextVarExt[str] = ContextVarExt("timezone_var")
+    assert not timezone_var.default_is_set
+
+    timezone_var = ContextVarExt("timezone_var", default="UTC")
+    assert timezone_var.default_is_set
+
+    timezone_var = ContextVarExt("timezone_var", deferred_default=lambda: "UTC")
+    assert timezone_var.default_is_set

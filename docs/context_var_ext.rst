@@ -21,6 +21,7 @@ API summary
    ContextVarExt.name
    ContextVarExt.default
    ContextVarExt.deferred_default
+   ContextVarExt.default_is_set
    ContextVarExt.__init__
    ContextVarExt.from_existing_var
    ContextVarExt.get
