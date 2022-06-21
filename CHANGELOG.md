@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.0 (2022-06-21)
+### Feature
+* New method: `ContextVarExt.is_gettable` ([`77ff938`](https://github.com/vdmit11/contextvars-extras/commit/77ff9382bb72026905d86f0872e95316ee85a255))
+* New flag: `ContextVarExt.default_is_set` ([`296fc9f`](https://github.com/vdmit11/contextvars-extras/commit/296fc9fefc00ce56020fd56556e98f4317987fb1))
+
 ## v0.1.0 (2022-02-14)
 ### Feature
 * Allow setting properties using `with registry(var=value)` ([`0a02cf6`](https://github.com/vdmit11/contextvars-extras/commit/0a02cf6d0f263f743def3c8c66bf9e20302930c2))
