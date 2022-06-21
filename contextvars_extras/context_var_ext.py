@@ -284,6 +284,7 @@ class ContextVarExt(Generic[_VarValueT]):
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
+        __NOT_SET = _NOT_SET
         _NO_DEFAULT = NO_DEFAULT
         _DELETED = DELETED
         _RESET_TO_DEFAULT = RESET_TO_DEFAULT
@@ -323,8 +324,8 @@ class ContextVarExt(Generic[_VarValueT]):
         self.get = _method_ContextVarExt_get  # type: ignore[assignment]
 
         def _method_ContextVarExt_is_set():
-            return context_var_get(_NO_DEFAULT) not in (  # type: ignore[arg-type]
-                _NO_DEFAULT,
+            return context_var_get(__NOT_SET) not in (  # type: ignore[arg-type]
+                __NOT_SET,
                 _DELETED,
                 _RESET_TO_DEFAULT,
             )
@@ -644,7 +645,7 @@ class ContextVarExt(Generic[_VarValueT]):
         return f"<{self.__class__.__name__} name={self.name!r}>"
 
 
-# A special sentinel object, used only by the ContextVarExt.set_if_not_set() method.
+# A special sentinel object, used internally by methods like .is_set() and .set_if_not_set()
 _NOT_SET = SentinelValue(__name__, "_NOT_SET")
 
 
