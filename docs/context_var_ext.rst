@@ -26,6 +26,7 @@ API summary
    ContextVarExt.from_existing_var
    ContextVarExt.get
    ContextVarExt.get_raw
+   ContextVarExt.is_gettable
    ContextVarExt.is_set
    ContextVarExt.set
    ContextVarExt.set_if_not_set
