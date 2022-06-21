@@ -4,6 +4,7 @@ from typing import ClassVar, Optional
 from pytest import raises
 
 from contextvars_extras import ContextVar, ContextVarDescriptor, ContextVarsRegistry
+from contextvars_extras.context_var_ext import RESET_TO_DEFAULT
 from contextvars_extras.context_vars_registry import RegistryInheritanceError
 
 # pylint: disable=attribute-defined-outside-init,protected-access,pointless-statement
@@ -547,3 +548,19 @@ def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
     }
     assert "user_id" not in current
     assert "last_name" not in current
+
+
+def test__dict_keys_method__does_NOT_trigger__deferred_default():
+    class CurrentVars(ContextVarsRegistry):
+        timezone = ContextVarDescriptor(deferred_default=lambda: "UTC")
+
+    current = CurrentVars()
+    assert CurrentVars.timezone.get_raw() == RESET_TO_DEFAULT
+
+    # .keys() does NOT trigger deferred_default
+    current.keys()
+    assert CurrentVars.timezone.get_raw() == RESET_TO_DEFAULT
+
+    # ...but .values() does
+    print(current.values())
+    assert CurrentVars.timezone.get_raw() == "UTC"

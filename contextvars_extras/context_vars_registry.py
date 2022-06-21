@@ -283,16 +283,6 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
     # collections.abc.MutableMapping implementation methods
 
     @classmethod
-    def _asdict(cls) -> Dict[str, Any]:
-        out = {}
-        for key, ctx_var in cls._registry_var_descriptors.items():
-            try:
-                out[key] = ctx_var.get()
-            except LookupError:
-                pass
-        return out
-
-    @classmethod
     def keys(cls) -> KeysView:
         """Get all variable names in the registry (excluding unset variables).
 
@@ -308,7 +298,11 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
             >>> list(keys)
             ['locale', 'timezone']
         """
-        return cls._asdict().keys()
+        return {
+            key: None
+            for (key, ctx_var) in cls._registry_var_descriptors.items()
+            if ctx_var.is_gettable()
+        }.keys()
 
     @classmethod
     def values(cls) -> ValuesView:
@@ -326,7 +320,11 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
             >>> list(values)
             ['en', 'UTC']
         """
-        return cls._asdict().values()
+        return {
+            key: ctx_var.get()
+            for (key, ctx_var) in cls._registry_var_descriptors.items()
+            if ctx_var.is_gettable()
+        }.values()
 
     @classmethod
     def items(cls) -> ItemsView:
@@ -344,15 +342,19 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
             >>> list(items)
             [('locale', 'en'), ('timezone', 'UTC')]
         """
-        return cls._asdict().items()
+        return {
+            key: ctx_var.get()
+            for (key, ctx_var) in cls._registry_var_descriptors.items()
+            if ctx_var.is_gettable()
+        }.items()
 
     @classmethod
     def __iter__(cls):
-        return iter(cls._asdict())
+        return iter(cls.keys())
 
     @classmethod
     def __len__(cls):
-        return len(cls._asdict())
+        return len(cls.keys())
 
     @classmethod
     def __getitem__(cls, key):
