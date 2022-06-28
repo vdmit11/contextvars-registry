@@ -286,7 +286,9 @@ class ContextVarExt(Generic[_VarValueT]):
         context_var_set = context_var.set
         context_var_ext_default = self.default
         context_var_ext_deferred_default = self.deferred_default
-        context_var_ext_default_is_set = self.default_is_set
+
+        context_var_ext_default_is_set = context_var_ext_default is not NO_DEFAULT
+        context_var_ext_deferred_default_is_set = context_var_ext_deferred_default is not None
 
         # Local variables are faster than globals.
         # So, copy all needed globals and thus make them locals.
@@ -329,22 +331,17 @@ class ContextVarExt(Generic[_VarValueT]):
 
         self.get = _method_ContextVarExt_get  # type: ignore[assignment]
 
-        def _method_ContextVarExt_is_gettable():
+        def _method_ContextVarExt_is_set(on_default=False, on_deferred_default=False):
             value = context_var_get(__NOT_SET)
 
-            if value in (__NOT_SET, _RESET_TO_DEFAULT):
-                return context_var_ext_default_is_set
+            if (value is __NOT_SET) or (value is _RESET_TO_DEFAULT):
+                if context_var_ext_default_is_set:
+                    return on_default
+                if context_var_ext_deferred_default_is_set:
+                    return on_deferred_default
+                return False
 
             return value is not _DELETED
-
-        self.is_gettable = _method_ContextVarExt_is_gettable  # type: ignore[assignment]
-
-        def _method_ContextVarExt_is_set():
-            return context_var_get(__NOT_SET) not in (  # type: ignore[arg-type]
-                __NOT_SET,
-                _DELETED,
-                _RESET_TO_DEFAULT,
-            )
 
         self.is_set = _method_ContextVarExt_is_set  # type: ignore[assignment]
 
@@ -479,39 +476,16 @@ class ContextVarExt(Generic[_VarValueT]):
             >>> timezone_var.is_gettable()
             True
         """
-        # pylint: disable=no-self-use,method-hidden
-        # This code is never actually called, see ``_init_fast_methods``.
-        # It exists only for auto-generated documentation and static code analysis tools.
-        raise AssertionError
+        return self.is_set(on_default=True, on_deferred_default=True)
 
-    def is_set(self):
-        """Check if the context variable was set.
+    def is_set(self, on_default=False, on_deferred_default=False):
+        """Check if the context variable is set.
 
-        .. Note::
+        We say that a context variable is set if the :meth:`set` was called,
+        and until that point, the variable is not set, even if it has a default value,
+        check this out::
 
-          There are two similar methods:
-
-            - :meth:`is_set` - checks if :meth:`set` was called
-            - :meth:`is_gettable` - checks if :meth:`get` would throw an exception
-
-          The difference is how they handle :attr:`default` values:
-
-            - :meth:`is_set` ignores a default value and returns ``False``
-              if the variable isn't set (the :meth:`set` method wasn't called).
-
-            - :meth:`is_gettable` takes into account the default value,
-              and returns ``True`` in case the variable isn't set, but the method
-              :meth:`get` would still return a default value.
-
-        Examples::
-
-            # Initially, variable is not set.
-            >>> timezone_var = ContextVarExt('timezone_var')
-            >>> timezone_var.is_set()
-            False
-
-            # Even with a default value, it is still not set.
-            # default is not an initial value. It is rather a fallback value for .get()
+            # Initially, the variable is not set (even with a default value)
             >>> timezone_var = ContextVarExt('timezone_var', default='UTC')
             >>> timezone_var.is_set()
             False
@@ -523,22 +497,33 @@ class ContextVarExt(Generic[_VarValueT]):
             True
 
             # .reset_to_default() also "un-sets" the variable
-            # (even though the special NO_DEFAULT object is written to the variable)
             >>> timezone_var.reset_to_default()
             >>> timezone_var.is_set()
             False
 
-            # Setting variable to None still means it is set.
-            >>> timezone_var.set(None)
-            <Token ...>
-            >>> timezone_var.is_set()
+        This may seem odd, but this is how the standard :meth:`contextvars.ContextVar.get` method
+        treats default values, check this out::
+
+            # The .get() method treats variable as not set and returns a fallback value.
+            # The trick is that default "UTC" is not an initial value of the variable,
+            # but rather a default argument for the .get() method below.
+            >>> timezone_var.get("<MISSING>")
+            '<MISSING>'
+
+        So, here in the :meth:`is_set` method we're implementing the same behavior: we say that
+        initially a variable is not set (even if it has a default value), and becomes set
+        after you call the :meth:`set` method.
+
+        But, if you want to tune this behavior and take into account default values,
+        then you can do it via parameters::
+
+            >>> timezone_var.is_set(on_default=True, on_deferred_default=True)
             True
 
-            # .delete() also "un-sets" the variable
-            # (even though the special DELETED object is written to the variable)
-            >>> timezone_var.delete()
-            >>> timezone_var.is_set()
-            False
+        or, just use :meth:`is_gettable` (same as above, but shorter)::
+
+            >>> timezone_var.is_gettable()
+            True
         """
         # pylint: disable=no-self-use,method-hidden
         # This code is never actually called, see ``_init_fast_methods``.
