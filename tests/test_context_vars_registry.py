@@ -550,17 +550,34 @@ def test__ContextVarsRegistry__can_act_like_dict():  # noqa R701
     assert "last_name" not in current
 
 
-def test__dict_keys_method__does_NOT_trigger__deferred_default():
+def test__dict_methods__do_NOT_trigger__deferred_default():
     class CurrentVars(ContextVarsRegistry):
         timezone = ContextVarDescriptor(deferred_default=lambda: "UTC")
 
     current = CurrentVars()
     assert CurrentVars.timezone.get_raw() == RESET_TO_DEFAULT
 
-    # .keys() does NOT trigger deferred_default
-    current.keys()
+    # iteration does NOT trigger deferred_default
+    dict(current)
     assert CurrentVars.timezone.get_raw() == RESET_TO_DEFAULT
 
-    # ...but .values() does
-    print(current.values())
-    assert CurrentVars.timezone.get_raw() == "UTC"
+    # ...but accessing individual values by key does trigger deferred_default
+    assert current["timezone"] == "UTC"
+
+
+def test__dict_clear_method():
+    class CurrentVars(ContextVarsRegistry):
+        locale: str = "en"
+        timezone: str = "UTC"
+        user_id: int
+
+    current = CurrentVars()
+
+    current.locale = "en_US"
+
+    assert set(current.values()) == {"en_US", "UTC"}
+
+    # the .clear() method erases the whole dict (all values, including defaults)
+    current.clear()
+
+    assert set(current.values()) == set()

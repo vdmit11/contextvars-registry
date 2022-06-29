@@ -1,10 +1,9 @@
 import abc
 import threading
-from collections.abc import ItemsView, KeysView, ValuesView
 from contextlib import ExitStack
 from contextvars import ContextVar
 from types import FunctionType, MethodType
-from typing import Any, ClassVar, Dict, Iterable, MutableMapping, Tuple, get_type_hints
+from typing import Any, ClassVar, Dict, Iterable, Iterator, MutableMapping, Tuple, get_type_hints
 
 from sentinel_value import sentinel
 
@@ -282,79 +281,15 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
 
     # collections.abc.MutableMapping implementation methods
 
-    @classmethod
-    def keys(cls) -> KeysView:
-        """Get all variable names in the registry (excluding unset variables).
+    def __iter__(self) -> Iterator[str]:
+        return (
+            key
+            for (key, ctx_var) in self._registry_var_descriptors.items()
+            if ctx_var.is_set(on_default=True, on_deferred_default=False)
+        )
 
-        Example::
-
-            >>> class CurrentVars(ContextVarsRegistry):
-            ...    locale: str = 'en'
-            ...    timezone: str = 'UTC'
-
-            >>> current = CurrentVars()
-
-            >>> keys = current.keys()
-            >>> list(keys)
-            ['locale', 'timezone']
-        """
-        return {
-            key: None
-            for (key, ctx_var) in cls._registry_var_descriptors.items()
-            if ctx_var.is_gettable()
-        }.keys()
-
-    @classmethod
-    def values(cls) -> ValuesView:
-        """Get values of all context variables in the registry.
-
-        Example::
-
-            >>> class CurrentVars(ContextVarsRegistry):
-            ...    locale: str = 'en'
-            ...    timezone: str = 'UTC'
-
-            >>> current = CurrentVars()
-
-            >>> values = current.values()
-            >>> list(values)
-            ['en', 'UTC']
-        """
-        return {
-            key: ctx_var.get()
-            for (key, ctx_var) in cls._registry_var_descriptors.items()
-            if ctx_var.is_gettable()
-        }.values()
-
-    @classmethod
-    def items(cls) -> ItemsView:
-        """Get key-value pairs for all context variables in the registry.
-
-        Example::
-
-            >>> class CurrentVars(ContextVarsRegistry):
-            ...    locale: str = 'en'
-            ...    timezone: str = 'UTC'
-
-            >>> current = CurrentVars()
-
-            >>> items = current.items()
-            >>> list(items)
-            [('locale', 'en'), ('timezone', 'UTC')]
-        """
-        return {
-            key: ctx_var.get()
-            for (key, ctx_var) in cls._registry_var_descriptors.items()
-            if ctx_var.is_gettable()
-        }.items()
-
-    @classmethod
-    def __iter__(cls):
-        return iter(cls.keys())
-
-    @classmethod
-    def __len__(cls):
-        return len(cls.keys())
+    def __len__(self):
+        return sum(1 for _ in self.__iter__())
 
     @classmethod
     def __getitem__(cls, key):
@@ -372,7 +307,7 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
     def __delitem__(self, key):
         ctx_var = self.__before_set__ensure_allocated(key, None)
 
-        if not ctx_var.is_set():
+        if not ctx_var.is_gettable():
             raise KeyError(key)
 
         ctx_var.delete()

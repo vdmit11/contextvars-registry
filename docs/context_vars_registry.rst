@@ -508,17 +508,17 @@ Methods are supported as well::
     ...    'user_id': 42
     ... })
 
-    >>> current.keys()
-    dict_keys(['locale', 'timezone', 'user_id'])
+    >>> list(current.keys())
+    ['locale', 'timezone', 'user_id']
 
-    >>> current.values()
-    dict_values(['en', 'UTC', 42])
+    >>> list(current.values())
+    ['en', 'UTC', 42]
 
     >>> current.pop('locale')
     'en'
 
-    >>> current.items()
-    dict_items([('timezone', 'UTC'), ('user_id', 42)])
+    >>> list(current.items())
+    [('timezone', 'UTC'), ('user_id', 42)]
 
 
 
