@@ -12,8 +12,10 @@ from contextvars_extras.context_var_ext import DELETED, NO_DEFAULT, ContextVarEx
 from contextvars_extras.internal_utils import ExceptionDocstringMixin
 
 
-class EmptySlotsMeta(abc.ABCMeta):
-    """Automatically add empty __slots__ to all registry classes.
+class ContextVarsRegistryMeta(abc.ABCMeta):
+    """Metaclass for ContextVarsRegistry and its subclasses.
+
+    It automatically adds empty __slots__ to all registry classes.
 
     This metaclass adds empty :ref:`slots` to :class:`ContextVarsRegistry` and all its subclasses,
     which means that you can't set any attributes on a registry instance.
@@ -35,7 +37,7 @@ class EmptySlotsMeta(abc.ABCMeta):
         return super().__new__(cls, name, bases, attrs)
 
 
-class ContextVarsRegistry(MutableMapping[str, Any], metaclass=EmptySlotsMeta):
+class ContextVarsRegistry(MutableMapping[str, Any], metaclass=ContextVarsRegistryMeta):
     """A collection of ContextVar() objects, with nice @property-like way to access them."""
 
     _registry_allocate_on_setattr: ClassVar[bool] = True
