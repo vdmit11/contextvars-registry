@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.0 (2022-10-30)
+### Feature
+* Remove "under development" warnings, the code is stable enough ([`6e5518b`](https://github.com/vdmit11/contextvars-extras/commit/6e5518bd4be621f4f481297225970a05bb5abd7f))
+
 ## v0.2.1 (2022-06-21)
 ### Fix
 * ContextVarsRegistry.keys() triggers deferred_default ([`fc17c59`](https://github.com/vdmit11/contextvars-extras/commit/fc17c59c3518efa4190cef5a1ce7f02088df210a))
