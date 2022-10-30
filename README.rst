@@ -3,10 +3,6 @@ contextvars-extras
 
 |pypi badge| |build badge| |docs badge|
 
-**Warning!**
-
-**The code is at the early development stage, and may be unstable. Use with caution.**
-
 ``contextvars-extras`` is a set of extensions for the Python's `contextvars`_ module.
 
 In case you are not familiar with the `contextvars`_ module, its `ContextVar`_ objects

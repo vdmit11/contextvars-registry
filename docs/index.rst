@@ -1,13 +1,6 @@
 contextvars-extras
 ==================
 
-.. Warning::
-
-   The code is at the early development stage, and may be unstable.
-
-   Use with caution.
-
-
 :mod:`contextvars-extras` is a set of extensions for the Python's :mod:`contextvars` module.
 
 In case you're not familiar with Context Variables, they're sort of `Thread Local Storage`_
