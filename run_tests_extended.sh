@@ -3,4 +3,4 @@
 set -e
 
 ./run_tests.sh $@
-tox
+poetry run tox

@@ -3,5 +3,5 @@
 set -e
 set -x
 
-isort contextvars_extras tests
-black contextvars_extras tests
+poetry run isort contextvars_extras tests
+poetry run black contextvars_extras tests
