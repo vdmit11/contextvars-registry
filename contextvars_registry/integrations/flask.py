@@ -1,6 +1,6 @@
 import flask
 
-from contextvars_extras.context_management import bind_to_sandbox_context
+from contextvars_registry.context_management import bind_to_sandbox_context
 
 
 class Flask(flask.Flask):
@@ -20,7 +20,7 @@ class Flask(flask.Flask):
 
         >>> import pytz
         >>> from contextvars import ContextVar
-        >>> from contextvars_extras.integrations.flask import Flask
+        >>> from contextvars_registry.integrations.flask import Flask
 
         >>> timezone_var = ContextVar("timezone_var", default="UTC")
 

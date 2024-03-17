@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 # -- Project information -----------------------------------------------------
 
-project = "contextvars-extras"
+project = "contextvars-registry"
 copyright = "2021, Dmitry Vasilyanov"  # pylint: disable=redefined-builtin
 author = "Dmitry Vasilyanov"
 
@@ -37,7 +37,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 #
 # That allows to simplify this:
 #
-#    class contextvars_extras.context_var_ext.ContextVarExt
+#    class contextvars_registry.context_var_ext.ContextVarExt
 #
 # to just this:
 #
@@ -80,7 +80,7 @@ autodoc_typehints = "description"
 # Because I have a lot of special singletons on the project,
 # and they look ugly in function signatures, e.g.:
 #
-#   def get(default=contextvars_extras.context_var_ext.NO_DEFAULT)
+#   def get(default=contextvars_registry.context_var_ext.NO_DEFAULT)
 #
 # And with this option enabled, they look nice and pretty:
 #

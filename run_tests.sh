@@ -5,4 +5,4 @@ echo '----------------'
 set -e
 set -x
 
-poetry run pytest --cov=contextvars_extras --cov-fail-under=100 $@
+poetry run pytest --cov=contextvars_registry --cov-fail-under=100 $@

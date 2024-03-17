@@ -23,8 +23,8 @@ def bind_to_snapshot_context(
     This is useful when you want to produce a "frozen" callback,
     protected from mutations of context variables, as illustrated in this example::
 
-        >>> from contextvars_extras import ContextVarsRegistry
-        >>> from contextvars_extras.context_management import bind_to_snapshot_context
+        >>> from contextvars_registry import ContextVarsRegistry
+        >>> from contextvars_registry.context_management import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     user_id: int = None
@@ -92,8 +92,8 @@ def bind_to_snapshot_context(
 
     This is illustrated by the example below::
 
-        >>> from contextvars_extras import ContextVarsRegistry
-        >>> from contextvars_extras.context_management import bind_to_snapshot_context
+        >>> from contextvars_registry import ContextVarsRegistry
+        >>> from contextvars_registry.context_management import bind_to_snapshot_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     locale: str
@@ -172,8 +172,8 @@ def bind_to_empty_context(fn: Callable[..., _ReturnT], *args, **kwargs) -> Calla
 
     Example::
 
-        >>> from contextvars_extras import ContextVarsRegistry
-        >>> from contextvars_extras.context_management import bind_to_empty_context
+        >>> from contextvars_registry import ContextVarsRegistry
+        >>> from contextvars_registry.context_management import bind_to_empty_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     locale: str
@@ -229,8 +229,8 @@ def bind_to_sandbox_context(
 
     Example::
 
-        >>> from contextvars_extras import ContextVarsRegistry
-        >>> from contextvars_extras.context_management import bind_to_sandbox_context
+        >>> from contextvars_registry import ContextVarsRegistry
+        >>> from contextvars_registry.context_management import bind_to_sandbox_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     timezone: str = 'UTC'
@@ -306,8 +306,8 @@ def create_async_task_in_empty_context(coro: Coroutine) -> asyncio.Task:
     Example::
 
         >>> from asyncio import create_task, run
-        >>> from contextvars_extras import ContextVarsRegistry
-        >>> from contextvars_extras.context_management import create_async_task_in_empty_context
+        >>> from contextvars_registry import ContextVarsRegistry
+        >>> from contextvars_registry.context_management import create_async_task_in_empty_context
 
         >>> class CurrentVars(ContextVarsRegistry):
         ...     locale: str = 'en'

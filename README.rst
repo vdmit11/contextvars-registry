@@ -1,9 +1,9 @@
-contextvars-extras
-==================
+contextvars-registry
+====================
 
 |pypi badge| |build badge| |docs badge|
 
-``contextvars-extras`` is a set of extensions for the Python's `contextvars`_ module.
+``contextvars-registry`` is a set of extensions for the Python's `contextvars`_ module.
 
 In case you are not familiar with the `contextvars`_ module, its `ContextVar`_ objects
 work like Thread-Local storage, but better: they are both thread-safe and async task-safe,
@@ -15,13 +15,13 @@ a function in the copied and isolated context.
 
 The `contextvars`_ is a powerful module, but its API seems too low-level.
 
-So this ``contextvars_extras`` package provides some higher-level additions on top of the
+So this ``contextvars_registry`` package provides some higher-level additions on top of the
 standard API, like, for example, organizing `ContextVar`_ objects into registry classes,
 with nice ``@property``-like access:
 
 .. code:: python
 
-    from contextvars_extras import ContextVarsRegistry
+    from contextvars_registry import ContextVarsRegistry
 
     class CurrentVars(ContextVarsRegistry):
         locale: str = 'en'
@@ -44,25 +44,25 @@ and it is naturally firendly to `typing`_, so static code analysis features
 
 .. _typing: https://docs.python.org/3/library/typing.html
 
-Check out the `full documentation <https://contextvars-extras.readthedocs.io>`_
+Check out the `full documentation <https://contextvars-registry.readthedocs.io>`_
 
 Links
 -----
 
-- Read the Docs: https://contextvars-extras.readthedocs.io
-- GitHub repository: https://github.com/vdmit11/contextvars-extras
-- Python package: https://pypi.org/project/contextvars-extras/
+- Read the Docs: https://contextvars-registry.readthedocs.io
+- GitHub repository: https://github.com/vdmit11/contextvars-registry
+- Python package: https://pypi.org/project/contextvars-registry/
 
 
-.. |pypi badge| image:: https://img.shields.io/pypi/v/contextvars-extras.svg
-  :target: https://pypi.org/project/contextvars-extras/
+.. |pypi badge| image:: https://img.shields.io/pypi/v/contextvars-registry.svg
+  :target: https://pypi.org/project/contextvars-registry/
   :alt: Python package version
 
-.. |build badge| image:: https://github.com/vdmit11/contextvars-extras/actions/workflows/build.yml/badge.svg
-  :target: https://github.com/vdmit11/contextvars-extras/actions/workflows/build.yml
+.. |build badge| image:: https://github.com/vdmit11/contextvars-registry/actions/workflows/build.yml/badge.svg
+  :target: https://github.com/vdmit11/contextvars-registry/actions/workflows/build.yml
   :alt: Tests Status
 
-.. |docs badge| image:: https://readthedocs.org/projects/contextvars-extras/badge/?version=latest
-  :target: https://contextvars-extras.readthedocs.io/en/latest/?badge=latest
+.. |docs badge| image:: https://readthedocs.org/projects/contextvars-registry/badge/?version=latest
+  :target: https://contextvars-registry.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
 

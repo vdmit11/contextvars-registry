@@ -1,7 +1,7 @@
-contextvars-extras
-==================
+contextvars-registry
+====================
 
-:mod:`contextvars-extras` is a set of extensions for the Python's :mod:`contextvars` module.
+:mod:`contextvars-registry` is a set of extensions for the Python's :mod:`contextvars` module.
 
 In case you're not familiar with Context Variables, they're sort of `Thread Local Storage`_
 that works not only with :mod:`threading`, but also other concurrency mechanisms,
@@ -24,7 +24,7 @@ Well, technically, nothing is wrong. The standard :mod:`contextvars` module work
 but its API is too minimalist, if not primitive. "Batteries included" principle
 somehow not applies there.
 
-So this :mod:`contextvars-extras` package supplies the batteries.
+So this :mod:`contextvars-registry` package supplies the batteries.
 It is just adds some higher-level nice-to-have tools on top of the standard :mod:`contextvars`.
 
 The two main concepts provided are:

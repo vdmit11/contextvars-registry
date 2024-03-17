@@ -3,7 +3,7 @@ from typing import Callable, Generic, Optional, TypeVar, Union
 
 from sentinel_value import SentinelValue
 
-from contextvars_extras.context_management import bind_to_empty_context
+from contextvars_registry.context_management import bind_to_empty_context
 
 
 class NoDefault(SentinelValue):
@@ -14,7 +14,7 @@ class NoDefault(SentinelValue):
 
     So this :class:`NoDefault` class is the solution. It has only 1 global instance:
 
-     - :data:`contextvars_extras.context_var_ext.NO_DEFAULT`
+     - :data:`contextvars_registry.context_var_ext.NO_DEFAULT`
 
     this special :data:`NO_DEFAULT` object may appear in a number of places:
 
@@ -61,11 +61,11 @@ class DeletionMark(SentinelValue):
     But, a litlle trick is that there are 2 slightly different ways to erase the variable,
     so :class:`DeletionMark` has exactly 2 instances:
 
-    :data:`contextvars_extras.context_var_ext.DELETED`
+    :data:`contextvars_registry.context_var_ext.DELETED`
      - written by :meth:`~ContextVarExt.delete` method
      - :meth:`~ContextVarExt.get` throws :class:`LookupError`
 
-    :data:`contextvars_extras.context_var_ext.RESET_TO_DEFAULT`
+    :data:`contextvars_registry.context_var_ext.RESET_TO_DEFAULT`
      - written by :meth:`~ContextVarExt.reset_to_default` method
      - :meth:`~ContextVarExt.get` returns a :attr:`~ContextVarExt.default` value
 
@@ -75,7 +75,7 @@ class DeletionMark(SentinelValue):
     A case when you do care is the :meth:`~ContextVarExt.get_raw` method,
     that may return a special deletion mark. Here is how you handle it::
 
-        >>> from contextvars_extras.context_var_ext import DELETED, RESET_TO_DEFAULT
+        >>> from contextvars_registry.context_var_ext import DELETED, RESET_TO_DEFAULT
 
         >>> timezone_var = ContextVarExt("timezone_var", default="UTC")
 
@@ -709,7 +709,7 @@ def get_context_var_default(context_var: ContextVar, missing=NO_DEFAULT):
     Example::
 
       >>> from contextvars import ContextVar
-      >>> from contextvars_extras.context_var_ext import get_context_var_default
+      >>> from contextvars_registry.context_var_ext import get_context_var_default
 
       >>> timezone_var = ContextVar('timezone_var', default='UTC')
 

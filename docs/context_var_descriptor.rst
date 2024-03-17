@@ -1,7 +1,7 @@
 ﻿module: context_var_descriptor
 ==============================
 
-.. currentmodule:: contextvars_extras.context_var_descriptor
+.. currentmodule:: contextvars_registry.context_var_descriptor
 
 Overview
 --------
@@ -38,7 +38,7 @@ class ContextVarDescriptor
 :class:`ContextVarDescriptor` is an extension for the standard :class:`~contextvars.ContextVar` object,
 that is designed to be placed in a class attribute, like this::
 
-    >>> from contextvars_extras import ContextVarDescriptor
+    >>> from contextvars_registry import ContextVarDescriptor
 
     >>> class MyVars:
     ...     locale = ContextVarDescriptor(default='en')
@@ -79,7 +79,7 @@ The underlying :class:`~contextvars.ContextVar` methods can be reached via class
 Inherited features of ContextVarExt
 -----------------------------------
 
-:class:`ContextVarDescriptor` is a subclass of :class:`~contextvars_extras.context_var_ext.ContextVarExt`.
+:class:`ContextVarDescriptor` is a subclass of :class:`~contextvars_registry.context_var_ext.ContextVarExt`.
 That means that it supports extended features (not availble in the built-in :class:`contextvars.ContextVar`).
 
 For example, you can delete the value::
@@ -118,7 +118,7 @@ For details, visit the separate page dedicated to the base class:
 API reference
 -------------
 
-.. automodule:: contextvars_extras.context_var_descriptor
+.. automodule:: contextvars_registry.context_var_descriptor
   :exclude-members: ContextVarDescriptor
 
   .. autoclass:: ContextVarDescriptor
@@ -126,4 +126,4 @@ API reference
     :inherited-members:
     :undoc-members:
 
-     base class: :class:`contextvars_extras.context_var_ext.ContextVarExt`
+     base class: :class:`contextvars_registry.context_var_ext.ContextVarExt`

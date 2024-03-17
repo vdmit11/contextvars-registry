@@ -3,9 +3,9 @@ from typing import ClassVar, Optional
 
 from pytest import raises
 
-from contextvars_extras import ContextVar, ContextVarDescriptor, ContextVarsRegistry
-from contextvars_extras.context_var_ext import RESET_TO_DEFAULT
-from contextvars_extras.context_vars_registry import RegistryInheritanceError
+from contextvars_registry import ContextVar, ContextVarDescriptor, ContextVarsRegistry
+from contextvars_registry.context_var_ext import RESET_TO_DEFAULT
+from contextvars_registry.context_vars_registry import RegistryInheritanceError
 
 # pylint: disable=attribute-defined-outside-init,protected-access,pointless-statement
 # pylint: disable=function-redefined

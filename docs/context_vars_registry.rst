@@ -1,7 +1,7 @@
 ﻿module: context_vars_registry
 =============================
 
-This is documentation page for the module: :mod:`contextvars_extras.context_vars_registry`
+This is documentation page for the module: :mod:`contextvars_registry.context_vars_registry`
 
 The module is about `class ContextVarsRegistry`_ - a container that provides nice
 ``@property``-like access to context variables.
@@ -9,7 +9,7 @@ The module is about `class ContextVarsRegistry`_ - a container that provides nic
 .. contents:: Contents
    :local:
 
-.. currentmodule:: contextvars_extras.context_vars_registry
+.. currentmodule:: contextvars_registry.context_vars_registry
 
 API summary
 -----------
@@ -44,7 +44,7 @@ class ContextVarsRegistry
 
 The idea is simple: you create a sub-class, and its attributes magically become context variables::
 
-    >>> from contextvars_extras import ContextVarsRegistry
+    >>> from contextvars_registry import ContextVarsRegistry
 
     >>> class CurrentVars(ContextVarsRegistry):
     ...    locale: str = "en"
@@ -92,20 +92,20 @@ Under the hood it really turns into this::
     CurrentVars.timezone.set("GMT")
 
 The ``CurrentVars.timezone`` above is a magic
-:class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor` object,
+:class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor` object,
 check this out::
 
     >>> CurrentVars.timezone
     <ContextVarDescriptor name='__main__.CurrentVars.timezone'...>
 
-Such :class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor` is an
+Such :class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor` is an
 extended version of the standard :class:`contextvars.ContextVar` that behaves like ``@property``
 when you put it into a class.
 
-Another important note is that :class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor`
+Another important note is that :class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor`
 is NOT a subclass of :class:`~contextvars.ContextVar`. It should have been done a subclass,
 but unfortunately, Python's :class:`~contextvars.ContextVar` cannot be subclassed (a technical limitation),
-so :class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor`
+so :class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor`
 is made a wrapper for :class:`~contextvars.ContextVar`.
 
 If you really need to reach the lower-level :class:`~contextvars.ContextVar` object,
@@ -115,7 +115,7 @@ then you just use the ``.context_var`` attribute, like this::
     <ContextVar name='__main__.CurrentVars.timezone'...>
 
 But in most cases, you don't need it, because
-:class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor` implements all the same
+:class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor` implements all the same
 methods and attributes as the standard :class:`~contextvars.ContextVar`, so it should work
 as a drop-in replacement in all cases except :func:`isinstance` checks.
 
@@ -138,7 +138,7 @@ Attribute Allocation
 
 As mentioned above, all registry attributes must be descriptors,
 so when you set (or even just declare) an attribute, then :class:`ContextVarsRegistry`
-automatically allocates a new :class:`~contextvars_extras.context_var_descriptor.ContextVarDescriptor`
+automatically allocates a new :class:`~contextvars_registry.context_var_descriptor.ContextVarDescriptor`
 for each attribute.
 
 But, a little problem is that not all attributes should become context variables.
@@ -317,7 +317,7 @@ manual creation of ContextVarDescriptor()
 
 You can also just manually create :class:`ContextVarDescriptor` objects, like this::
 
-     >>> from contextvars_extras import ContextVarDescriptor
+     >>> from contextvars_registry import ContextVarDescriptor
 
      >>> class CurrentVars(ContextVarsRegistry):
      ...     timezone = ContextVarDescriptor(deferred_default=lambda: "UTC")
@@ -402,7 +402,7 @@ It is only a small syntax sugar over setting attributes, and it restores only at
 that are listed inside the inside the ``with()`` parenthesizes, and nothing else.
 
 If you need a full context isolation mechanism, then you should use tools from the
-:mod:`~contextvars_extras.context_management` module.
+:mod:`~contextvars_registry.context_management` module.
 
 
 Deleting Attributes
@@ -415,7 +415,7 @@ So, we have to do some trickery to implement deletion...
 
 When you call ``del`` or :func:`delattr`, we don't actually delete anything,
 but instead we write to the variable a special sentinel object called
-:data:`~contextvars_extras.context_var_ext.DELETED`.
+:data:`~contextvars_registry.context_var_ext.DELETED`.
 
 Later on, when the variable is read, there is a ``if`` check under the hood,
 that detects the special sentinel object, and throws an exception.
@@ -448,7 +448,7 @@ as if its attribute was really deleted, check this out::
     >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
     'DEFAULT_VALUE'
 
-The only case when you see this special :data:`~contextvars_extras.context_var_ext.DELETED` object
+The only case when you see this special :data:`~contextvars_registry.context_var_ext.DELETED` object
 is when you use some low-level stuff, like :func:`save_context_vars_registry`, or
 the :meth:`~.ContextVarDescriptor.get_raw` method::
 
@@ -525,6 +525,6 @@ Methods are supported as well::
 API reference
 -------------
 
-.. automodule:: contextvars_extras.context_vars_registry
+.. automodule:: contextvars_registry.context_vars_registry
    :special-members: __call__
    :private-members: _registry_allocate_on_setattr

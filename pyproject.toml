@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "contextvars-extras"
+name = "contextvars-registry"
 version = "0.3.0"
 description = "Contextvars made easy (WARNING: unstable alpha version. Things may break)."
 license = "MIT"
 authors = ["Dmitry Vasilyanov <vdmit11@gmail.com>"]
 readme = "README.rst"
-repository = "https://github.com/vdmit11/contextvars-extras"
-documentation = "https://contextvars-extras.readthedocs.io"
+repository = "https://github.com/vdmit11/contextvars-registry"
+documentation = "https://contextvars-registry.readthedocs.io"
 keywords = ["contextvars", "context", "async", "threading", "gevent"]
 exclude = []
 classifiers = [

@@ -3,8 +3,8 @@
 from contextvars import ContextVar
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
-from contextvars_extras.context_var_ext import NO_DEFAULT, ContextVarExt, NoDefault
-from contextvars_extras.internal_utils import ExceptionDocstringMixin
+from contextvars_registry.context_var_ext import NO_DEFAULT, ContextVarExt, NoDefault
+from contextvars_registry.internal_utils import ExceptionDocstringMixin
 
 # A value stored in the context variable.
 _VarValueT = TypeVar("_VarValueT")
@@ -102,7 +102,7 @@ class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError
     This exception is usually raised when you declare a context variable without a default value,
     like this:
 
-        >>> from contextvars_extras import ContextVarsRegistry
+        >>> from contextvars_registry import ContextVarsRegistry
         >>> class Current(ContextVarsRegistry):
         ...     timezone: str
         >>> current = Current()
@@ -113,7 +113,7 @@ class ContextVarNotSetError(ExceptionDocstringMixin, AttributeError, LookupError
         >>> current.timezone
         Traceback (most recent call last):
         ...
-        contextvars_extras.context_var_descriptor.ContextVarNotSetError: ...
+        contextvars_registry.context_var_descriptor.ContextVarNotSetError: ...
 
     So you have 2 options to solve the problem:
 

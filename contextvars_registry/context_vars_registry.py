@@ -7,9 +7,9 @@ from typing import Any, ClassVar, Dict, Iterable, Iterator, MutableMapping, Tupl
 
 from sentinel_value import sentinel
 
-from contextvars_extras.context_var_descriptor import ContextVarDescriptor
-from contextvars_extras.context_var_ext import DELETED, NO_DEFAULT, ContextVarExt, Token
-from contextvars_extras.internal_utils import ExceptionDocstringMixin
+from contextvars_registry.context_var_descriptor import ContextVarDescriptor
+from contextvars_registry.context_var_ext import DELETED, NO_DEFAULT, ContextVarExt, Token
+from contextvars_registry.internal_utils import ExceptionDocstringMixin
 
 
 class ContextVarsRegistryMeta(abc.ABCMeta):
@@ -431,7 +431,7 @@ def restore_context_vars_registry(
 
     Example::
 
-        >>> from contextvars_extras.context_vars_registry import (
+        >>> from contextvars_registry.context_vars_registry import (
         ...    ContextVarsRegistry,
         ...    save_context_vars_registry,
         ...    restore_context_vars_registry,
@@ -482,7 +482,7 @@ def restore_context_vars_registry(
         in the registry.
 
         There is a faster tool, a decorator that saves/restores all context variables on each call,
-        and that takes O(1) time: :func:`contextvars_extras.context.bind_to_sandbox_context`
+        and that takes O(1) time: :func:`contextvars_registry.context.bind_to_sandbox_context`
 
         So you prefer that decorator by default, and choose :func:`restore_registry_state`
         only when you can't use the decorator, or when you need to restore only 1 specific

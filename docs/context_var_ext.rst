@@ -1,14 +1,14 @@
 ﻿module: context_var_ext
 =======================
 
-This is documentation page for the module: :mod:`contextvars_extras.context_var_ext`
+This is documentation page for the module: :mod:`contextvars_registry.context_var_ext`
 
 The module contains `class ContextVarExt`_, and its helpers.
 
 .. contents:: Contents
    :local:
 
-.. currentmodule:: contextvars_extras.context_var_ext
+.. currentmodule:: contextvars_registry.context_var_ext
 
 API summary
 -----------
@@ -71,7 +71,7 @@ That is, you just replace this::
 
 with this::
 
-  >>> from contextvars_extras import ContextVarExt
+  >>> from contextvars_registry import ContextVarExt
 
   >>> locale_var = ContextVarExt('locale_var', default='en')
 
@@ -153,7 +153,7 @@ Deferred Defaults
 
 Normally, you set a default value for a context variable like this::
 
-  >>> from contextvars_extras import ContextVarExt
+  >>> from contextvars_registry import ContextVarExt
 
   >>> locale_var = ContextVarExt(
   ...     name='locale_var',
@@ -355,7 +355,7 @@ you will get the same performance as the lower-level :class:`contextvars.Context
 API reference
 -------------
 
-.. automodule:: contextvars_extras.context_var_ext
+.. automodule:: contextvars_registry.context_var_ext
    :exclude-members: ContextVarExt
 
    ..

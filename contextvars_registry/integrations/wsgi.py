@@ -1,7 +1,7 @@
 from contextvars import ContextVar
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
-from contextvars_extras.context_management import bind_to_sandbox_context
+from contextvars_registry.context_management import bind_to_sandbox_context
 
 EnvironDict = Dict[str, str]
 StatusStr = str
@@ -12,7 +12,7 @@ WsgiApp = Callable[[EnvironDict, StartResponseFn], Response]
 
 
 current_environ: ContextVar[EnvironDict] = ContextVar(
-    "contextvars_extras.integrations.wsgi.current_environ"
+    "contextvars_registry.integrations.wsgi.current_environ"
 )
 """Environment variables for the current HTTP request.
 
@@ -48,7 +48,7 @@ class ContextVarsMiddleware:
 
     Example::
 
-       >>> from contextvars_extras.integrations.wsgi import ContextVarsMiddleware, current_environ
+       >>> from contextvars_registry.integrations.wsgi import ContextVarsMiddleware, current_environ
        >>> import werkzeug.test
 
        >>> def get_current_url():
