@@ -33,37 +33,26 @@ sentinel-value = "^1.0.0"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
 tox = "^3.24.4"
-ipython = "^7.31.1"
 Sphinx = "^4.2.0"
-rpdb = "^0.1.6"
 sphinx-toggleprompt = "^0.0.5"
 sphinx-copybutton = "^0.4.0"
-pylava = "^0.3.0"
-pylava-pylint = "^0.0.3"
 radon = "^5.1.0"
 mypy = "^0.910"
-pytest-mypy = "^0.8.1"
-black = "^22.3.0"
-isort = "^5.9.3"
-pytest-black = "^0.3.12"
-pytest-isort = "^2.0.0"
 Flask = {extras = ["async"], version = "^2.0.2"}
 gevent = "^21.8.0"
 sphinx-rtd-theme = "^1.0.0"
 pytest-cov = "^3.0.0"
 python-semantic-release = "^7.19.2"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.3.3"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
 line-length = 100
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 100
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
@@ -78,10 +67,6 @@ addopts = """
     --maxfail=2
     --doctest-modules
     --doctest-glob='*.rst'
-    --pylava
-    --mypy
-    --black
-    --isort
     --cov-report=term-missing:skip-covered
     --ignore='./playground.py'
     --ignore-glob='**/.*.py'
@@ -100,7 +85,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = 3.7
+python_version = 3.8
 show_error_codes = true
 # Enable some strict checks. It is like `mypy --strict`,
 # except for several options that bring too little benefit
