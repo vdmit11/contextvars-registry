@@ -182,7 +182,7 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=ContextVarsRegistr
                 cls.__before_set__ensure_allocated(attr_name, value)
             __setattr__(self, attr_name, value)
 
-        cls.__setattr__ = _ContextVarsRegistry__setattr__  # type: ignore[assignment]
+        cls.__setattr__ = _ContextVarsRegistry__setattr__  # type: ignore[method-assign]
 
     # There is a bug in Pylint that gives false-positive warnings for classmethods below.
     # So, I have to mask that warning completely and wait until the bug in Pylint is fied.

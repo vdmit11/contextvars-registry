@@ -78,7 +78,7 @@ class ContextVarExt(Generic[_VarValueT]):
     if sys.version_info >= (3, 9):
         def __class_getitem__(cls, item: Any) -> GenericAlias: ...
 
-class Token(Generic[_VarValueT], contextvars.Token[_VarValueT]):
+class Token(Generic[_VarValueT], contextvars.Token[_VarValueT]):  # type: ignore[misc]
     MISSING: ClassVar[object]
     var: ContextVar[_VarValueT]
     old_value: _VarValueT

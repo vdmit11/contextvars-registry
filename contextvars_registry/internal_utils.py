@@ -54,7 +54,7 @@ class ExceptionDocstringMixin:
         if not args and not kwargs:
             super().__init__(self._clean_docstring())  # type: ignore[call-arg]
         else:
-            super().__init__(*args, **kwargs)  # type: ignore[call-arg]
+            super().__init__(*args, **kwargs)
 
     @classmethod
     def format(cls, **kwargs):
