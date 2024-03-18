@@ -71,8 +71,6 @@ class ContextVarsMiddleware:
         self.wrapped_app = wrapped_app
 
     @bind_to_sandbox_context
-    def __call__(
-        self, environ: EnvironDict, start_response: StartResponseFn
-    ) -> Response:  # noqa: D102
+    def __call__(self, environ: EnvironDict, start_response: StartResponseFn) -> Response:  # noqa: D102
         current_environ.set(environ)
         return self.wrapped_app(environ, start_response)

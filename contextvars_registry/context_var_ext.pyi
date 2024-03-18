@@ -22,7 +22,8 @@ from typing import Any, Callable, ClassVar, Generic, Optional, Type, TypeVar, Un
 
 from sentinel_value import SentinelValue
 
-from contextvars_registry.context_management import bind_to_empty_context
+if sys.version_info >= (3, 9):
+    from typing import GenericAlias
 
 class DeletionMark(SentinelValue): ...
 

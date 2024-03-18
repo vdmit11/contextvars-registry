@@ -66,18 +66,17 @@ class ContextVarDescriptor(Generic[_VarValueT], ContextVarExt[_VarValueT]):
         return f"{owner_cls.__module__}.{owner_cls.__name__}.{owner_attr_name}"
 
     @overload
-    def __get__(self: _DescriptorT, owner_instance: None, owner_cls: Type[_OwnerT]) -> _DescriptorT:
-        ...
+    def __get__(
+        self: _DescriptorT, owner_instance: None, owner_cls: Type[_OwnerT]
+    ) -> _DescriptorT: ...
 
     @overload
-    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> _VarValueT:
-        ...
+    def __get__(self, owner_instance: _OwnerT, owner_cls: Type[_OwnerT]) -> _VarValueT: ...
 
     @overload
     def __get__(
         self: _DescriptorT, owner_instance: Any, owner_cls: Any
-    ) -> Union[_DescriptorT, _VarValueT]:
-        ...
+    ) -> Union[_DescriptorT, _VarValueT]: ...
 
     def __get__(self, owner_instance, owner_cls):
         if owner_instance is None:
