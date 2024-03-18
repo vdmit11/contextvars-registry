@@ -29,23 +29,20 @@ classifiers = [
 python = "^3.8.10"
 sentinel-value = "^1.0.0"
 
-
-[tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-tox = "^3.24.4"
-Sphinx = "^4.2.0"
-sphinx-toggleprompt = "^0.0.5"
-sphinx-copybutton = "^0.4.0"
-radon = "^5.1.0"
-mypy = "^0.910"
-Flask = {extras = ["async"], version = "^2.0.2"}
-gevent = "^21.8.0"
-sphinx-rtd-theme = "^1.0.0"
-pytest-cov = "^3.0.0"
-python-semantic-release = "^7.19.2"
-
 [tool.poetry.group.dev.dependencies]
+Flask = {extras = ["async"], version = "^3.0.2"}
+Sphinx = "^7.1.2"
+gevent = "^24.2.1"
+mypy = "^1.9.0"
+pytest = "^8.1.1"
+pytest-cov = "^4.1.0"
+python-semantic-release = "^9.2.0"
+pytz = "^2024.1"
+radon = "6.0.1"
 ruff = "^0.3.3"
+sphinx-copybutton = "^0.5.2"
+sphinx-rtd-theme = "^2.0.0"
+tox = "^4.14.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
