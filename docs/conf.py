@@ -52,7 +52,6 @@ python_use_unqualified_type_names = True
 # ones.
 extensions = [
     "sphinx_copybutton",
-    "sphinx_toggleprompt",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
@@ -100,9 +99,6 @@ copybutton_prompt_text = r">>> |\.\.\. | $"
 copybutton_prompt_is_regexp = True
 copybutton_remove_prompts = True
 copybutton_only_copy_prompt_lines = False
-
-# Shift '>>>' button away from corner, otherwise it conflicts with sphinx_copybutton
-toggleprompt_offset_right = 40
 
 # Allow links to standard Python docs and other documentation sites.
 intersphinx_mapping = {
