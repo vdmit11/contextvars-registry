@@ -2,6 +2,9 @@ name: build
 
 on: [push]
 
+env:
+  SRC_DIRS: "contextvars_registry tests docs"
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -20,6 +23,12 @@ jobs:
       - name: Install Python packages
         run: |
           poetry install --no-root
-      - name: Run tests
+      - name: ruff
         run: |
-          poetry run pytest
+          poetry run ruff check $SRC_DIRS
+      - name: mypy
+        run: |
+          poetry run mypy SRC_DIRS
+      - name: pytest
+        run: |
+          poetry run pytest -vv --cov=contextvars_registry --cov-fail-under=100 $SRC_DIRS
