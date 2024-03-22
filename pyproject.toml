@@ -32,6 +32,8 @@ sentinel-value = "^1.0.0"
 [tool.poetry.group.dev.dependencies]
 Flask = {extras = ["async"], version = "^3.0.2"}
 Sphinx = "^7.1.2"
+doit = "^0.36.0"
+doit-auto1 = "^0.1.0"
 gevent = "^24.2.1"
 mypy = "^1.9.0"
 pytest = "^8.1.1"
