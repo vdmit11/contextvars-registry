@@ -23,12 +23,9 @@ jobs:
       - name: Install Python packages
         run: |
           poetry install --no-root
-      - name: ruff
+      - name: lint
         run: |
-          poetry run ruff check $SRC_DIRS
-      - name: mypy
+          poetry run doit lint
+      - name: test
         run: |
-          poetry run mypy $SRC_DIRS
-      - name: pytest
-        run: |
-          poetry run pytest -vv --cov=contextvars_registry --cov-fail-under=100 $SRC_DIRS
+          poetry run doit test
