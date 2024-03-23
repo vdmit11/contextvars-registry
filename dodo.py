@@ -51,7 +51,7 @@ def task_fix():
     return {
         "file_dep": SRC_FILES,
         "actions": [
-            Interactive("ruff format {SRC_DIRS_STR}"),
+            Interactive(f"ruff format {SRC_DIRS_STR}"),
             Interactive(f"ruff check --fix {SRC_DIRS_STR}"),
         ],
     }
