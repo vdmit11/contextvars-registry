@@ -18,7 +18,7 @@ So this ``contextvars_registry`` package provides some higher-level additions on
 standard API, like, for example, grouping `ContextVar`_ objects in a registry class,
 with nice ``@property``-like access:
 
-.. code:: python
+.. code::
 
     from contextvars_registry import ContextVarsRegistry
 
