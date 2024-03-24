@@ -415,7 +415,7 @@ So, we have to do some trickery to implement deletion...
 
 When you call ``del`` or :func:`delattr`, we don't actually delete anything,
 but instead we write to the variable a special sentinel object called
-:data:`~contextvars_registry.context_var_ext.DELETED`.
+:data:`~contextvars_registry.context_var_descriptor.DELETED`.
 
 Later on, when the variable is read, there is a ``if`` check under the hood,
 that detects the special sentinel object, and throws an exception.
@@ -448,7 +448,7 @@ as if its attribute was really deleted, check this out::
     >>> getattr(current, 'user_id', 'DEFAULT_VALUE')
     'DEFAULT_VALUE'
 
-The only case when you see this special :data:`~contextvars_registry.context_var_ext.DELETED` object
+The only case when you see this special :data:`~contextvars_registry.context_var_descriptor.DELETED` object
 is when you use some low-level stuff, like :func:`save_context_vars_registry`, or
 the :meth:`~.ContextVarDescriptor.get_raw` method::
 

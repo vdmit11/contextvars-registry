@@ -1,14 +1,17 @@
 import abc
 import threading
 from contextlib import ExitStack
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from types import FunctionType, MethodType
 from typing import Any, ClassVar, Dict, Iterable, Iterator, MutableMapping, Tuple, get_type_hints
 
 from sentinel_value import sentinel
 
-from contextvars_registry.context_var_descriptor import ContextVarDescriptor
-from contextvars_registry.context_var_ext import DELETED, NO_DEFAULT, ContextVarExt, Token
+from contextvars_registry.context_var_descriptor import (
+    ContextVarDescriptor,
+    DELETED,
+    NO_DEFAULT,
+)
 from contextvars_registry.internal_utils import ExceptionDocstringMixin
 
 
@@ -248,7 +251,7 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=ContextVarsRegistr
             assert attr_name not in cls._registry_var_descriptors
 
             value = getattr(cls, attr_name, NO_DEFAULT)
-            assert not isinstance(value, (ContextVar, ContextVarExt, ContextVarDescriptor))
+            assert not isinstance(value, (ContextVar, ContextVarDescriptor))
 
             descriptor: ContextVarDescriptor = ContextVarDescriptor(default=value)
             descriptor.__set_name__(cls, attr_name)

@@ -37,11 +37,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 #
 # That allows to simplify this:
 #
-#    class contextvars_registry.context_var_ext.ContextVarExt
+#    class contextvars_registry.context_var_descriptor.ContextVarDescriptor
 #
 # to just this:
 #
-#    class ContextVarExt
+#    class ContextVarDescriptor
 #
 # which is much more readable.
 add_module_names = False
@@ -66,8 +66,8 @@ autodoc_default_options = {
 
 # Remove type hints from function signatures (and instead put them to function description).
 #
-# This is done because this whole project is about Generic containers (ContextVarExt,
-# ContextVarDescriptor, etc), so that means there is a lot of TypeVar and Union in the code,
+# This is done because this whole project is about Generic containers
+# (like ContextVarDescriptor), so there is a lot of TypeVar and Union in the code,
 # which makes function signatures ugly.
 #
 # So, to make signatures look nice in the docs, I'm removing type hints from them
@@ -79,7 +79,7 @@ autodoc_typehints = "description"
 # Because I have a lot of special singletons on the project,
 # and they look ugly in function signatures, e.g.:
 #
-#   def get(default=contextvars_registry.context_var_ext.NO_DEFAULT)
+#   def get(default=contextvars_registry.context_var_descriptor.NO_DEFAULT)
 #
 # And with this option enabled, they look nice and pretty:
 #

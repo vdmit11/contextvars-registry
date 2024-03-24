@@ -14,12 +14,10 @@
 from contextvars import ContextVar
 
 from contextvars_registry.context_var_descriptor import ContextVarDescriptor
-from contextvars_registry.context_var_ext import ContextVarExt
 from contextvars_registry.context_vars_registry import ContextVarsRegistry
 
 __all__ = [
     "ContextVar",
     "ContextVarDescriptor",
-    "ContextVarExt",
     "ContextVarsRegistry",
 ]

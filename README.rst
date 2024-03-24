@@ -3,12 +3,11 @@ contextvars-registry
 
 |pypi badge| |build badge| |docs badge|
 
-``contextvars-registry`` is a set of extensions for the Python's `contextvars`_ module.
+``contextvars-registry`` is an extension for the Python's `contextvars`_ module.
 
-In case you are not familiar with the `contextvars`_ module, its `ContextVar`_ objects
-work like Thread-Local storage, but better: they are both thread-safe and async task-safe,
-and they can be copied (all existing vars copied in O(1) time), and then you can run
-a function in the copied and isolated context.
+In case you are not familiar with Context Variables, they work like Thread-Local storage,
+but better: they are both thread-safe and async task-safe, have snapshots (all existing
+vars copied in O(1) time), allowing to run functions/threads/asynctasks in the copied context snapshot.
 
 .. _contextvars: https://docs.python.org/3/library/contextvars.html
 .. _ContextVar: https://docs.python.org/3/library/contextvars.html#contextvars.ContextVar
@@ -16,7 +15,7 @@ a function in the copied and isolated context.
 The `contextvars`_ is a powerful module, but its API seems too low-level.
 
 So this ``contextvars_registry`` package provides some higher-level additions on top of the
-standard API, like, for example, organizing `ContextVar`_ objects into registry classes,
+standard API, like, for example, grouping `ContextVar`_ objects in a registry class,
 with nice ``@property``-like access:
 
 .. code:: python

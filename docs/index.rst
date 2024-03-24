@@ -1,45 +1,46 @@
 contextvars-registry
 ====================
 
-:mod:`contextvars-registry` is a set of extensions for the Python's :mod:`contextvars` module.
+:mod:`contextvars_registry` is an extension for the Python's :mod:`contextvars` module.
 
-In case you're not familiar with Context Variables, they're sort of `Thread Local Storage`_
-that works not only with :mod:`threading`, but also other concurrency mechanisms,
-like :mod:`asyncio` and :mod:`gevent`.
+In case you're not familiar with Context Variables, they work like `Thread Local Storage`_,
+but better:
+
+- Context variables are both thread-safe and async task-safe (work seamlessly across :mod:`threading`, :mod:`asyncio`, :mod:`gevent`, and probably other concurrency mechanisms).
+- Cheap snapshots: **all** variables are copied at once in O(1) time (and then you can :meth:`~contextvars.Context.run` a function in the copied isolated context).
 
 .. _`Thread Local Storage`: https://stackoverflow.com/questions/104983/what-is-thread-local-storage-in-python-and-why-do-i-need-it
 
-That is, for example, if you have a web application, it is often handy to have a bunch of
-"current" variables, like: "current URL", or "current user ID", or "current DB connection".
+The Python's :mod:`contextvars` is a powerful module, but its API seems too low-level.
 
-So :class:`contextvars.ContextVar` allows to store this kind of "current" values in a thread-safe way:
-each :class:`~threading.Thread` gets its own isolated context, where it can set context variables freely,
-without interfering with other threads (and the same is true for :class:`asyncio.Task` and
-:class:`gevent.Greenlet` - each of them runs in its own isolated context).
+So this :mod:`contextvars_registry` package provides some higher-level additions on top of the
+standard API. Most notably, it allows to group :class:`~contextvars.ContextVar` objects
+in a registry class with ``@property``-like access:
 
-Ok, then what is wrong with the standard :mod:`contextvars` module?
-Why do you also need a 3rd-party library?
+.. code:: python
 
-Well, technically, nothing is wrong. The standard :mod:`contextvars` module works fine,
-but its API is too minimalist, if not primitive. "Batteries included" principle
-somehow not applies there.
+    from contextvars_registry import ContextVarsRegistry
 
-So this :mod:`contextvars-registry` package supplies the batteries.
-It is just adds some higher-level nice-to-have tools on top of the standard :mod:`contextvars`.
+    class CurrentVars(ContextVarsRegistry):
+        locale: str = 'en'
+        timezone: str = 'UTC'
 
-The two main concepts provided are:
+    current = CurrentVars()
 
-:doc:`class ContextVarsRegistry <context_vars_registry>` - provides nice ``@property``-like
-access to context variables. You just get/set its attributes, and the underlying
-:class:`~contextvars.ContextVar` objects are managed automatically under the hood.
+    # calls ContextVar.get() under the hood
+    current.timezone  # => 'UTC'
 
-:doc:`class ContextVarExt <context_var_ext>` - a wrapper and drop-in replacement to the standard
-:class:`~contextvars.ContextVar`, that adds some extra methods and features. You can use it
-if you like extra features, but don't like the registry magic.
+    # calls ContextVar.set() under the hood
+    current.timezone = 'GMT'
 
-There are other things, that aren't that bold, but hopefully still useful.
+    # ContextVar() methods can be reached via class members
+    CurrentVars.timezone.get()  # => 'GMT'
 
-Check out the modules, listed below.
+
+That makes your code more readable (no more noisy ``.get()`` calls),
+and it is naturally friendly to :mod:`typing`, so static code analysis features
+(like type checkers and auto-completion in your IDE) work nicely.
+
 
 Pages
 -----
@@ -48,7 +49,6 @@ Pages
    :maxdepth: 1
 
    context_vars_registry
-   context_var_ext
    context_var_descriptor
    context_management
    integrations.wsgi
@@ -59,4 +59,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
