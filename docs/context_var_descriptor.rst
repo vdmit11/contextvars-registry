@@ -341,7 +341,7 @@ If you want to reset variable to the default value, then you can use :meth:`~Con
     or call some performance-optimized methods, like :meth:`~ContextVarDescriptor.get_raw`::
 
         >>> timezone_var.get_raw()
-        <DELETED>
+        <DeletionMark.DELETED: 'DELETED'>
 
 
 Performance Tips

@@ -1369,17 +1369,6 @@ files = [
 ]
 
 [[package]]
-name = "sentinel-value"
-version = "1.0.0"
-description = "Sentinel Values - unique objects akin to None, True, False"
-optional = false
-python-versions = ">=3.6.0,<4.0.0"
-files = [
-    {file = "sentinel-value-1.0.0.tar.gz", hash = "sha256:2ff8e9e303c8f6abb2ad8c6d2615ed5f11061eeda2e51edfd560dc0567de633a"},
-    {file = "sentinel_value-1.0.0-py3-none-any.whl", hash = "sha256:fab2501cb3f40c412a105b9a93089780c571468963f7bbcd0b5772ecdcfdc8cc"},
-]
-
-[[package]]
 name = "setuptools"
 version = "69.2.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -1817,4 +1806,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.10"
-content-hash = "1347616f8c1c8215e711cd075783e1819df95a4c4314f376e93cca6817f2f682"
+content-hash = "487297c3dd0c073bb7d68067f842f7a5f2f100a4a2dd8efb6dd73b1bb0a0433d"

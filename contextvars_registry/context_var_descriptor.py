@@ -1,9 +1,9 @@
 """ContextVarDescriptor - extension for the built-in ContextVar that behaves like @property."""
 
+from enum import Enum
+
 from contextvars import ContextVar, Token
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
-
-from sentinel_value import SentinelValue
 
 from contextvars_registry.context_management import bind_to_empty_context
 from contextvars_registry.internal_utils import ExceptionDocstringMixin
@@ -21,24 +21,17 @@ _DescriptorT = TypeVar("_DescriptorT", bound="ContextVarDescriptor[Any]")
 _OwnerT = TypeVar("_OwnerT")
 
 
-class NoDefault(SentinelValue):
+class NoDefault(Enum):
     """Special sentinel object that means: "default value is not set".
 
-    Problem: a context variable may have ``default = None``.
-    But, if ``None`` is a valid default value, then how do we represent "no default is set" state?
-
-    So this :class:`NoDefault` class is the solution. It has only 1 global instance:
-
-     - :data:`contextvars_registry.context_var_descriptor.NO_DEFAULT`
-
-    this special :data:`NO_DEFAULT` object may appear in a number of places:
+    This special :data:`NO_DEFAULT` object may appear in a number of places:
 
      - :attr:`ContextVarDescriptor.default`
      - :meth:`ContextVarDescriptor.get`
      - :func:`get_context_var_default`
      - and some other places
 
-    and in all these places it means that "default value is not set"
+    where it indicates the "default value is not set" case
     (which is different from ``default = None``).
 
     Example usage::
@@ -49,29 +42,29 @@ class NoDefault(SentinelValue):
       timezone_var has no default value
     """
 
+    NO_DEFAULT = "NO_DEFAULT"
 
-NO_DEFAULT = NoDefault(__name__, "NO_DEFAULT")
+
+NO_DEFAULT = NoDefault.NO_DEFAULT
 """Special sentinel object that means "default value is not set"
 
 see docs for: :class:`NoDefault`
 """
 
 
-class DeletionMark(SentinelValue):
-    """Special sentinel object written into ContextVar when it has no value.
+class DeletionMark(Enum):
+    """Special sentinel object written into ContextVar when it is erased.
 
     Problem: in Python, it is not possible to erase a :class:`~contextvars.ContextVar` object.
-    Once the variable is set, it cannot be unset.
-    But, we (or at least I, the author) need to implement the deletion feature.
+    Once a variable is set, it cannot be unset.
+    But, we still want to have the deletion feature.
 
     So, the solution is:
 
-    1. Write a special deletion mark into the context variable.
-    2. When reading the variable, detect the deltion mark and act as if there was no value
+    1. When the value is deleted, write an instance of :class:`DeletionMark`
+       into the context variable.
+    2. When reading the variable, detect the deletion mark and act as if there was no value
        (this logic is implemented by the :meth:`~ContextVarDescriptor.get` method).
-
-    So, an instance of :class:`DeletionMark` is that special object written
-    to the context variable when it is erased.
 
     But, a litlle trick is that there are 2 slightly different ways to erase the variable,
     so :class:`DeletionMark` has exactly 2 instances:
@@ -105,14 +98,17 @@ class DeletionMark(SentinelValue):
     Just use the :meth:`ContextVarDescriptor.get` method, that will handle it for you.
     """
 
+    DELETED = "DELETED"
+    RESET_TO_DEFAULT = "RESET_TO_DEFAULT"
 
-DELETED = DeletionMark(__name__, "DELETED")
+
+DELETED = DeletionMark.DELETED
 """Special object, written to ContextVar when its value is deleted.
 
 see docs in: :class:`DeletionMark`.
 """
 
-RESET_TO_DEFAULT = DeletionMark(__name__, "RESET_TO_DEFAULT")
+RESET_TO_DEFAULT = DeletionMark.RESET_TO_DEFAULT
 """Special object, written to ContextVar when it is reset to default.
 
 see docs in: :class:`DeletionMark`
@@ -622,7 +618,6 @@ class ContextVarDescriptor(Generic[_VarValueT]):
             self.set(value)
             return value
 
-        assert not isinstance(existing_value, SentinelValue)
         return existing_value
 
     def reset(self, token: "Token[_VarValueT]") -> None:
@@ -771,7 +766,11 @@ class ContextVarDescriptor(Generic[_VarValueT]):
 
 
 # A special sentinel object, used internally by methods like .is_set() and .set_if_not_set()
-_NOT_SET = SentinelValue(__name__, "_NOT_SET")
+class _NotSet(Enum):
+    NOT_SET = "NOT_SET"
+
+
+_NOT_SET = _NotSet.NOT_SET
 
 
 def _new_context_var(
@@ -830,7 +829,7 @@ def get_context_var_default(
       <Token ...>
 
       >>> get_context_var_default(timezone_var)
-      <NO_DEFAULT>
+      <NoDefault.NO_DEFAULT: 'NO_DEFAULT'>
 
     You can also use a custom missing marker (instead of :data:`NO_DEFAULT`), like this::
 

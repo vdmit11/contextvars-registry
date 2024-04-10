@@ -453,7 +453,7 @@ is when you use some low-level stuff, like :func:`save_context_vars_registry`, o
 the :meth:`~.ContextVarDescriptor.get_raw` method::
 
     >>> CurrentVars.user_id.get_raw()
-    <DELETED>
+    <DeletionMark.DELETED: 'DELETED'>
 
 So, long story short: once a :class:`contextvars.ContextVar` object is allocated,
 it lives forever in the registry.

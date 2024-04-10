@@ -4,8 +4,8 @@ from contextlib import ExitStack
 from contextvars import ContextVar, Token
 from types import FunctionType, MethodType
 from typing import Any, ClassVar, Dict, Iterable, Iterator, MutableMapping, Tuple, get_type_hints
+from enum import Enum
 
-from sentinel_value import sentinel
 
 from contextvars_registry.context_var_descriptor import (
     ContextVarDescriptor,
@@ -318,8 +318,18 @@ class ContextVarsRegistry(MutableMapping[str, Any], metaclass=ContextVarsRegistr
         ctx_var.delete()
 
 
-_NO_ATTR_VALUE = sentinel("_NO_VALUE")
-_NO_TYPE_HINT = sentinel("_NO_TYPE_HINT")
+class _NoAttrValue(Enum):
+    NO_ATTR_VALUE = "NO_ATTR_VALUE"
+
+
+_NO_ATTR_VALUE = _NoAttrValue.NO_ATTR_VALUE
+
+
+class _NoTypeHint(Enum):
+    NO_TYPE_HINT = "NO_TYPE_HINT"
+
+
+_NO_TYPE_HINT = _NoTypeHint.NO_TYPE_HINT
 
 
 def _get_attr_type_hints_and_values(cls: object) -> Iterable[Tuple[str, Any, Any]]:
